@@ -1,0 +1,6 @@
+{
+  "name": "Correcteur Pédagogique Pro",
+  "description": "Application d'aide à la correction pédagogique assistée par IA, analyse de classe et suivi des élèves.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -344,6 +344,49 @@
 </div>
 </div><!-- /wrap -->
 
+<!-- LEAD CAPTURE POPUP / MODAL -->
+<div class="mo" id="leadGateModal" style="display:none;z-index:99999;backdrop-filter:blur(8px);background:rgba(0,0,0,0.55)">
+  <div class="modal" style="max-width:440px;padding:24px;text-align:center;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.25)">
+    <div style="font-size:36px;margin-bottom:8px">🎓</div>
+    <h3 style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;margin-bottom:6px;color:var(--label)">Bienvenue sur Correcteur Pro</h3>
+    <p style="font-size:13.5px;color:var(--label2);margin-bottom:20px;line-height:1.4">
+      Renseignez vos coordonnées pour activer la correction IA instantanée et recevoir le compte-rendu pédagogique de votre classe.
+    </p>
+
+    <form id="leadGateForm" onsubmit="event.preventDefault();submitLeadCapture();" style="display:flex;flex-direction:column;gap:12px;text-align:left">
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Nom complet ou Titre</label>
+        <input type="text" id="leadInputName" placeholder="Ex: M. Dupont / Mme Traoré" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none" required>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Adresse Email <span style="color:var(--red)">*</span></label>
+        <input type="email" id="leadInputEmail" placeholder="votre.email@ecole.fr" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none" required>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Numéro WhatsApp <span style="color:var(--green)">📱</span></label>
+        <input type="tel" id="leadInputWhatsapp" placeholder="+33 6 12 34 56 78 ou +225 07..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none" required>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Établissement / Ville (optionnel)</label>
+        <input type="text" id="leadInputSchool" placeholder="Ex: Collège Jean Jaurès, Abidjan, Paris..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none">
+      </div>
+
+      <div id="leadGateErr" style="display:none;color:var(--red);font-size:12px;text-align:center;margin-top:2px"></div>
+
+      <button type="submit" id="leadGateBtn" style="margin-top:8px;padding:12px;border-radius:12px;background:var(--blue);color:#fff;border:none;font-weight:600;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <span>🚀 Accéder à la correction</span>
+      </button>
+      
+      <div style="font-size:11px;color:var(--label3);text-align:center;margin-top:4px">
+        🔒 Vos données restent confidentielles et ne sont jamais partagées.
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="mo" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal"><div id="modalContent"></div></div>

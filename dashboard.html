@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard · Correcteur Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: #131b2e;
+      --card-sub: #1b253e;
+      --border: #233054;
+      --text: #f0f4fc;
+      --text-muted: #92a4c8;
+      --blue: #3b82f6;
+      --blue-light: rgba(59, 130, 246, 0.15);
+      --green: #10b981;
+      --green-light: rgba(16, 185, 129, 0.15);
+      --purple: #a855f7;
+      --purple-light: rgba(168, 85, 247, 0.15);
+      --orange: #f59e0b;
+      --orange-light: rgba(245, 158, 11, 0.15);
+      --red: #ef4444;
+      --red-light: rgba(239, 68, 68, 0.15);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1280px; margin: 0 auto; }
+    
+    /* AUTH LOCK OVERLAY */
+    #authLock {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.96);
+      backdrop-filter: blur(12px);
+      z-index: 100000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .lock-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 32px;
+      border-radius: 20px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+    .lock-icon { font-size: 40px; margin-bottom: 12px; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge-admin {
+      background: var(--purple-light);
+      color: var(--purple);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      background: var(--accent-color, var(--blue));
+    }
+    .stat-val { font-size: 2.2rem; font-weight: 800; color: #fff; margin-top: 4px; }
+    .stat-lbl { color: var(--text-muted); font-size: 13px; font-weight: 500; }
+
+    .btn {
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .btn:hover { background: var(--card-sub); border-color: var(--blue); }
+    .btn-blue { background: var(--blue); color: #fff; border: none; }
+    .btn-blue:hover { opacity: 0.9; }
+    .btn-green { background: var(--green); color: #fff; border: none; }
+    .btn-green:hover { opacity: 0.9; }
+    .btn-red { background: var(--red-light); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+
+    .card-table {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .table-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: var(--card-sub);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px; }
+    th {
+      padding: 12px 16px;
+      background: rgba(9, 13, 22, 0.6);
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:hover { background: rgba(255,255,255,0.02); }
+
+    .plan-select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .status-active { background: var(--green-light); color: var(--green); }
+    .status-trial { background: var(--orange-light); color: var(--orange); }
+
+    .wa-btn {
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 4px 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+    .wa-btn:hover { background: rgba(16, 185, 129, 0.25); transform: translateY(-1px); }
+
+    .search-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      outline: none;
+      min-width: 260px;
+    }
+    .search-input:focus { border-color: var(--blue); }
+
+    /* MODAL */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .modal-box {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px; max-width: 500px; width: 90%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ADMIN ACCESS CODE AUTHENTICATION -->
+  <div id="authLock">
+    <div class="lock-box">
+      <div class="lock-icon">🔐</div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:8px">Accès Propriétaire</h2>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px">
+        Entrez votre code secret administrateur pour accéder à la gestion des utilisateurs et abonnements.
+      </p>
+      <input type="password" id="adminPassInput" placeholder="Code secret (ex: admin123)" style="width:100%;padding:12px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:#fff;font-size:15px;text-align:center;margin-bottom:12px;outline:none" onkeydown="if(event.key==='Enter')checkAuth()">
+      <div id="authErr" style="color:var(--red);font-size:12px;display:none;margin-bottom:10px">❌ Code secret incorrect</div>
+      <button class="btn btn-blue" style="width:100%;justify-content:center;padding:12px" onclick="checkAuth()">🔓 Déverrouiller le Dashboard</button>
+      <div style="margin-top:14px;font-size:11px;color:var(--text-muted)">
+        💡 Code par défaut : <code>admin123</code> (modifiable dans les réglages)
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD CONTENT -->
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>👑 Dashboard SaaS Propriétaire <span class="badge-admin">Admin Privé</span></h1>
+        <p style="color:var(--text-muted);font-size:13px;margin-top:4px">
+          Gestion des abonnements, plans tarifaires et contacts enseignants
+        </p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <a href="/" class="btn" target="_blank">🚀 Ouvrir le SaaS Client</a>
+        <button class="btn btn-green" onclick="exportCSV()">📥 Exporter CSV / Excel</button>
+        <button class="btn btn-red" onclick="logout()" title="Verrouiller la session">🔒 Verrouiller</button>
+      </div>
+    </header>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card" style="--accent-color: var(--blue)">
+        <div class="stat-lbl">Utilisateurs Enregistrés</div>
+        <div class="stat-val" id="stTotal" style="color:var(--blue)">0</div>
+      </div>
+      <div class="stat-card" style="--accent-color: var(--green)">
+        <div class="stat-lbl">Contacts WhatsApp Directs</div>
+        <div class="stat-val" id="stWA" style="color:var(--green)">0</div>
+      </div>
+      <div class="stat-card" style="--accent-color: var(--purple)">
+        <div class="stat-lbl">Abonnés Payants (Pro & Écoles)</div>
+        <div class="stat-val" id="stPro" style="color:var(--purple)">0</div>
+      </div>
+      <div class="stat-card" style="--accent-color: var(--orange)">
+        <div class="stat-lbl">Utilisateurs Essai Gratuit</div>
+        <div class="stat-val" id="stFree" style="color:var(--orange)">0</div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card-table">
+      <div class="table-header">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <input type="text" class="search-input" id="searchBox" placeholder="🔍 Rechercher (nom, email, tel, école)..." oninput="filterTable()">
+          <select id="filterPlan" class="plan-select" onchange="filterTable()" style="padding:8px 12px">
+            <option value="all">Tous les forfaits</option>
+            <option value="free">Essai Gratuit</option>
+            <option value="pro">Abonnement Pro</option>
+            <option value="ecole">Pack Établissement</option>
+          </select>
+        </div>
+        <button class="btn" onclick="fetchLeads()">🔄 Actualiser</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Enseignant / Nom</th>
+              <th>Email</th>
+              <th>WhatsApp (Action directe)</th>
+              <th>Établissement</th>
+              <th>Forfait Actuel</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="leadsBody">
+            <tr>
+              <td colspan="7" style="text-align:center;color:var(--text-muted);padding:30px">Chargement des données...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div id="editModal" class="modal-backdrop" style="display:none">
+    <div class="modal-box">
+      <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:16px">Modifier l'utilisateur</h3>
+      <form id="editForm" onsubmit="event.preventDefault();saveEditUser();" style="display:flex;flex-direction:column;gap:12px">
+        <input type="hidden" id="editUserId">
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Nom de l'enseignant</label>
+          <input type="text" id="editUserName" style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff" required>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Forfait / Abonnement</label>
+          <select id="editUserPlan" style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff">
+            <option value="free">Essai Gratuit (Free)</option>
+            <option value="pro">Pro Enseignant (19€ / mois)</option>
+            <option value="ecole">Pack Établissement / École</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Établissement / École</label>
+          <input type="text" id="editUserSchool" style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff">
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Notes internes (Privé)</label>
+          <textarea id="editUserNotes" rows="3" placeholder="Ex: Contacté sur WhatsApp le 19/08, intéressé par la formule annuelle..." style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+          <button type="button" class="btn" onclick="closeEditModal()">Annuler</button>
+          <button type="submit" class="btn btn-blue">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_SECRET = 'admin123';
+    let allLeads = [];
+
+    function checkAuth() {
+      const input = document.getElementById('adminPassInput').value;
+      const err = document.getElementById('authErr');
+      if (input === ADMIN_SECRET || localStorage.getItem('cpro_admin_auth') === 'true') {
+        localStorage.setItem('cpro_admin_auth', 'true');
+        document.getElementById('authLock').style.display = 'none';
+        fetchLeads();
+      } else {
+        err.style.display = 'block';
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('cpro_admin_auth');
+      document.getElementById('authLock').style.display = 'flex';
+      document.getElementById('adminPassInput').value = '';
+    }
+
+    // Auto-login if session already active
+    if (localStorage.getItem('cpro_admin_auth') === 'true') {
+      document.getElementById('authLock').style.display = 'none';
+      fetchLeads();
+    }
+
+    async function fetchLeads() {
+      try {
+        const res = await fetch('/api/leads');
+        if (res.ok) {
+          const data = await res.json();
+          allLeads = data.leads || [];
+          render(allLeads);
+        }
+      } catch (e) {
+        console.error('Erreur chargement leads:', e);
+      }
+    }
+
+    function render(list) {
+      document.getElementById('stTotal').textContent = list.length;
+      document.getElementById('stWA').textContent = list.filter(l => l.whatsapp).length;
+      
+      const proCount = list.filter(l => l.plan === 'pro' || l.plan === 'ecole').length;
+      const freeCount = list.length - proCount;
+      document.getElementById('stPro').textContent = proCount;
+      document.getElementById('stFree').textContent = freeCount;
+
+      const tbody = document.getElementById('leadsBody');
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:30px">Aucun utilisateur enregistré pour le moment.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(l => {
+        const dateStr = l.createdAt ? new Date(l.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+        const waClean = l.whatsapp ? l.whatsapp.replace(/[^0-9+]/g, '') : '';
+        const waLink = l.whatsapp 
+          ? `<a href="https://wa.me/${encodeURIComponent(waClean.replace('+', ''))}?text=${encodeURIComponent('Bonjour ' + (l.name || 'Enseignant') + ', je suis le fondateur de Correcteur Pro. Comment se passe la correction de vos copies ?')}" target="_blank" class="wa-btn">💬 ${l.whatsapp}</a>` 
+          : '<span style="color:var(--text-muted)">-</span>';
+
+        const plan = l.plan || 'free';
+
+        return `
+          <tr>
+            <td style="color:var(--text-muted);font-size:12px">${dateStr}</td>
+            <td style="font-weight:600;color:#fff">${l.name || 'Enseignant anonyme'}</td>
+            <td><a href="mailto:${l.email}" style="color:var(--blue);text-decoration:none">${l.email || '-'}</a></td>
+            <td>${waLink}</td>
+            <td style="color:var(--text-muted)">${l.school || '-'}</td>
+            <td>
+              <select class="plan-select" onchange="quickUpdatePlan('${l.id}', this.value)">
+                <option value="free" ${plan === 'free' ? 'selected' : ''}>Essai Free</option>
+                <option value="pro" ${plan === 'pro' ? 'selected' : ''}>⭐ Plan Pro</option>
+                <option value="ecole" ${plan === 'ecole' ? 'selected' : ''}>🏫 École</option>
+              </select>
+            </td>
+            <td>
+              <div style="display:flex;gap:6px">
+                <button class="btn" style="padding:4px 8px;font-size:12px" onclick="openEditModal('${l.id}')">✏️ Modifier</button>
+                <button class="btn btn-red" style="padding:4px 8px;font-size:12px" onclick="deleteUser('${l.id}')">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function quickUpdatePlan(id, newPlan) {
+      try {
+        const res = await fetch('/api/leads/' + id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, plan: newPlan })
+        });
+        if (res.ok) {
+          const updated = allLeads.find(l => l.id === id);
+          if (updated) updated.plan = newPlan;
+          render(allLeads);
+        }
+      } catch (e) {
+        alert('Erreur lors de la mise à jour du forfait.');
+      }
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('Voulez-vous vraiment supprimer cet utilisateur ?')) return;
+      try {
+        const res = await fetch('/api/leads/' + id, { method: 'DELETE' });
+        if (res.ok) {
+          allLeads = allLeads.filter(l => l.id !== id);
+          render(allLeads);
+        }
+      } catch (e) {
+        alert('Erreur lors de la suppression.');
+      }
+    }
+
+    function openEditModal(id) {
+      const user = allLeads.find(l => l.id === id);
+      if (!user) return;
+      document.getElementById('editUserId').value = user.id;
+      document.getElementById('editUserName').value = user.name || '';
+      document.getElementById('editUserPlan').value = user.plan || 'free';
+      document.getElementById('editUserSchool').value = user.school || '';
+      document.getElementById('editUserNotes').value = user.notes || '';
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').style.display = 'none';
+    }
+
+    async function saveEditUser() {
+      const id = document.getElementById('editUserId').value;
+      const name = document.getElementById('editUserName').value;
+      const plan = document.getElementById('editUserPlan').value;
+      const school = document.getElementById('editUserSchool').value;
+      const notes = document.getElementById('editUserNotes').value;
+
+      try {
+        const res = await fetch('/api/leads/' + id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, name, plan, school, notes })
+        });
+        if (res.ok) {
+          const user = allLeads.find(l => l.id === id);
+          if (user) {
+            user.name = name;
+            user.plan = plan;
+            user.school = school;
+            user.notes = notes;
+          }
+          closeEditModal();
+          render(allLeads);
+        }
+      } catch (e) {
+        alert('Erreur de sauvegarde.');
+      }
+    }
+
+    function filterTable() {
+      const q = (document.getElementById('searchBox').value || '').toLowerCase();
+      const planFilter = document.getElementById('filterPlan').value;
+
+      const filtered = allLeads.filter(l => {
+        const matchQuery = 
+          (l.name && l.name.toLowerCase().includes(q)) ||
+          (l.email && l.email.toLowerCase().includes(q)) ||
+          (l.whatsapp && l.whatsapp.includes(q)) ||
+          (l.school && l.school.toLowerCase().includes(q));
+        
+        const matchPlan = planFilter === 'all' || (l.plan || 'free') === planFilter;
+        return matchQuery && matchPlan;
+      });
+      render(filtered);
+    }
+
+    function exportCSV() {
+      if (!allLeads.length) return alert('Aucune donnée à exporter');
+      const headers = ['Date', 'Nom', 'Email', 'WhatsApp', 'Etablissement', 'Plan', 'Notes'];
+      const rows = allLeads.map(l => [
+        l.createdAt || '',
+        `"${(l.name || '').replace(/"/g, '""')}"`,
+        `"${(l.email || '').replace(/"/g, '""')}"`,
+        `"${(l.whatsapp || '').replace(/"/g, '""')}"`,
+        `"${(l.school || '').replace(/"/g, '""')}"`,
+        `"${(l.plan || 'free')}"`,
+        `"${(l.notes || '').replace(/"/g, '""')}"`
+      ].join(';'));
+
+      const csvContent = '\uFEFF' + headers.join(';') + '\n' + rows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `utilisateurs_et_abonnements_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script>
+</body>
+</html>

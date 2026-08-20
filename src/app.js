@@ -14,7 +14,7 @@ var MATS = [
 var NIVS = ['(auto)', 'CP/CE1', 'CE2/CM1', 'CM2', '6ème', '5ème', '4ème', '3ème', 'Seconde', 'Première', 'Terminale', 'BTS/BUT', 'Licence'];
 var LM = {};
 var ST = { students: [], pdfClass: null, refB: null, mode: 'A', mats: new Set(), niv: '', uploadMode: 'sep', teacherComments: '' };
-var DB = { classes: [], evals: [] };
+var DB = { classes: [], evals: [], leads: [] };
 var _annotIdx = null;
 var _cmpSel = [];
 
@@ -43,15 +43,22 @@ function init() {
   upSum();
   loadDB();
   populateClassSelect();
+  fetchRemoteLeads();
 }
 
 /* ── DB ── */
 function loadDB() {
   try {
     var r = localStorage.getItem('cpro_db');
-    if (r) DB = JSON.parse(r);
+    if (r) {
+      var parsed = JSON.parse(r);
+      DB.classes = parsed.classes || [];
+      DB.evals = parsed.evals || [];
+      DB.leads = parsed.leads || [];
+    }
   } catch (e) {}
   upBadge();
+  upLeadsBadge();
   renderClassList();
   renderHistList();
 }
@@ -59,13 +66,26 @@ function saveDB() {
   try {
     localStorage.setItem('cpro_db', JSON.stringify(DB));
   } catch (e) {}
+  upLeadsBadge();
 }
 function upBadge() {
   var b = document.getElementById('hbadge');
-  if (DB.evals.length) {
+  if (DB.evals && DB.evals.length) {
     b.textContent = DB.evals.length;
     b.style.display = '';
-  } else b.style.display = 'none';
+  } else if (b) b.style.display = 'none';
+}
+function upLeadsBadge() {
+  var b = document.getElementById('leadsBadge');
+  if (b) {
+    var count = (DB.leads && DB.leads.length) || 0;
+    if (count > 0) {
+      b.textContent = count;
+      b.style.display = '';
+    } else {
+      b.style.display = 'none';
+    }
+  }
 }
 
 /* ── NAV ── */
@@ -91,6 +111,9 @@ function gNav(v) {
   } else if (v === 'hist') {
     renderHistList();
     document.getElementById('vhist').style.display = 'block';
+  } else if (v === 'leads') {
+    renderLeadsList();
+    document.getElementById('vleads').style.display = 'block';
   }
 }
 
@@ -323,21 +346,52 @@ function buildPrompt(forClass) {
 
 /* ── API ── */
 async function callAPI(messages) {
-  var resp = await fetch('/api/correct', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: messages })
-  });
-  var data = await resp.json();
-  if (data.error) throw new Error(data.error.message || data.error);
+  var apiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL)
+    ? import.meta.env.VITE_BACKEND_URL + '/api/correct'
+    : '/api/correct';
+
+  var resp;
+  try {
+    resp = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: messages })
+    });
+  } catch (netErr) {
+    throw new Error('Impossible de contacter le serveur (' + (netErr.message || 'Erreur réseau') + '). Vérifiez votre connexion.');
+  }
+
+  var textData = await resp.text();
+  var data;
+  try {
+    data = JSON.parse(textData);
+  } catch (e) {
+    if (!resp.ok) {
+      throw new Error('Erreur serveur HTTP ' + resp.status + ' : ' + (textData.slice(0, 120) || 'Échec'));
+    }
+    var m = textData.match(/\{[\s\S]*\}/);
+    if (m) {
+      data = JSON.parse(m[0]);
+    } else {
+      throw new Error('Réponse invalide du serveur IA : ' + textData.slice(0, 100));
+    }
+  }
+
+  if (data.error) {
+    var errTxt = typeof data.error === 'string' ? data.error : (data.error.message || JSON.stringify(data.error));
+    if (errTxt.includes('GEMINI_API_KEY') || errTxt.includes('API key')) {
+      throw new Error('Clé API Gemini non configurée sur le serveur. Ajoutez GEMINI_API_KEY dans les variables d\'environnement.');
+    }
+    throw new Error(errTxt);
+  }
   if (data.result) return data.result;
   var raw = data.content ? data.content.map(function (b) { return b.type === 'text' ? b.text : ''; }).join('').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim() : (data.text || '');
   try {
     return JSON.parse(raw);
   } catch (e) {
-    var m = raw.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]);
-    throw new Error('JSON invalide reçu du serveur.');
+    var m2 = raw.match(/\{[\s\S]*\}/);
+    if (m2) return JSON.parse(m2[0]);
+    throw new Error('Format de correction IA invalide.');
   }
 }
 
@@ -383,7 +437,109 @@ async function correctPDFClass() {
 }
 
 /* ── SUBMIT ── */
+var _pendingSubmit = false;
+
+function hasUserRegisteredLead() {
+  try {
+    var storedUser = localStorage.getItem('cpro_lead_user');
+    return Boolean(storedUser);
+  } catch (e) {
+    return false;
+  }
+}
+
+function openLeadGateModal() {
+  var modal = document.getElementById('leadGateModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeLeadGateModal() {
+  var modal = document.getElementById('leadGateModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitLeadCapture() {
+  var name = document.getElementById('leadInputName').value.trim();
+  var email = document.getElementById('leadInputEmail').value.trim();
+  var whatsapp = document.getElementById('leadInputWhatsapp').value.trim();
+  var school = document.getElementById('leadInputSchool').value.trim();
+  var errEl = document.getElementById('leadGateErr');
+  var btn = document.getElementById('leadGateBtn');
+
+  if (!email && !whatsapp) {
+    if (errEl) {
+      errEl.textContent = 'Veuillez saisir au moins une adresse email ou un numéro WhatsApp.';
+      errEl.style.display = 'block';
+    }
+    return;
+  }
+
+  if (errEl) errEl.style.display = 'none';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳ Enregistrement…</span>';
+  }
+
+  var leadData = {
+    id: 'lead_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+    name: name,
+    email: email,
+    whatsapp: whatsapp,
+    school: school,
+    createdAt: new Date().toISOString()
+  };
+
+  // Save in local DB
+  if (!DB.leads) DB.leads = [];
+  // Avoid duplicate by email or phone
+  var exists = DB.leads.some(function(l) { return (email && l.email === email.toLowerCase()) || (whatsapp && l.whatsapp === whatsapp); });
+  if (!exists) {
+    DB.leads.unshift(leadData);
+    saveDB();
+  }
+
+  try {
+    localStorage.setItem('cpro_lead_user', JSON.stringify(leadData));
+  } catch (e) {}
+
+  // Post to backend server / API
+  try {
+    var targetUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL)
+      ? import.meta.env.VITE_BACKEND_URL + '/api/leads'
+      : '/api/leads';
+
+    await fetch(targetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(leadData)
+    });
+  } catch (err) {
+    console.warn('Could not post lead to server (saved locally in DB):', err);
+  }
+
+  closeLeadGateModal();
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>🚀 Accéder à la correction</span>';
+  }
+
+  // Continue to start correction if user was launching one
+  if (_pendingSubmit) {
+    _pendingSubmit = false;
+    executeSub();
+  }
+}
+
 async function sub() {
+  if (!hasUserRegisteredLead()) {
+    _pendingSubmit = true;
+    openLeadGateModal();
+    return;
+  }
+  executeSub();
+}
+
+async function executeSub() {
   document.getElementById('sb').disabled = true;
   document.getElementById('em').style.display = 'none';
   ['vf', 'vl', 'vr'].forEach(function (x) { document.getElementById(x).style.display = 'none'; });
@@ -452,8 +608,10 @@ async function sub() {
               if (res.nom_eleve_detecte && /^El.ve \d+$/i.test(student.name)) student.name = res.nom_eleve_detecte;
               student.result = res;
               student.status = 'ok';
+              student.lastError = null;
             }).catch(function (e) {
               student.status = 'err';
+              student.lastError = e && e.message ? e.message : 'Erreur de communication avec l\'IA';
               console.error(e);
             }).finally(function () {
               done++;
@@ -545,9 +703,10 @@ function renderResults() {
 
   document.getElementById('rt').innerHTML = ST.students.map(function (s, i) {
     if (s.status !== 'ok' || !s.result) {
-      return '<div class="rt-row" style="background:rgba(192,57,43,.06);border-color:rgba(192,57,43,.2)">' +
+      var errDetail = s.lastError ? ('<div style="font-size:0.75rem;color:var(--r2);margin-top:2px">' + escH(s.lastError) + '</div>') : '';
+      return '<div class="rt-row" style="background:rgba(192,57,43,.06);border-color:rgba(192,57,43,.2);flex-wrap:wrap">' +
         '<span class="rt-num">' + (i + 1) + '</span>' +
-        '<span class="rt-name">' + escH(s.name) + '</span>' +
+        '<div style="flex:1"><span class="rt-name">' + escH(s.name) + '</span>' + errDetail + '</div>' +
         '<span class="rt-score" style="color:var(--r2);font-weight:600">' + (s.status === 'run' ? '⏳ En cours…' : '❌ Non corrigé') + '</span>' +
         '<div style="margin-left:auto">' +
         (s.status === 'run' ? '<div class="spin-sm"></div>' : '<button class="bs2" style="padding:3px 10px;font-size:.72rem" onclick="event.stopPropagation();retryStudent(' + i + ')">🔄 Réessayer</button>') +
@@ -2416,6 +2575,132 @@ function initTuto() {
   } catch (e) {}
 }
 
+/* ── LEADS & CONTACTS MANAGEMENT ── */
+async function fetchRemoteLeads() {
+  try {
+    var targetUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL)
+      ? import.meta.env.VITE_BACKEND_URL + '/api/leads'
+      : '/api/leads';
+
+    var res = await fetch(targetUrl);
+    if (res.ok) {
+      var data = await res.json();
+      if (data.leads && Array.isArray(data.leads)) {
+        // Merge without duplicating
+        if (!DB.leads) DB.leads = [];
+        var localMap = {};
+        DB.leads.forEach(function (l) {
+          var key = (l.email || '') + '|' + (l.whatsapp || '');
+          localMap[key] = true;
+        });
+
+        data.leads.forEach(function (r) {
+          var key = (r.email || '') + '|' + (r.whatsapp || '');
+          if (!localMap[key]) {
+            DB.leads.push(r);
+            localMap[key] = true;
+          }
+        });
+        saveDB();
+      }
+    }
+  } catch (e) {
+    console.warn('Silent fallback for remote leads:', e);
+  }
+}
+
+function refreshLeadsList() {
+  fetchRemoteLeads().then(function () {
+    renderLeadsList();
+  });
+}
+
+function renderLeadsList() {
+  var list = DB.leads || [];
+  var totalEl = document.getElementById('leadStatTotal');
+  var emailsEl = document.getElementById('leadStatEmails');
+  var waEl = document.getElementById('leadStatWhatsapp');
+  var emptyEl = document.getElementById('leadsEmpty');
+  var tableEl = document.getElementById('leadsTableWrap');
+  var tbody = document.getElementById('leadsTableBody');
+
+  var total = list.length;
+  var withEmail = list.filter(function (l) { return Boolean(l.email); }).length;
+  var withWa = list.filter(function (l) { return Boolean(l.whatsapp); }).length;
+
+  if (totalEl) totalEl.textContent = total;
+  if (emailsEl) emailsEl.textContent = withEmail;
+  if (waEl) waEl.textContent = withWa;
+
+  if (total === 0) {
+    if (emptyEl) emptyEl.style.display = 'block';
+    if (tableEl) tableEl.style.display = 'none';
+    return;
+  }
+
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (tableEl) tableEl.style.display = 'block';
+
+  if (tbody) {
+    tbody.innerHTML = list.map(function (lead, idx) {
+      var dt = lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+      var emailLink = lead.email ? '<a href="mailto:' + escH(lead.email) + '" style="color:var(--blue);text-decoration:none;font-weight:500">✉️ ' + escH(lead.email) + '</a>' : '<span style="color:var(--label3)">-</span>';
+      
+      var waClean = lead.whatsapp ? lead.whatsapp.replace(/[^0-9+]/g, '') : '';
+      var waLink = lead.whatsapp ? '<a href="https://wa.me/' + encodeURIComponent(waClean.replace('+', '')) + '" target="_blank" rel="noreferrer" style="color:var(--green-dark);background:var(--green-light);padding:3px 8px;border-radius:6px;text-decoration:none;font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:4px">💬 ' + escH(lead.whatsapp) + '</a>' : '<span style="color:var(--label3)">-</span>';
+
+      return '<tr style="border-bottom:1px solid var(--separator);transition:background .15s" onmouseover="this.style.background=\'var(--fill3)\'" onmouseout="this.style.background=\'transparent\'">' +
+        '<td style="padding:10px 14px;color:var(--label2);font-size:12px">' + dt + '</td>' +
+        '<td style="padding:10px 14px;font-weight:600;color:var(--label)">' + escH(lead.name || 'Enseignant anonyme') + '</td>' +
+        '<td style="padding:10px 14px">' + emailLink + '</td>' +
+        '<td style="padding:10px 14px">' + waLink + '</td>' +
+        '<td style="padding:10px 14px;color:var(--label2)">' + escH(lead.school || '-') + '</td>' +
+        '<td style="padding:10px 14px;text-align:right">' +
+          '<button onclick="delLead(' + idx + ')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:4px 8px;border-radius:6px" title="Supprimer">🗑️</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  }
+}
+
+function delLead(idx) {
+  if (confirm('Voulez-vous supprimer ce contact de la liste ?')) {
+    DB.leads.splice(idx, 1);
+    saveDB();
+    renderLeadsList();
+  }
+}
+
+function exportLeadsCSV() {
+  var list = DB.leads || [];
+  if (list.length === 0) {
+    alert('Aucun contact à exporter.');
+    return;
+  }
+
+  var headers = ['Date', 'Nom', 'Email', 'WhatsApp', 'Etablissement'];
+  var rows = list.map(function (l) {
+    return [
+      l.createdAt || '',
+      '"' + (l.name || '').replace(/"/g, '""') + '"',
+      '"' + (l.email || '').replace(/"/g, '""') + '"',
+      '"' + (l.whatsapp || '').replace(/"/g, '""') + '"',
+      '"' + (l.school || '').replace(/"/g, '""') + '"'
+    ].join(';');
+  });
+
+  var csvContent = '\uFEFF' + headers.join(';') + '\n' + rows.join('\n');
+  var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'contacts_enseignants_' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // Expose all functions to global window for inline event handlers
 window.init = init;
 window.toggleDark = toggleDark;
@@ -2440,6 +2725,13 @@ window.loadRefB = loadRefB;
 window.rmRefB = rmRefB;
 window.swInstr = swInstr;
 window.sub = sub;
+window.submitLeadCapture = submitLeadCapture;
+window.openLeadGateModal = openLeadGateModal;
+window.closeLeadGateModal = closeLeadGateModal;
+window.refreshLeadsList = refreshLeadsList;
+window.renderLeadsList = renderLeadsList;
+window.delLead = delLead;
+window.exportLeadsCSV = exportLeadsCSV;
 window.back = back;
 window.exportCSV = exportCSV;
 window.printClass = printClass;

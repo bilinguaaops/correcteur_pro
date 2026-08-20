@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -11,6 +12,121 @@ const PORT = 3000;
 
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
+
+const LEADS_FILE = path.join(process.cwd(), "leads.json");
+
+function getStoredLeads() {
+  try {
+    if (fs.existsSync(LEADS_FILE)) {
+      return JSON.parse(fs.readFileSync(LEADS_FILE, "utf8"));
+    }
+  } catch (e) {
+    console.error("Error reading leads:", e);
+  }
+  return [];
+}
+
+function saveStoredLeads(leads: any[]) {
+  try {
+    fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2), "utf8");
+  } catch (e) {
+    console.error("Error saving leads:", e);
+  }
+}
+
+// Leads API endpoints
+app.post("/api/leads", (req, res) => {
+  try {
+    const { email, whatsapp, name, school, plan } = req.body || {};
+    if (!email && !whatsapp) {
+      return res.status(400).json({ error: "Un email ou un numéro WhatsApp est requis." });
+    }
+
+    const leads = getStoredLeads();
+    const cleanEmail = (email || "").trim().toLowerCase();
+    const cleanPhone = (whatsapp || "").trim();
+
+    // Check if user already exists -> update or create
+    const existingIndex = leads.findIndex((l: any) => 
+      (cleanEmail && l.email === cleanEmail) || (cleanPhone && l.whatsapp === cleanPhone)
+    );
+
+    if (existingIndex >= 0) {
+      // Update existing lead
+      leads[existingIndex].name = (name || leads[existingIndex].name || "").trim();
+      leads[existingIndex].school = (school || leads[existingIndex].school || "").trim();
+      if (plan) leads[existingIndex].plan = plan;
+      leads[existingIndex].updatedAt = new Date().toISOString();
+      saveStoredLeads(leads);
+      return res.status(200).json({ success: true, lead: leads[existingIndex] });
+    }
+
+    const lead = {
+      id: "lead_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+      email: cleanEmail,
+      whatsapp: cleanPhone,
+      name: (name || "").trim(),
+      school: (school || "").trim(),
+      plan: plan || "free",
+      status: "active",
+      createdAt: new Date().toISOString(),
+      userAgent: req.headers["user-agent"] || "",
+      ip: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "",
+    };
+
+    leads.unshift(lead);
+    saveStoredLeads(leads);
+
+    console.log("✨ Nouveau Lead Enregistré :", lead.email || lead.whatsapp);
+    return res.status(200).json({ success: true, lead });
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message || "Erreur serveur" });
+  }
+});
+
+// Update specific user / lead plan or details
+app.patch("/api/leads/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { plan, status, notes, name, school } = req.body || {};
+    const leads = getStoredLeads();
+    const lead = leads.find((l: any) => l.id === id);
+
+    if (!lead) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    }
+
+    if (plan !== undefined) lead.plan = plan;
+    if (status !== undefined) lead.status = status;
+    if (notes !== undefined) lead.notes = notes;
+    if (name !== undefined) lead.name = name;
+    if (school !== undefined) lead.school = school;
+    lead.updatedAt = new Date().toISOString();
+
+    saveStoredLeads(leads);
+    return res.status(200).json({ success: true, lead });
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message || "Erreur serveur" });
+  }
+});
+
+// Delete a user
+app.delete("/api/leads/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    let leads = getStoredLeads();
+    leads = leads.filter((l: any) => l.id !== id);
+    saveStoredLeads(leads);
+    return res.status(200).json({ success: true });
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message || "Erreur serveur" });
+  }
+});
+
+app.get("/api/leads", (req, res) => {
+  const leads = getStoredLeads();
+  return res.status(200).json({ leads, count: leads.length });
+});
 
 function getGenAI() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -156,6 +272,18 @@ app.post("/api/correct", async (req, res) => {
 app.post("/api/anthropic/v1/messages", async (req, res) => {
   req.url = "/api/correct";
   return app._router.handle(req, res);
+});
+
+// Explicit Admin Dashboard Route
+app.get(["/dashboard", "/dashboard.html"], (req, res) => {
+  const dashDist = path.join(process.cwd(), "dist", "dashboard.html");
+  const dashPublic = path.join(process.cwd(), "public", "dashboard.html");
+  const dashRoot = path.join(process.cwd(), "dashboard.html");
+
+  if (fs.existsSync(dashDist)) return res.sendFile(dashDist);
+  if (fs.existsSync(dashPublic)) return res.sendFile(dashPublic);
+  if (fs.existsSync(dashRoot)) return res.sendFile(dashRoot);
+  res.status(404).send("Tableau de bord introuvable.");
 });
 
 async function startServer() {

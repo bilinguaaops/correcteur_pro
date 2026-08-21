@@ -148,10 +148,10 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Helper with exponential backoff and model fallback for high-demand / 503 / 429 quota errors
+// Helper with exponential backoff and model fallback for high-demand / 503 / 429 / timeout quota errors
 async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
-  // Use fast flash models with zero thinking latency for fast document correction
-  const models = ["gemini-flash-latest", "gemini-3.7-flash", "gemini-3.1-flash-lite"];
+  // Use stable, highly available official models with fallbacks
+  const models = ["gemini-2.5-flash", "gemini-3.7-flash", "gemini-2.5-flash-lite"];
   let lastError: any = null;
 
   for (const modelName of models) {
@@ -160,49 +160,68 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
       try {
         console.log(`[Gemini API] Début de l'analyse avec le modèle ${modelName} (tentative ${attempt}/${maxAttempts})...`);
         const startTime = Date.now();
+        
+        // Prepare config based on model capabilities
+        const config: any = {
+          systemInstruction: "Tu es un correcteur pédagogique expert, bienveillant, rigoureux et précis. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises de code Markdown ni texte autour.",
+          responseMimeType: "application/json",
+          temperature: 0.2,
+        };
+
+        if (modelName.includes("3.7")) {
+          config.thinkingConfig = { thinkingBudget: 0 };
+        }
+
         const response = await ai.models.generateContent({
           model: modelName,
           contents: [{ parts }],
-          config: {
-            systemInstruction: "Tu es un correcteur pédagogique expert, bienveillant, rigoureux et précis. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises de code Markdown ni texte autour.",
-            responseMimeType: "application/json",
-            temperature: 0.2,
-            thinkingConfig: {
-              thinkingBudget: 0,
-            },
-          },
+          config,
         });
+
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
         console.log(`[Gemini API] Correction générée avec succès en ${elapsed}s avec ${modelName}.`);
         return response;
       } catch (err: any) {
         lastError = err;
-        const errMsg = err?.message || String(err);
-        const isQuotaExceeded = errMsg.includes("429") || errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("Quota exceeded");
-        const isUnavailable =
+        const errMsg = (err?.message || String(err)).toLowerCase();
+        const errStatus = err?.status || err?.code || "";
+        
+        const isQuotaExceeded =
+          errMsg.includes("429") ||
+          errMsg.includes("resource_exhausted") ||
+          errMsg.includes("quota exceeded");
+
+        const isTransientError =
           errMsg.includes("503") ||
-          errMsg.includes("UNAVAILABLE") ||
+          errMsg.includes("unavailable") ||
           errMsg.includes("high demand") ||
           errMsg.includes("overloaded") ||
-          errMsg.includes("Deadline expired") ||
-          errMsg.includes("timed out");
+          errMsg.includes("500") ||
+          errMsg.includes("502") ||
+          errMsg.includes("504") ||
+          errMsg.includes("timeout") ||
+          errMsg.includes("fetch failed") ||
+          errMsg.includes("und_err_headers_timeout") ||
+          errMsg.includes("econnreset") ||
+          errMsg.includes("etimedout") ||
+          errMsg.includes("deadline expired") ||
+          String(errStatus).includes("503");
 
         if (isQuotaExceeded) {
-          console.warn(`[Gemini API] Quota atteint pour le modèle ${modelName}, bascule immédiate vers le modèle suivant.`);
-          // Don't retry on the same exhausted model, switch to next model immediately
+          console.warn(`[Gemini API] Quota atteint sur ${modelName}, bascule immédiate vers le modèle alternatif...`);
           break;
-        } else if (isUnavailable) {
-          console.warn(`[Gemini API] Modèle ${modelName} temporairement indisponible (tentative ${attempt}/${maxAttempts}):`, errMsg);
+        } else if (isTransientError) {
+          console.warn(`[Gemini API] Modèle ${modelName} momentanément indisponible ou lent (tentative ${attempt}/${maxAttempts})...`);
           if (attempt < maxAttempts) {
-            const delay = 1000 + Math.random() * 500;
-            await new Promise((r) => setTimeout(r, delay));
+            await new Promise((r) => setTimeout(r, 1000));
             continue;
           }
-          // Proceed to next fallback model
+          console.warn(`[Gemini API] Bascule vers le modèle suivant...`);
           break;
         } else {
-          console.error(`[Gemini API] Erreur lors de l'appel avec ${modelName}:`, errMsg);
-          throw err;
+          console.error(`[Gemini API] Erreur critique avec ${modelName}:`, err?.message || err);
+          // Try next model just in case it's model-specific
+          break;
         }
       }
     }

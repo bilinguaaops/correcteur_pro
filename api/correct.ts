@@ -31,7 +31,7 @@ function getGenAI() {
 }
 
 async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
-  const models = ['gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.1-flash-lite'];
+  const models = ['gemini-2.5-flash', 'gemini-3.7-flash', 'gemini-2.5-flash-lite'];
   let lastError: any = null;
 
   for (const modelName of models) {
@@ -40,40 +40,67 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
       try {
         console.log(`[Gemini API] Début analyse avec ${modelName} (tentative ${attempt}/${maxAttempts})...`);
         const startTime = Date.now();
+
+        const config: any = {
+          systemInstruction:
+            'Tu es un correcteur pédagogique expert, bienveillant, rigoureux et précis. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises de code Markdown ni texte autour.',
+          responseMimeType: 'application/json',
+          temperature: 0.2,
+        };
+
+        if (modelName.includes('3.7')) {
+          config.thinkingConfig = { thinkingBudget: 0 };
+        }
+
         const response = await ai.models.generateContent({
           model: modelName,
           contents: [{ parts }],
-          config: {
-            systemInstruction:
-              'Tu es un correcteur pédagogique expert, bienveillant, rigoureux et précis. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises de code Markdown ni texte autour.',
-            responseMimeType: 'application/json',
-            temperature: 0.2,
-            thinkingConfig: {
-              thinkingBudget: 0,
-            },
-          },
+          config,
         });
+
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
         console.log(`[Gemini API] Réponse en ${elapsed}s avec ${modelName}.`);
         return response;
       } catch (err: any) {
         lastError = err;
-        const errMsg = err?.message || String(err);
+        const errMsg = (err?.message || String(err)).toLowerCase();
+        const errStatus = err?.status || err?.code || '';
+
         const isQuotaExceeded =
           errMsg.includes('429') ||
-          errMsg.includes('RESOURCE_EXHAUSTED') ||
-          errMsg.includes('Quota exceeded');
-        const isUnavailable =
-          errMsg.includes('503') ||
-          errMsg.includes('UNAVAILABLE') ||
-          errMsg.includes('high demand') ||
-          errMsg.includes('temporarily overloaded');
+          errMsg.includes('resource_exhausted') ||
+          errMsg.includes('quota exceeded');
 
-        if ((isQuotaExceeded || isUnavailable) && attempt < maxAttempts) {
-          await new Promise((r) => setTimeout(r, 1200 * attempt));
-          continue;
+        const isTransientError =
+          errMsg.includes('503') ||
+          errMsg.includes('unavailable') ||
+          errMsg.includes('high demand') ||
+          errMsg.includes('overloaded') ||
+          errMsg.includes('500') ||
+          errMsg.includes('502') ||
+          errMsg.includes('504') ||
+          errMsg.includes('timeout') ||
+          errMsg.includes('fetch failed') ||
+          errMsg.includes('und_err_headers_timeout') ||
+          errMsg.includes('econnreset') ||
+          errMsg.includes('etimedout') ||
+          errMsg.includes('deadline expired') ||
+          String(errStatus).includes('503');
+
+        if (isQuotaExceeded) {
+          console.warn(`[Gemini API] Quota atteint sur ${modelName}, bascule immédiate...`);
+          break;
+        } else if (isTransientError) {
+          console.warn(`[Gemini API] Erreur transitoire sur ${modelName} (tentative ${attempt}/${maxAttempts})...`);
+          if (attempt < maxAttempts) {
+            await new Promise((r) => setTimeout(r, 1000));
+            continue;
+          }
+          break;
+        } else {
+          console.error(`[Gemini API] Erreur avec ${modelName}:`, err?.message || err);
+          break;
         }
-        break;
       }
     }
   }

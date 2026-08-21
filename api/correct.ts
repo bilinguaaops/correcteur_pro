@@ -38,6 +38,8 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
     const maxAttempts = 2;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
+        console.log(`[Gemini API] Début analyse avec ${modelName} (tentative ${attempt}/${maxAttempts})...`);
+        const startTime = Date.now();
         const response = await ai.models.generateContent({
           model: modelName,
           contents: [{ parts }],
@@ -46,8 +48,13 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
               'Tu es un correcteur pédagogique expert, bienveillant, rigoureux et précis. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises de code Markdown ni texte autour.',
             responseMimeType: 'application/json',
             temperature: 0.2,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
           },
         });
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`[Gemini API] Réponse en ${elapsed}s avec ${modelName}.`);
         return response;
       } catch (err: any) {
         lastError = err;

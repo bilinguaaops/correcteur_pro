@@ -150,7 +150,7 @@ app.get("/api/health", (req, res) => {
 
 // Helper with exponential backoff and model fallback for high-demand / 503 / 429 quota errors
 async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
-  // Try stable flash alias first for higher quota, with fallbacks
+  // Use fast flash models with zero thinking latency for fast document correction
   const models = ["gemini-flash-latest", "gemini-3.7-flash", "gemini-3.1-flash-lite"];
   let lastError: any = null;
 
@@ -158,6 +158,8 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
     const maxAttempts = 2;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
+        console.log(`[Gemini API] Début de l'analyse avec le modèle ${modelName} (tentative ${attempt}/${maxAttempts})...`);
+        const startTime = Date.now();
         const response = await ai.models.generateContent({
           model: modelName,
           contents: [{ parts }],
@@ -165,8 +167,13 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
             systemInstruction: "Tu es un correcteur pédagogique expert, bienveillant, rigoureux et précis. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises de code Markdown ni texte autour.",
             responseMimeType: "application/json",
             temperature: 0.2,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
           },
         });
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`[Gemini API] Correction générée avec succès en ${elapsed}s avec ${modelName}.`);
         return response;
       } catch (err: any) {
         lastError = err;
@@ -194,6 +201,7 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
           // Proceed to next fallback model
           break;
         } else {
+          console.error(`[Gemini API] Erreur lors de l'appel avec ${modelName}:`, errMsg);
           throw err;
         }
       }

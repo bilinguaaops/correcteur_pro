@@ -1,4 +1,18 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+interface ApiRequest {
+  method?: string;
+  body?: any;
+  query?: Record<string, any>;
+  headers?: Record<string, any>;
+  socket?: any;
+}
+
+interface ApiResponse {
+  status: (code: number) => ApiResponse;
+  json: (data: any) => void;
+  send: (data: any) => void;
+  end: () => void;
+  setHeader: (k: string, v: string) => ApiResponse;
+}
 import { GoogleGenAI } from '@google/genai';
 
 function getGenAI() {
@@ -59,7 +73,7 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
   throw lastError;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: ApiRequest, res: ApiResponse) {
   // CORS configuration
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');

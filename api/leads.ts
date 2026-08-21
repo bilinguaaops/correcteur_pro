@@ -1,4 +1,18 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+interface ApiRequest {
+  method?: string;
+  body?: any;
+  query?: Record<string, any>;
+  headers?: Record<string, any>;
+  socket?: any;
+}
+
+interface ApiResponse {
+  status: (code: number) => ApiResponse;
+  json: (data: any) => void;
+  send: (data: any) => void;
+  end: () => void;
+  setHeader: (k: string, v: string) => ApiResponse;
+}
 import fs from 'fs';
 import path from 'path';
 
@@ -23,7 +37,7 @@ function saveStoredLeads(leads: any[]) {
   }
 }
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default function handler(req: ApiRequest, res: ApiResponse) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PATCH,DELETE');

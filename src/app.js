@@ -13,7 +13,7 @@ var MATS = [
 ];
 var NIVS = ['(auto)', 'CP/CE1', 'CE2/CM1', 'CM2', '6ème', '5ème', '4ème', '3ème', 'Seconde', 'Première', 'Terminale', 'BTS/BUT', 'Licence'];
 var LM = {};
-var ST = { students: [], pdfClass: null, refB: null, mode: 'A', mats: new Set(), niv: '', uploadMode: 'sep', teacherComments: '' };
+var ST = { students: [], pdfClass: null, refB: null, mode: 'B', mats: new Set(), niv: '', uploadMode: 'sep', teacherComments: '' };
 var DB = { classes: [], evals: [], leads: [] };
 var _annotIdx = null;
 var _cmpSel = [];
@@ -41,6 +41,7 @@ function init() {
     nr.appendChild(d);
   });
   upSum();
+  setM(ST.mode || 'B');
   loadDB();
   populateClassSelect();
   fetchRemoteLeads();
@@ -206,6 +207,32 @@ function afPDF(e) {
   var f = e.target.files[0];
   if (f) setPDFClass(f);
 }
+function updateNextStepButton() {
+  var hasFiles = ST.uploadMode === 'pdf' ? (ST.pdfClass !== null) : (ST.students.length > 0);
+  var btn1 = document.getElementById('btnGoStep2');
+  var sb = document.getElementById('sb');
+  if (btn1) btn1.disabled = !hasFiles;
+  if (sb) sb.disabled = !hasFiles;
+}
+
+var _currWizStep = 1;
+function goToStep(step) {
+  _currWizStep = step;
+  var s1 = document.getElementById('wizStep1View');
+  var s2 = document.getElementById('wizStep2View');
+  var p1 = document.getElementById('wsp1');
+  var p2 = document.getElementById('wsp2');
+  if (s1 && s2) {
+    s1.style.display = step === 1 ? 'block' : 'none';
+    s2.style.display = step === 2 ? 'block' : 'none';
+  }
+  if (p1 && p2) {
+    p1.classList.toggle('on', step === 1);
+    p2.classList.toggle('on', step === 2);
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function setPDFClass(f) {
   var r = new FileReader();
   r.onload = function (e) {
@@ -213,7 +240,7 @@ function setPDFClass(f) {
     document.getElementById('pdfClassName').textContent = f.name;
     document.getElementById('pdfClassPreview').style.display = 'block';
     document.getElementById('dzPDF').style.display = 'none';
-    document.getElementById('sb').disabled = false;
+    updateNextStepButton();
   };
   r.readAsDataURL(f);
 }
@@ -221,7 +248,7 @@ function rmPDFClass() {
   ST.pdfClass = null;
   document.getElementById('pdfClassPreview').style.display = 'none';
   document.getElementById('dzPDF').style.display = 'flex';
-  document.getElementById('sb').disabled = true;
+  updateNextStepButton();
 }
 async function compressImage(b64, mime) {
   if (!mime || !mime.startsWith('image/')) return b64;
@@ -253,7 +280,7 @@ function af2(fl) {
       (isPdf ? Promise.resolve(rawB64) : compressImage(rawB64, f.type)).then(function (b64) {
         ST.students.push({ id: id, name: nm, base64: b64, type: isPdf ? f.type : 'image/jpeg', isPdf: isPdf, status: 'wait', result: null });
         rStudents();
-        document.getElementById('sb').disabled = false;
+        updateNextStepButton();
       });
     };
     r.readAsDataURL(f);
@@ -262,7 +289,7 @@ function af2(fl) {
 function rmStudent(id) {
   ST.students = ST.students.filter(function (s) { return s.id !== id; });
   rStudents();
-  document.getElementById('sb').disabled = ST.students.length === 0;
+  updateNextStepButton();
 }
 function rStudents() {
   var sl = document.getElementById('sl'), dz = document.getElementById('dz0'), cc = document.getElementById('ccnt'), am = document.getElementById('addMoreBtn');
@@ -271,6 +298,7 @@ function rStudents() {
     dz.style.display = 'flex';
     cc.style.display = 'none';
     am.style.display = 'none';
+    updateNextStepButton();
     return;
   }
   dz.style.display = 'none';
@@ -280,6 +308,7 @@ function rStudents() {
   cc.style.display = '';
   var stMap = { wait: 'st-wait', run: 'st-run', ok: 'st-ok', err: 'st-err', retry: 'st-retry' };
   updateTimeEst();
+  updateNextStepButton();
   sl.innerHTML = ST.students.map(function (s, i) {
     var stL = { wait: 'En attente', run: 'Correction…', retry: 'Nouvel essai…', ok: s.result ? ((s.result.note_obtenue !== undefined ? s.result.note_obtenue : '?') + '/' + s.result.note_total) : '✓', err: 'Erreur' };
     return '<div class="si" id="si-' + s.id + '">' +
@@ -302,6 +331,8 @@ function loadRefB(f) {
     document.getElementById('rpBName').textContent = f.name;
     document.getElementById('rpB').style.display = 'block';
     document.getElementById('rdzB').style.display = 'none';
+    var em = document.getElementById('em');
+    if (em) em.style.display = 'none';
   };
   r.readAsDataURL(f);
 }
@@ -312,10 +343,37 @@ function rmRefB() {
   document.getElementById('rfiB').value = '';
 }
 function setM(m) {
-  ST.mode = m;
-  document.getElementById('ma').classList.toggle('on', m === 'A');
-  document.getElementById('mb').classList.toggle('on', m === 'B');
-  document.getElementById('mbf').style.display = m === 'B' ? 'block' : 'none';
+  ST.mode = m || 'B';
+  var mb = document.getElementById('mb');
+  var ma = document.getElementById('ma');
+  var refWrap = document.getElementById('refInputContainer');
+  var notice = document.getElementById('modeAutoNotice');
+  var badge = document.getElementById('modeBadge');
+  var em = document.getElementById('em');
+  if (em) em.style.display = 'none';
+
+  if (mb) mb.classList.toggle('on', ST.mode === 'B');
+  if (ma) ma.classList.toggle('on', ST.mode === 'A');
+
+  if (ST.mode === 'B') {
+    if (refWrap) refWrap.style.display = 'block';
+    if (notice) notice.style.display = 'none';
+    if (badge) {
+      badge.innerHTML = '<span>*</span> Obligatoire';
+      badge.style.background = 'rgba(231,76,60,0.12)';
+      badge.style.color = 'var(--red,#e74c3c)';
+      badge.style.borderColor = 'rgba(231,76,60,0.35)';
+    }
+  } else {
+    if (refWrap) refWrap.style.display = 'none';
+    if (notice) notice.style.display = 'block';
+    if (badge) {
+      badge.innerHTML = '<span>⚡</span> Mode rapide actif';
+      badge.style.background = 'rgba(0,113,227,0.12)';
+      badge.style.color = 'var(--blue,#0071e3)';
+      badge.style.borderColor = 'rgba(0,113,227,0.35)';
+    }
+  }
 }
 function bldBlk(b, t, isPdf) {
   return isPdf ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b } } : { type: 'image', source: { type: 'base64', media_type: t, data: b } };
@@ -324,22 +382,29 @@ function bldBlk(b, t, isPdf) {
 /* ── BUILD PROMPT ── */
 function buildPrompt(forClass) {
   var matList = Array.from(ST.mats).map(function (id) { return getL(id); }).join(', ');
-  var ei = document.getElementById('ei').value.trim();
-  var ct = document.getElementById('ct2').value.trim();
-  var p = ST.mode === 'A' ? 'MODE A — Correction autonome.' : 'MODE B — Corrigé prof fourni. ' + (ct ? 'CORRIGÉ :\n' + ct : '') + (ST.refB ? ' (document corrigé fourni)' : '') + ' Utilise UNIQUEMENT ce corrigé.';
+  var ctEl = document.getElementById('ct2');
+  var ct = ctEl ? ctEl.value.trim() : '';
+
+  var p = '';
+  if (ST.mode === 'B') {
+    p = 'MODE AVEC CORRIGÉ DU PROFESSEUR (MODE B) :\n' + (ct ? ct : '(Voir document de corrigé officiel joint)') + '\nConsigne stricte pour l\'IA : Tu DOIS utiliser UNIQUEMENT ce corrigé officiel pour évaluer les copies d\'élèves, attribuer les points et valider les réponses attendues.';
+  } else {
+    p = 'MODE CORRECTION AUTONOME PAR L\'IA (MODE A - MODE RAPIDE SANS CORRIGÉ FOURNI) :\nTu dois analyser de manière autonome l\'exercice/le devoir sur la copie de l\'élève, identifier chaque question ou consigne, déterminer les réponses correctes attendues selon le programme scolaire officiel et évaluer la copie avec bienveillance, clarté et rigueur pédagogique.';
+  }
+
   p += matList ? '\nMatière(s) : ' + matList : '\nMatière : détecter automatiquement';
   p += '\nNiveau : ' + (ST.niv || 'à détecter');
-  if (ei) p += '\nContexte : ' + ei;
   p += '\nPour chaque question, le champ zone indique la position sur la feuille : haut, milieu_haut, milieu_bas, ou bas. Si le nom de l\'eleve est visible sur la feuille, indique-le dans nom_eleve_detecte.';
+  p += '\nImportant: Fournis également "transcription_copie" (la transcription textuelle propre et complète de la copie d\'élève) et "corrections_detectees" (une liste structurée des erreurs trouvées avec categorie: "Accord"|"Orthographe"|"Syntaxe"|"Style"|"Calcul"|"Vocabulaire", texte_original, texte_corrige, statut: "Corrigé"|"Suggestion", et explication pédagogique).';
   var nm = getNoteMax();
   if (nm) p += '\n' + nm;
   var ci = getCorrInstr();
   if (ci) p += '\n\n' + ci;
   if (forClass) {
     p += '\n\nCe PDF contient les copies de PLUSIEURS élèves scannées à la suite. Identifie chaque élève (lis leur nom sur la copie, sinon utilise "Élève 1", "Élève 2"…). Pour chaque élève, corrige sa copie.';
-    p += '\n\nRetourne UNIQUEMENT du JSON valide :\n{"students":[{"name":"","nom_eleve_detecte":"","matiere":"","niveau":"","type_exercice":"","mode":"' + ST.mode + '","questions":[{"titre":"","zone":"haut","reponse_eleve":"","attendu":"","points_obtenus":0,"points_total":0,"commentaire":""}],"note_obtenue":0,"note_total":0,"appreciation":"","remarques":""}]}';
+    p += '\n\nRetourne UNIQUEMENT du JSON valide :\n{"students":[{"name":"","nom_eleve_detecte":"","matiere":"","niveau":"","type_exercice":"","mode":"' + ST.mode + '","transcription_copie":"","corrections_detectees":[{"categorie":"Accord","texte_original":"","texte_corrige":"","statut":"Corrigé","explication":""}],"questions":[{"titre":"","zone":"haut","reponse_eleve":"","attendu":"","points_obtenus":0,"points_total":0,"commentaire":""}],"note_obtenue":0,"note_total":0,"appreciation":"","remarques":""}]}';
   } else {
-    p += '\n\nRetourne UNIQUEMENT du JSON valide (pas de backtick) :\n{"nom_eleve_detecte":"","matiere":"","niveau":"","type_exercice":"","mode":"' + ST.mode + '","questions":[{"titre":"","zone":"haut","reponse_eleve":"","attendu":"","points_obtenus":0,"points_total":0,"commentaire":""}],"note_obtenue":0,"note_total":0,"appreciation":"","remarques":""}';
+    p += '\n\nRetourne UNIQUEMENT du JSON valide (pas de backtick) :\n{"nom_eleve_detecte":"","matiere":"","niveau":"","type_exercice":"","mode":"' + ST.mode + '","transcription_copie":"","corrections_detectees":[{"categorie":"Accord","texte_original":"","texte_corrige":"","statut":"Corrigé","explication":""}],"questions":[{"titre":"","zone":"haut","reponse_eleve":"","attendu":"","points_obtenus":0,"points_total":0,"commentaire":""}],"note_obtenue":0,"note_total":0,"appreciation":"","remarques":""}';
   }
   return p;
 }
@@ -400,7 +465,7 @@ async function correctOne(student) {
   mc.push(bldBlk(student.base64, student.type, student.isPdf));
   mc.push({ type: 'text', text: '[Copie de : ' + student.name + ']\n' + buildPrompt(false) });
   if (ST.mode === 'B' && ST.refB) {
-    mc.push({ type: 'text', text: '[Corrigé officiel :]' });
+    mc.push({ type: 'text', text: '[Document officiel du corrigé professeur :]' });
     mc.push(bldBlk(ST.refB.base64, ST.refB.type, ST.refB.isPdf));
   }
   return await callAPI([{ role: 'user', content: mc }]);
@@ -429,7 +494,7 @@ async function correctPDFClass() {
   mc.push(bldBlk(ST.pdfClass.base64, ST.pdfClass.type, true));
   mc.push({ type: 'text', text: buildPrompt(true) });
   if (ST.mode === 'B' && ST.refB) {
-    mc.push({ type: 'text', text: '[Corrigé officiel :]' });
+    mc.push({ type: 'text', text: '[Document officiel du corrigé professeur :]' });
     mc.push(bldBlk(ST.refB.base64, ST.refB.type, ST.refB.isPdf));
   }
   var res = await callAPI([{ role: 'user', content: mc }]);
@@ -531,6 +596,31 @@ async function submitLeadCapture() {
 }
 
 async function sub() {
+  if (ST.mode === 'B') {
+    var ctEl = document.getElementById('ct2');
+    var ctVal = ctEl ? ctEl.value.trim() : '';
+
+    if (!ctVal && !ST.refB) {
+      var em = document.getElementById('em');
+      if (em) {
+        em.innerHTML = '⚠️ <strong>Corrigé type obligatoire en mode personnalisé :</strong> Veuillez saisir le texte de votre corrigé ou importer un fichier (photo / PDF), ou passez en <em>⚡ Mode Rapide (Correction IA autonome)</em>.';
+        em.style.display = 'block';
+      }
+      var card = document.getElementById('cardCorrigeType');
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (ctEl) {
+          ctEl.style.borderColor = 'var(--red,#e74c3c)';
+          ctEl.focus();
+          setTimeout(function () {
+            ctEl.style.borderColor = '';
+          }, 3000);
+        }
+      }
+      return;
+    }
+  }
+
   if (!hasUserRegisteredLead()) {
     _pendingSubmit = true;
     openLeadGateModal();
@@ -674,183 +764,113 @@ function onTeacherCommentsInput() {
   }
 }
 
-/* ── RENDER RESULTS ── */
-function renderResults() {
-  var ok = ST.students.filter(function (s) { return s.status === 'ok' && s.result; });
-  var matList = Array.from(new Set(ok.map(function (s) { return s.result.matiere || ''; }).filter(Boolean))).join(', ') || 'Mixte';
-  var niv = Array.from(new Set(ok.map(function (s) { return s.result.niveau || ''; }).filter(Boolean))).join(', ') || '—';
-  var evalNameDisp = (document.getElementById('evalName') || {}).value || '';
-  document.getElementById('evalTitle').textContent = evalNameDisp || (matList + (niv && niv !== '—' ? ' — ' + niv : ''));
-  var wn = ok.filter(function (s) { return s.result.note_total && s.result.note_obtenue != null; });
-  var avg = wn.length ? Math.round(10 * wn.reduce(function (a, r) { return a + (r.result.note_obtenue / r.result.note_total) * 20; }, 0) / wn.length) / 10 : null;
-  var above = wn.filter(function (s) { return (s.result.note_obtenue / s.result.note_total) >= 0.5; }).length;
-  document.getElementById('cs').innerHTML =
-    '<div class="cs-box"><div class="csv-val">' + ST.students.length + '</div><div class="csl">Copies</div></div>' +
-    '<div class="cs-box"><div class="csv-val">' + (avg !== null ? avg + '/20' : '—') + '</div><div class="csl">Moyenne</div></div>' +
-    '<div class="cs-box"><div class="csv-val">' + above + '</div><div class="csl">≥ 10/20</div></div>' +
-    '<div class="cs-box"><div class="csv-val">' + ok.length + '/' + ST.students.length + '</div><div class="csl">Corrigées</div></div>';
-  renderHistogram(wn);
-  renderAnalysis(ok);
+/* ── RESULT SPLIT VIEW & CONTROLS ── */
+var _activeStudentIdx = 0;
+var _activeDocView = 'txt';
+var _activeResultTab = 'split';
 
-  var tc = document.getElementById('teacherEvalComments');
-  if (tc && tc.value !== (ST.teacherComments || '')) {
-    tc.value = ST.teacherComments || '';
-  }
-  var tb = document.getElementById('teacherNotesSavedBadge');
-  if (tb) {
-    tb.style.display = (ST.teacherComments && ST.teacherComments.trim()) ? 'inline-block' : 'none';
-  }
-
-  document.getElementById('rt').innerHTML = ST.students.map(function (s, i) {
-    if (s.status !== 'ok' || !s.result) {
-      var errDetail = s.lastError ? ('<div style="font-size:0.75rem;color:var(--r2);margin-top:2px">' + escH(s.lastError) + '</div>') : '';
-      return '<div class="rt-row" style="background:rgba(192,57,43,.06);border-color:rgba(192,57,43,.2);flex-wrap:wrap">' +
-        '<span class="rt-num">' + (i + 1) + '</span>' +
-        '<div style="flex:1"><span class="rt-name">' + escH(s.name) + '</span>' + errDetail + '</div>' +
-        '<span class="rt-score" style="color:var(--r2);font-weight:600">' + (s.status === 'run' ? '⏳ En cours…' : '❌ Non corrigé') + '</span>' +
-        '<div style="margin-left:auto">' +
-        (s.status === 'run' ? '<div class="spin-sm"></div>' : '<button class="bs2" style="padding:3px 10px;font-size:.72rem" onclick="event.stopPropagation();retryStudent(' + i + ')">🔄 Réessayer</button>') +
-        '</div>' +
-        '</div>';
+function setDocView(mode) {
+  _activeDocView = mode;
+  var btnTxt = document.getElementById('vt-txt');
+  var btnImg = document.getElementById('vt-img');
+  var txtWrap = document.getElementById('docSheetContainer');
+  var imgWrap = document.getElementById('docScanContainer');
+  if (btnTxt) btnTxt.classList.toggle('on', mode === 'txt');
+  if (btnImg) btnImg.classList.toggle('on', mode === 'img');
+  if (txtWrap) txtWrap.style.display = mode === 'txt' ? 'block' : 'none';
+  if (imgWrap) {
+    imgWrap.style.display = mode === 'img' ? 'block' : 'none';
+    if (mode === 'img') {
+      setTimeout(function() { drawAnnotSplit(_activeStudentIdx); }, 50);
     }
-    var r = s.result;
-    var no = r.note_obtenue, nt = r.note_total;
-    var pct = nt ? (no / nt) * 100 : 50;
-    var sc = scCls(no, nt);
-    return '<div class="rt-row" onclick="showDetail(' + i + ')"><span class="rt-num">' + (i + 1) + '</span><span class="rt-name">' + escH(s.name) + '</span><span class="rt-mat">' + escH(r.matiere || '') + '</span><div class="rt-bar"><div class="rt-fill ' + sc.f + '" style="width:' + Math.min(pct, 100) + '%"></div></div><span class="rt-score ' + sc.c + '">' + (nt != null ? ((no !== undefined ? no : '?') + '/' + nt) : '—') + '</span><span class="rt-arr">→</span></div>';
-  }).join('');
+  }
 }
 
-/* ── HISTOGRAM ── */
-function renderHistogram(wn) {
-  var slots = [0, 0, 0, 0];
-  wn.forEach(function (s) {
-    var n20 = s.result.note_obtenue / s.result.note_total * 20;
-    if (n20 < 5) slots[0]++;
-    else if (n20 < 10) slots[1]++;
-    else if (n20 < 15) slots[2]++;
-    else slots[3]++;
-  });
-  var max = Math.max.apply(null, slots) || 1;
-  var colors = ['#e74c3c', '#e67e22', '#3498db', '#27ae60'];
-  document.getElementById('histoBars').innerHTML = slots.map(function (v, i) {
-    var h = Math.round((v / max) * 85);
-    return '<div class="hbar-wrap"><div class="hbar-count">' + (v || '') + '</div><div class="hbar" style="height:' + Math.max(h, v ? 3 : 0) + 'px;background:' + colors[i] + '"></div></div>';
-  }).join('');
+function switchResultView(tab) {
+  _activeResultTab = tab;
+  var splitGrid = document.getElementById('splitViewContainer');
+  var overviewContainer = document.getElementById('classOverviewContainer');
+  var swWrap = document.getElementById('studentSwitcherWrap');
+  
+  if (swWrap) {
+    var tabs = swWrap.querySelectorAll('.student-pill-btn');
+    tabs.forEach(function(tb) {
+      if (tab === 'overview' && tb.id === 'tab-overview') {
+        tb.classList.add('on');
+      } else if (tab === 'split' && tb.getAttribute('data-idx') === String(_activeStudentIdx)) {
+        tb.classList.add('on');
+      } else {
+        tb.classList.remove('on');
+      }
+    });
+  }
+
+  if (tab === 'overview') {
+    if (splitGrid) splitGrid.style.display = 'none';
+    if (overviewContainer) overviewContainer.style.display = 'block';
+  } else {
+    if (splitGrid) splitGrid.style.display = 'grid';
+    if (overviewContainer) overviewContainer.style.display = 'none';
+    renderActiveStudentPane();
+  }
 }
 
-/* ── ERROR ANALYSIS ── */
-function renderAnalysis(ok) {
-  if (!ok.length) {
-    document.getElementById('analysisSec').style.display = 'none';
-    return;
-  }
-  document.getElementById('analysisSec').style.display = 'block';
-  var qMap = {};
-  ok.forEach(function (s) {
-    (s.result.questions || []).forEach(function (q) {
-      if (!q.titre || !q.points_total) return;
-      if (!qMap[q.titre]) qMap[q.titre] = { total: 0, fail: 0, pts: q.points_total };
-      qMap[q.titre].total++;
-      if ((q.points_obtenus / q.points_total) < 0.5) qMap[q.titre].fail++;
-    });
-  });
-  var qs = Object.keys(qMap).map(function (k) {
-    return { titre: k, failPct: Math.round((qMap[k].fail / qMap[k].total) * 100), total: qMap[k].total, fail: qMap[k].fail };
-  });
-  qs.sort(function (a, b) { return b.failPct - a.failPct; });
-  if (!qs.length) {
-    document.getElementById('analysisSec').style.display = 'none';
-    return;
-  }
-  var topFail = qs.filter(function (q) { return q.failPct >= 50; });
-  var html = '';
-  if (qs.length) {
-    html += '<div style="margin-bottom:1rem">';
-    qs.slice(0, 6).forEach(function (q) {
-      var col = q.failPct >= 75 ? 'var(--r2)' : q.failPct >= 50 ? 'var(--g)' : 'var(--a)';
-      html += '<div class="q-fail-row"><span class="qfail-name">' + escH(q.titre) + '</span><div class="qfail-bar"><div class="qfail-fill" style="width:' + q.failPct + '%;background:' + col + '"></div></div><span class="qfail-pct" style="color:' + col + '">' + q.failPct + '%</span></div>';
-    });
-    html += '</div>';
-  }
-  if (topFail.length) {
-    html += '<div style="font-size:.75rem;font-weight:600;color:var(--ink);margin-bottom:.5rem">📌 Points de remédiation suggérés</div>';
-    topFail.forEach(function (q) {
-      html += '<div class="remed-item"><span style="font-size:1rem;flex-shrink:0">' + (q.failPct >= 75 ? '🔴' : '🟡') + '</span><div><strong style="font-size:.78rem">' + escH(q.titre) + '</strong> — ' + q.fail + ' élève' + (q.fail > 1 ? 's' : '') + ' en difficulté (' + q.failPct + '%)<br><span style="font-size:.73rem;color:var(--inkm)">Revoir ce point lors du prochain cours. Proposer des exercices supplémentaires ciblés.</span></div></div>';
-    });
-  }
-  document.getElementById('analysisContent').innerHTML = html;
+function switchActiveStudent(idx) {
+  _activeStudentIdx = idx;
+  switchResultView('split');
 }
 
-/* ── DETAIL MODAL ── */
-function showDetail(idx) {
-  _annotIdx = idx;
-  var s = ST.students[idx];
+function prevStudent() {
+  if (_activeStudentIdx > 0) {
+    switchActiveStudent(_activeStudentIdx - 1);
+  }
+}
+
+function nextStudent() {
+  if (_activeStudentIdx < ST.students.length - 1) {
+    switchActiveStudent(_activeStudentIdx + 1);
+  } else {
+    switchResultView('overview');
+  }
+}
+
+function updateActiveStudentTeacherNote(val) {
+  var s = ST.students[_activeStudentIdx];
+  if (s) {
+    s.teacherNote = val;
+  }
+}
+
+function confirmValidateStudent() {
+  var s = ST.students[_activeStudentIdx];
+  if (s) {
+    s.validated = true;
+  }
+  // If next student exists, advance; else show overview
+  if (_activeStudentIdx < ST.students.length - 1) {
+    nextStudent();
+  } else {
+    switchResultView('overview');
+  }
+}
+
+function openStudentEditMode() {
+  var s = ST.students[_activeStudentIdx];
   if (!s || !s.result) return;
-  var d = s.result;
-  var qs = d.questions || [];
-  var no = d.note_obtenue || 0, nt = d.note_total || 0;
-  var pct = nt ? Math.round((no / nt) * 100) : 0;
-  var gc = pct >= 75 ? '#52b788' : pct >= 50 ? '#e9a23b' : '#e74c3c';
-  var ci = 2 * Math.PI * 26;
-  var da = Math.round((pct / 100) * ci);
-  var wellQ = qs.filter(function (q) { return q.points_total && (q.points_obtenus / q.points_total) >= 0.9; });
-  var badQ = qs.filter(function (q) { return q.points_total && (q.points_obtenus / q.points_total) < 0.5; });
-  var wH = wellQ.length ? wellQ.map(function (q) { return '<div class="m-sitem">' + escH(q.titre || 'Q') + '</div>'; }).join('') : '<div class="m-sempty">—</div>';
-  var bH = badQ.length ? badQ.map(function (q) { return '<div class="m-sitem">' + escH(q.titre || 'Q') + '</div>'; }).join('') : '<div class="m-sempty">Aucune erreur majeure 🎉</div>';
-  var qH = qs.map(function (q) {
-    var qp = q.points_total ? Math.round((q.points_obtenus / q.points_total) * 100) : 50;
-    var cl = qp >= 99 ? 'mqok' : qp >= 50 ? 'mqpa' : 'mqba';
-    var ic = qp >= 99 ? '✅' : qp >= 50 ? '⚠️' : '❌';
-    var bs = q.points_total != null ? ((q.points_obtenus !== undefined ? q.points_obtenus : '?') + ' / ' + q.points_total + ' pt' + (q.points_total > 1 ? 's' : '')) : '';
-    return '<div class="mqc ' + cl + '">' +
-      '<div class="mqh"><span style="font-size:13px;flex-shrink:0">' + ic + '</span><span class="mqt">' + escH(q.titre || 'Question') + '</span>' + (bs ? '<span class="mqbdg">' + bs + '</span>' : '') + '</div>' +
-      '<div class="mqb">' +
-      (q.reponse_eleve ? '<div class="mqr"><span class="mql">Élève</span><span class="mqv">' + escH(q.reponse_eleve) + '</span></div>' : '') +
-      (q.attendu ? '<div class="mqr"><span class="mql">Attendu</span><span class="mqv">' + escH(q.attendu) + '</span></div>' : '') +
-      (q.points_total ? '<div class="mqpb"><div class="mqpf" style="width:' + qp + '%"></div></div>' : '') +
-      (q.commentaire ? '<div class="mqcmt modal-cmt">' + escH(q.commentaire) + '</div>' : '') +
-      '</div></div>';
-  }).join('');
-  var canA = s && !s.isPdf && s.base64;
-  document.getElementById('modalContent').innerHTML =
-    '<div class="m-head">' +
-    '<button class="m-close" onclick="closeModal()">✕</button>' +
-    '<div class="m-name">' + escH(s.name) + '</div>' +
-    '<div class="m-meta">' + (d.matiere ? '<span>' + escH(d.matiere) + '</span><span class="m-sep">·</span>' : '') + (d.niveau ? '<span>' + escH(d.niveau) + '</span><span class="m-sep">·</span>' : '') + (d.type_exercice ? '<span>' + escH(d.type_exercice) + '</span><span class="m-sep">·</span>' : '') + '<span>Mode ' + (d.mode || ST.mode) + '</span></div>' +
-    '<div class="m-score-row">' +
-    '<div class="m-gauge"><svg width="68" height="68" viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="5"/><circle cx="30" cy="30" r="26" fill="none" stroke="' + gc + '" stroke-width="5" stroke-linecap="round" stroke-dasharray="' + da + ' ' + ci + '"/></svg><div class="m-gval"><span>' + no + '</span><span class="m-gsub">/ ' + nt + '</span></div></div>' +
-    '<div class="m-sd"><div class="m-slbl">Performance globale</div><div class="m-sbar"><div class="m-sfill" style="width:' + pct + '%;background:' + gc + '"></div></div><div class="m-sstats"><div class="m-st"><strong>' + pct + '%</strong></div><div class="m-st"><strong>' + wellQ.length + '</strong> réussie' + (wellQ.length > 1 ? 's' : '') + '</div><div class="m-st"><strong>' + badQ.length + '</strong> à revoir</div></div></div>' +
-    '</div></div>' +
-    '<div class="m-body">' +
-    '<div class="edit-toolbar"><button class="btn-edit" id="btn-edit" onclick="enterEdit(' + idx + ')">✏️ Modifier</button><button class="btn-save" id="btn-save" onclick="saveEdits(' + idx + ')">💾 Enregistrer</button></div>' +
-    '<div class="m-tabs">' +
-    '<button class="m-tab on" id="mTab-d" onclick="swTab(\'d\')">📋 Correction</button>' +
-    (canA ? '<button class="m-tab" id="mTab-a" onclick="swTab(\'a\')">🖊 Copie annotée</button>' : '') +
-    '</div>' +
-    '<div id="mVd">' +
-    '<div style="height:.8rem"></div>' +
-    '<div class="m-synth"><div class="m-sw"><div class="m-stitle">✅ Points réussis</div><div class="m-sitems">' + wH + '</div></div><div class="m-sb"><div class="m-stitle">❌ Points à revoir</div><div class="m-sitems">' + bH + '</div></div></div>' +
-    (qs.length ? '<div class="m-sec">Détail par question</div><div class="m-qs">' + qH + '</div>' : '') +
-    (d.appreciation ? '<div class="m-apprec"><div class="m-al">💬 Appréciation</div><div class="m-at modal-apprec">' + escH(d.appreciation) + '</div></div>' : '') +
-    (d.remarques && d.remarques.toLowerCase() !== 'aucune' && d.remarques.length > 2 ? '<div class="m-rem"><div class="m-rl">⚠️ Remarques</div><div class="m-rt">' + escH(d.remarques) + '</div></div>' : '') +
-    '</div>' +
-    (canA ? '<div id="mVa" style="display:none"><div style="height:.8rem"></div><p style="font-size:.71rem;color:var(--inkl);margin-bottom:.6rem">Annotations positionnées par zone détectée par l\'IA.</p><div class="annot-wrap" id="annotWrap"><canvas id="annotCanvas"></canvas></div><div class="ann-legend"><span class="al-item"><span class="al-dot" style="background:#2d6a4f"></span>Correct</span><span class="al-item"><span class="al-dot" style="background:#b5860d"></span>Partiel</span><span class="al-item"><span class="al-dot" style="background:#c0392b"></span>Incorrect</span></div></div>' : '<div id="mVa" style="display:none"></div>') +
-    '</div>' +
-    '<div class="m-acts"><button class="btn-pdf-export" onclick="exportStudentSheetPDF(' + idx + ')">📥 Exporter PDF</button><button class="m-bpr" onclick="printOne(' + idx + ')">🖨 Imprimer</button><button class="btn-retour" onclick="printStudentSheet(' + idx + ')">📄 Fiche élève</button><button class="m-bcl" onclick="closeModal()">Fermer</button></div>';
-  document.getElementById('modal').style.display = 'flex';
+  var currentScore = s.result.note_obtenue !== undefined ? s.result.note_obtenue : 15;
+  var maxScore = s.result.note_total || 20;
+  var newScoreStr = prompt("Modifier la note de " + s.name + " (sur " + maxScore + ") :", currentScore);
+  if (newScoreStr !== null) {
+    var newScore = parseFloat(newScoreStr.replace(',', '.'));
+    if (!isNaN(newScore)) {
+      s.result.note_obtenue = Math.min(Math.max(0, newScore), maxScore);
+      renderResults();
+      renderActiveStudentPane();
+    }
+  }
 }
 
-function swTab(t) {
-  document.getElementById('mTab-d').classList.toggle('on', t === 'd');
-  var ta = document.getElementById('mTab-a');
-  if (ta) ta.classList.toggle('on', t === 'a');
-  document.getElementById('mVd').style.display = t === 'd' ? 'block' : 'none';
-  document.getElementById('mVa').style.display = t === 'a' ? 'block' : 'none';
-  if (t === 'a' && _annotIdx !== null) setTimeout(function () { drawAnnot(_annotIdx); }, 80);
-}
-
-function drawAnnot(idx) {
+function drawAnnotSplit(idx) {
   var s = ST.students[idx];
   if (!s || !s.result || !s.base64) return;
   var d = s.result;
@@ -859,11 +879,12 @@ function drawAnnot(idx) {
   img.onload = function () {
     var wrap = document.getElementById('annotWrap');
     if (!wrap) return;
-    var mw = Math.min(img.width, wrap.clientWidth || 600);
+    var mw = Math.min(img.width, wrap.clientWidth || 550);
     var sc = mw / img.width;
     var cw = Math.round(img.width * sc);
     var ch = Math.round(img.height * sc);
     var cv = document.getElementById('annotCanvas');
+    if (!cv) return;
     cv.width = cw;
     cv.height = ch;
     var ctx = cv.getContext('2d');
@@ -909,11 +930,338 @@ function drawAnnot(idx) {
   img.src = 'data:' + s.type + ';base64,' + s.base64;
 }
 
-function closeModal() {
-  document.getElementById('modal').style.display = 'none';
+function renderStudentSwitcherTabs() {
+  var wrap = document.getElementById('studentSwitcherWrap');
+  if (!wrap) return;
+  var html = '';
+  ST.students.forEach(function(s, idx) {
+    var scoreStr = s.result && s.result.note_total ? (s.result.note_obtenue + '/' + s.result.note_total) : '';
+    var isSel = (_activeResultTab === 'split' && idx === _activeStudentIdx);
+    var statusIco = s.status === 'ok' ? '👤' : s.status === 'run' ? '⏳' : '❌';
+    html += '<button class="student-pill-btn ' + (isSel ? 'on' : '') + '" data-idx="' + idx + '" onclick="switchActiveStudent(' + idx + ')">';
+    html += statusIco + ' ' + escH(s.name) + (scoreStr ? ' <span style="font-weight:700;margin-left:4px;opacity:0.9">' + scoreStr + '</span>' : '');
+    html += '</button>';
+  });
+  // Tab for class overview if more than 1 student
+  if (ST.students.length > 1) {
+    var isOverview = (_activeResultTab === 'overview');
+    html += '<button class="student-pill-btn ' + (isOverview ? 'on' : '') + '" id="tab-overview" onclick="switchResultView(\'overview\')" style="background:var(--bg-card);border:1px dashed var(--blue);color:var(--blue);font-weight:600">';
+    html += '📊 Vue d\'ensemble classe';
+    html += '</button>';
+  }
+  wrap.innerHTML = html;
 }
 
-/* ── EXPORT CSV ── */
+function renderActiveStudentPane() {
+  var s = ST.students[_activeStudentIdx];
+  if (!s) return;
+  var r = s.result || {};
+
+  // Avatar and header
+  var avatarEl = document.getElementById('paneStudentAvatar');
+  var nameEl = document.getElementById('paneStudentName');
+  var metaEl = document.getElementById('paneStudentMeta');
+  var initials = s.name.split(/\s+/).map(function (w) { return w[0]; }).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'É';
+  if (avatarEl) avatarEl.textContent = initials;
+  if (nameEl) nameEl.textContent = s.name;
+  if (metaEl) {
+    metaEl.textContent = (r.matiere ? r.matiere + ' · ' : '') + (r.niveau ? r.niveau + ' · ' : '') + 'Copie n°' + (_activeStudentIdx + 1) + '/' + ST.students.length;
+  }
+
+  // View toggle between text and scan if image is present
+  var toggleWrap = document.getElementById('paneViewToggleWrap');
+  if (toggleWrap) {
+    toggleWrap.style.display = (!s.isPdf && s.base64) ? 'flex' : 'none';
+  }
+  if (!(!s.isPdf && s.base64)) {
+    setDocView('txt');
+  }
+
+  // Document Text with Highlighting
+  var docTextEl = document.getElementById('paneDocText');
+  var docTitleEl = document.getElementById('paneDocTitle');
+  if (docTitleEl) {
+    docTitleEl.textContent = (r.type_exercice || 'Transcription de la copie') + ' — ' + s.name;
+  }
+
+  var rawTrans = r.transcription_copie || '';
+  var detectedErrors = r.corrections_detectees || [];
+
+  // If no explicit detected errors returned, synthesize from questions
+  if (!detectedErrors.length && r.questions && r.questions.length) {
+    r.questions.forEach(function(q) {
+      if (q.points_total && (q.points_obtenus / q.points_total) < 0.9) {
+        detectedErrors.push({
+          categorie: (q.points_obtenus / q.points_total) < 0.5 ? 'Orthographe' : 'Accord',
+          texte_original: q.reponse_eleve || q.titre,
+          texte_corrige: q.attendu || 'À revoir',
+          statut: (q.points_obtenus / q.points_total) < 0.5 ? 'Corrigé' : 'Suggestion',
+          explication: q.commentaire || 'Réponse incomplète ou imprécise par rapport au barème.'
+        });
+      }
+    });
+  }
+
+  // If no transcription provided by AI, synthesize a formatted student sheet
+  if (!rawTrans.trim()) {
+    if (r.questions && r.questions.length) {
+      rawTrans = r.questions.map(function(q, i) {
+        return 'Question ' + (i + 1) + ' (' + (q.titre || '') + ') :\n' + (q.reponse_eleve ? q.reponse_eleve : 'Réponse manuscrite analysée');
+      }).join('\n\n');
+    } else {
+      rawTrans = "Copie manuscrite numérisée pour " + s.name + ".\nL'IA a évalué le contenu pédagogique et calculé la note ci-contre.";
+    }
+  }
+
+  // Render text with highlight annotations
+  var formattedHtml = escH(rawTrans).replace(/\n/g, '<br>');
+  // Highlight words that match detected errors
+  detectedErrors.forEach(function(err) {
+    if (err.texte_original && err.texte_original.length > 2) {
+      var escapedOrig = escH(err.texte_original);
+      var tagCls = (err.categorie === 'Accord' ? 'annot-orange' : err.categorie === 'Syntaxe' ? 'annot-blue' : err.categorie === 'Style' ? 'annot-purple' : 'annot-red');
+      var highlightSpan = '<span class="annot-tag ' + tagCls + '">' + escapedOrig + '<span class="annot-badge-sub">(' + escH(err.texte_corrige || err.categorie) + ')</span></span>';
+      if (formattedHtml.includes(escapedOrig)) {
+        formattedHtml = formattedHtml.replace(escapedOrig, highlightSpan);
+      }
+    }
+  });
+  if (docTextEl) docTextEl.innerHTML = formattedHtml;
+
+  // Score proposed
+  var scoreEl = document.getElementById('paneProposedScore');
+  var gaugeEl = document.getElementById('paneScoreGauge');
+  var pctEl = document.getElementById('paneScorePercent');
+  var no = r.note_obtenue !== undefined ? r.note_obtenue : '?';
+  var nt = r.note_total || 20;
+  var pct = r.note_total ? Math.round((r.note_obtenue / r.note_total) * 100) : 75;
+  if (scoreEl) scoreEl.textContent = no + ' / ' + nt;
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (gaugeEl) {
+    gaugeEl.style.borderColor = pct >= 75 ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
+  }
+
+  // Detected errors count & list
+  var countBadge = document.getElementById('paneErrorCountBadge');
+  var listEl = document.getElementById('paneDetectedErrorsList');
+  if (countBadge) {
+    countBadge.textContent = detectedErrors.length + ' correction' + (detectedErrors.length > 1 ? 's' : '');
+  }
+  if (listEl) {
+    if (detectedErrors.length === 0) {
+      listEl.innerHTML = '<div style="padding:12px;background:rgba(45,106,79,.08);border-radius:10px;color:var(--green);font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px">🎉 Aucune faute majeure détectée sur cette copie !</div>';
+    } else {
+      listEl.innerHTML = detectedErrors.map(function(err) {
+        var cat = err.categorie || 'Orthographe';
+        var catIco = (cat === 'Accord' ? 'A' : cat === 'Syntaxe' ? 'S' : cat === 'Style' ? 'St' : cat === 'Calcul' ? 'C' : 'O');
+        var icoCls = (cat === 'Accord' ? 'ico-orange' : cat === 'Syntaxe' ? 'ico-blue' : cat === 'Style' ? 'ico-purple' : 'ico-red');
+        return '<div class="detected-err-card">' +
+          '<div class="dec-header">' +
+            '<div class="dec-cat-tag">' +
+              '<span class="cat-ico ' + icoCls + '">' + catIco + '</span>' +
+              '<span>' + escH(cat) + '</span>' +
+            '</div>' +
+            '<span class="dec-status-pill">' + escH(err.statut || 'Corrigé') + '</span>' +
+          '</div>' +
+          '<div class="dec-words-diff">' +
+            (err.texte_original ? '<span class="word-wrong">' + escH(err.texte_original) + '</span>' : '') +
+            (err.texte_corrige ? '<span class="word-arrow">→</span><span class="word-fixed">' + escH(err.texte_corrige) + '</span>' : '') +
+          '</div>' +
+          (err.explication ? '<div class="dec-explanation">' + escH(err.explication) + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  // Comment Box
+  var cmtEl = document.getElementById('paneCommentBox');
+  if (cmtEl) {
+    cmtEl.textContent = r.appreciation || "Travail sérieux. Continuer ainsi.";
+  }
+
+  // Teacher custom note
+  var noteInput = document.getElementById('paneTeacherNoteInput');
+  if (noteInput) {
+    noteInput.value = s.teacherNote || '';
+  }
+
+  // Questions Detail accordion (optional)
+  var qWrap = document.getElementById('paneQuestionsWrap');
+  var qList = document.getElementById('paneQuestionsList');
+  if (qWrap && qList && r.questions && r.questions.length) {
+    qWrap.style.display = 'block';
+    qList.innerHTML = r.questions.map(function(q) {
+      var qp = q.points_total ? Math.round((q.points_obtenus / q.points_total) * 100) : 50;
+      var ic = qp >= 90 ? '✅' : qp >= 50 ? '⚠️' : '❌';
+      return '<div style="padding:8px 12px;background:var(--bg-secondary);border-radius:8px;margin-bottom:6px;font-size:12.5px">' +
+        '<div style="display:flex;justify-content:space-between;font-weight:600">' +
+          '<span>' + ic + ' ' + escH(q.titre || 'Question') + '</span>' +
+          '<span style="color:var(--blue)">' + (q.points_obtenus !== undefined ? q.points_obtenus : '?') + ' / ' + (q.points_total || 0) + ' pts</span>' +
+        '</div>' +
+        (q.reponse_eleve ? '<div style="color:var(--label2);font-size:11.5px;margin-top:3px"><strong>Élève :</strong> ' + escH(q.reponse_eleve) + '</div>' : '') +
+        (q.attendu ? '<div style="color:var(--label2);font-size:11.5px;margin-top:2px"><strong>Attendu :</strong> ' + escH(q.attendu) + '</div>' : '') +
+        (q.commentaire ? '<div style="color:var(--label);font-size:11.5px;font-style:italic;margin-top:3px">' + escH(q.commentaire) + '</div>' : '') +
+      '</div>';
+    }).join('');
+  } else if (qWrap) {
+    qWrap.style.display = 'none';
+  }
+}
+
+/* ── RENDER RESULTS ── */
+function renderResults() {
+  var ok = ST.students.filter(function (s) { return s.status === 'ok' && s.result; });
+  var matList = Array.from(new Set(ok.map(function (s) { return s.result.matiere || ''; }).filter(Boolean))).join(', ') || 'Mixte';
+  var niv = Array.from(new Set(ok.map(function (s) { return s.result.niveau || ''; }).filter(Boolean))).join(', ') || '—';
+  var evalNameDisp = (document.getElementById('evalName') || {}).value || '';
+  var titleEl = document.getElementById('evalTitle');
+  if (titleEl) {
+    titleEl.textContent = evalNameDisp || (matList + (niv && niv !== '—' ? ' — ' + niv : ''));
+  }
+  var wn = ok.filter(function (s) { return s.result.note_total && s.result.note_obtenue != null; });
+  var avg = wn.length ? Math.round(10 * wn.reduce(function (a, r) { return a + (r.result.note_obtenue / r.result.note_total) * 20; }, 0) / wn.length) / 10 : null;
+  var above = wn.filter(function (s) { return (s.result.note_obtenue / s.result.note_total) >= 0.5; }).length;
+  
+  var csEl = document.getElementById('cs');
+  if (csEl) {
+    csEl.innerHTML =
+      '<div class="cs-box"><div class="csv-val">' + ST.students.length + '</div><div class="csl">Copies</div></div>' +
+      '<div class="cs-box"><div class="csv-val">' + (avg !== null ? avg + '/20' : '—') + '</div><div class="csl">Moyenne</div></div>' +
+      '<div class="cs-box"><div class="csv-val">' + above + '</div><div class="csl">≥ 10/20</div></div>' +
+      '<div class="cs-box"><div class="csv-val">' + ok.length + '/' + ST.students.length + '</div><div class="csl">Corrigées</div></div>';
+  }
+
+  renderHistogram(wn);
+  renderAnalysis(ok);
+
+  var tc = document.getElementById('teacherEvalComments');
+  if (tc && tc.value !== (ST.teacherComments || '')) {
+    tc.value = ST.teacherComments || '';
+  }
+  var tb = document.getElementById('teacherNotesSavedBadge');
+  if (tb) {
+    tb.style.display = (ST.teacherComments && ST.teacherComments.trim()) ? 'inline-block' : 'none';
+  }
+
+  var rtEl = document.getElementById('rt');
+  if (rtEl) {
+    rtEl.innerHTML = ST.students.map(function (s, i) {
+      if (s.status !== 'ok' || !s.result) {
+        var errDetail = s.lastError ? ('<div style="font-size:0.75rem;color:var(--r2);margin-top:2px">' + escH(s.lastError) + '</div>') : '';
+        return '<div class="rt-row" style="background:rgba(192,57,43,.06);border-color:rgba(192,57,43,.2);flex-wrap:wrap">' +
+          '<span class="rt-num">' + (i + 1) + '</span>' +
+          '<div style="flex:1"><span class="rt-name">' + escH(s.name) + '</span>' + errDetail + '</div>' +
+          '<span class="rt-score" style="color:var(--r2);font-weight:600">' + (s.status === 'run' ? '⏳ En cours…' : '❌ Non corrigé') + '</span>' +
+          '<div style="margin-left:auto">' +
+          (s.status === 'run' ? '<div class="spin-sm"></div>' : '<button class="bs2" style="padding:3px 10px;font-size:.72rem" onclick="event.stopPropagation();retryStudent(' + i + ')">🔄 Réessayer</button>') +
+          '</div>' +
+          '</div>';
+      }
+      var r = s.result;
+      var no = r.note_obtenue, nt = r.note_total;
+      var pct = nt ? (no / nt) * 100 : 50;
+      var sc = scCls(no, nt);
+      return '<div class="rt-row" onclick="switchActiveStudent(' + i + ')"><span class="rt-num">' + (i + 1) + '</span><span class="rt-name">' + escH(s.name) + '</span><span class="rt-mat">' + escH(r.matiere || '') + '</span><div class="rt-bar"><div class="rt-fill ' + sc.f + '" style="width:' + Math.min(pct, 100) + '%"></div></div><span class="rt-score ' + sc.c + '">' + (nt != null ? ((no !== undefined ? no : '?') + '/' + nt) : '—') + '</span><span class="rt-arr">→</span></div>';
+    }).join('');
+  }
+
+  // Populate Switcher tabs and Split screen
+  renderStudentSwitcherTabs();
+  renderActiveStudentPane();
+}
+
+/* ── HISTOGRAM ── */
+function renderHistogram(wn) {
+  var el = document.getElementById('histoBars');
+  if (!el) return;
+  var slots = [0, 0, 0, 0];
+  wn.forEach(function (s) {
+    var n20 = s.result.note_obtenue / s.result.note_total * 20;
+    if (n20 < 5) slots[0]++;
+    else if (n20 < 10) slots[1]++;
+    else if (n20 < 15) slots[2]++;
+    else slots[3]++;
+  });
+  var max = Math.max.apply(null, slots) || 1;
+  var colors = ['#e74c3c', '#e67e22', '#3498db', '#27ae60'];
+  el.innerHTML = slots.map(function (v, i) {
+    var h = Math.round((v / max) * 85);
+    return '<div class="hbar-wrap"><div class="hbar-count">' + (v || '') + '</div><div class="hbar" style="height:' + Math.max(h, v ? 3 : 0) + 'px;background:' + colors[i] + '"></div></div>';
+  }).join('');
+}
+
+/* ── ERROR ANALYSIS ── */
+function renderAnalysis(ok) {
+  var aSec = document.getElementById('analysisSec');
+  var aCnt = document.getElementById('analysisContent');
+  if (!aSec || !aCnt) return;
+  if (!ok.length) {
+    aSec.style.display = 'none';
+    return;
+  }
+  aSec.style.display = 'block';
+  var qMap = {};
+  ok.forEach(function (s) {
+    (s.result.questions || []).forEach(function (q) {
+      if (!q.titre || !q.points_total) return;
+      if (!qMap[q.titre]) qMap[q.titre] = { total: 0, fail: 0, pts: q.points_total };
+      qMap[q.titre].total++;
+      if ((q.points_obtenus / q.points_total) < 0.5) qMap[q.titre].fail++;
+    });
+  });
+  var qs = Object.keys(qMap).map(function (k) {
+    return { titre: k, failPct: Math.round((qMap[k].fail / qMap[k].total) * 100), total: qMap[k].total, fail: qMap[k].fail };
+  });
+  qs.sort(function (a, b) { return b.failPct - a.failPct; });
+  if (!qs.length) {
+    aSec.style.display = 'none';
+    return;
+  }
+  var topFail = qs.filter(function (q) { return q.failPct >= 50; });
+  var html = '';
+  if (qs.length) {
+    html += '<div style="margin-bottom:1rem">';
+    qs.slice(0, 6).forEach(function (q) {
+      var col = q.failPct >= 75 ? 'var(--r2)' : q.failPct >= 50 ? 'var(--g)' : 'var(--a)';
+      html += '<div class="q-fail-row"><span class="qfail-name">' + escH(q.titre) + '</span><div class="qfail-bar"><div class="qfail-fill" style="width:' + q.failPct + '%;background:' + col + '"></div></div><span class="qfail-pct" style="color:' + col + '">' + q.failPct + '%</span></div>';
+    });
+    html += '</div>';
+  }
+  if (topFail.length) {
+    html += '<div style="font-size:.75rem;font-weight:600;color:var(--ink);margin-bottom:.5rem">📌 Points de remédiation suggérés</div>';
+    topFail.forEach(function (q) {
+      html += '<div class="remed-item"><span style="font-size:1rem;flex-shrink:0">' + (q.failPct >= 75 ? '🔴' : '🟡') + '</span><div><strong style="font-size:.78rem">' + escH(q.titre) + '</strong> — ' + q.fail + ' élève' + (q.fail > 1 ? 's' : '') + ' en difficulté (' + q.failPct + '%)<br><span style="font-size:.73rem;color:var(--inkm)">Revoir ce point lors du prochain cours. Proposer des exercices supplémentaires ciblés.</span></div></div>';
+    });
+  }
+  aCnt.innerHTML = html;
+}
+
+/* ── MODAL & DETAIL HELPERS ── */
+function showDetail(idx) {
+  switchActiveStudent(idx);
+}
+
+function closeModal() {
+  var m = document.getElementById('modal');
+  if (m) m.style.display = 'none';
+}
+
+function swTab(t) {
+  var td = document.getElementById('mTab-d');
+  var ta = document.getElementById('mTab-a');
+  if (td) td.classList.toggle('on', t === 'd');
+  if (ta) ta.classList.toggle('on', t === 'a');
+  var vd = document.getElementById('mVd');
+  var va = document.getElementById('mVa');
+  if (vd) vd.style.display = t === 'd' ? 'block' : 'none';
+  if (va) va.style.display = t === 'a' ? 'block' : 'none';
+}
+
+/* ── EXPORT EXCEL (CSV UTF-8 BOM pour Excel) ── */
+function exportExcel() {
+  exportCSV();
+}
+
 function exportCSV() {
   var ok = ST.students;
   var matList = Array.from(new Set(ok.filter(function (s) { return s.result; }).map(function (s) { return s.result.matiere || ''; }).filter(Boolean))).join(' / ') || 'Correction';
@@ -924,7 +1272,7 @@ function exportCSV() {
     lines.push('"Remarques enseignant : ' + teacherCmt.replace(/"/g, '""').replace(/\n/g, ' ') + '"');
     lines.push('');
   }
-  lines.push('Élève,Matière,Niveau,Note obtenue,Note totale,Note /20,Appréciation');
+  lines.push('Élève,Matière,Niveau,Note obtenue,Note totale,Note /20,Remarque prof,Appréciation');
   ok.forEach(function (s) {
     var r = s.result;
     var no = r ? r.note_obtenue : '';
@@ -937,6 +1285,7 @@ function exportCSV() {
       no !== undefined ? no : '',
       nt || '',
       n20,
+      '"' + escH(s.teacherNote || '') + '"',
       '"' + (r ? escH(r.appreciation || '') : '') + '"'
     ].join(','));
   });
@@ -945,7 +1294,7 @@ function exportCSV() {
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
-  a.download = 'correction_' + matList.replace(/[^a-zA-Z0-9]/g, '_') + '_' + dateStr.replace(/\//g, '-') + '.csv';
+  a.download = 'notes_classe_excel_' + matList.replace(/[^a-zA-Z0-9]/g, '_') + '_' + dateStr.replace(/\//g, '-') + '.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1021,6 +1370,8 @@ function back() {
   document.getElementById('addMoreBtn').style.display = 'none';
   document.getElementById('pdfClassPreview').style.display = 'none';
   document.getElementById('dzPDF').style.display = 'flex';
+  goToStep(1);
+  updateNextStepButton();
   gNav('corr');
 }
 
@@ -2705,6 +3056,18 @@ function exportLeadsCSV() {
 window.init = init;
 window.toggleDark = toggleDark;
 window.gNav = gNav;
+window.goToStep = goToStep;
+window.updateNextStepButton = updateNextStepButton;
+window.setDocView = setDocView;
+window.switchResultView = switchResultView;
+window.switchActiveStudent = switchActiveStudent;
+window.prevStudent = prevStudent;
+window.nextStudent = nextStudent;
+window.updateActiveStudentTeacherNote = updateActiveStudentTeacherNote;
+window.confirmValidateStudent = confirmValidateStudent;
+window.openStudentEditMode = openStudentEditMode;
+window.drawAnnotSplit = drawAnnotSplit;
+window.exportExcel = exportExcel;
 window.toggleTuto = toggleTuto;
 window.setUploadMode = setUploadMode;
 window.dg = dg;

@@ -22,278 +22,434 @@
   <button class="navbtn" id="n-hist" onclick="gNav('hist')">🗂 Historique <span class="nbadge" id="hbadge" style="display:none">0</span></button>
 </div>
 
-<!-- ══ CORRECTION VIEW ══ -->
+<!-- ══ CORRECTION VIEW (WIZARD) ══ -->
 <div id="vf">
 
-  <!-- ── TUTORIEL ── -->
+  <!-- Wizard Step Indicator -->
+  <div class="wiz-nav">
+    <div class="wiz-step-pill on" id="wsp1" onclick="goToStep(1)">
+      <span class="wsp-num">1</span>
+      <span class="wsp-txt">Importer les copies</span>
+    </div>
+    <div class="wiz-step-arrow">→</div>
+    <div class="wiz-step-pill" id="wsp2" onclick="goToStep(2)">
+      <span class="wsp-num">2</span>
+      <span class="wsp-txt">Corrigé type & Barème</span>
+    </div>
+  </div>
+
+  <!-- ── TUTORIEL GUIDE PROFESSEUR (REPLIABLE) ── -->
   <div class="tuto-banner" id="tutoBanner">
     <div class="tuto-header" onclick="toggleTuto()">
       <div class="tuto-header-left">
-        <span class="tuto-tag">Guide</span>
-        <span class="tuto-htitle">Comment utiliser le Correcteur Pédagogique ?</span>
+        <span class="tuto-tag">Guide express</span>
+        <span class="tuto-htitle">Comment préparer et corriger vos copies en 2 étapes ?</span>
       </div>
-      <span class="tuto-toggle">Voir <span class="tuto-arrow" id="tutoArrow">▼</span></span>
+      <span class="tuto-toggle">Guide <span class="tuto-arrow" id="tutoArrow">▼</span></span>
     </div>
     <div class="tuto-body" id="tutoBody">
       <div class="tuto-steps">
-
         <div class="tuto-step">
           <div class="tuto-step-num">1</div>
           <div class="tuto-step-content">
-            <div class="tuto-step-title">📱 Scannez les copies des élèves</div>
-            <div class="tuto-step-desc">Photographiez ou scannez chaque copie papier. Pour un meilleur résultat, utilisez un <strong style="color:rgba(255,255,255,.85)">scanner de bureau</strong> ou une application mobile de scan.</div>
+            <div class="tuto-step-title">📱 Photographiez ou scannez les copies</div>
+            <div class="tuto-step-desc">Utilisez votre smartphone ou le scanner de l'établissement. Prenez des photos bien éclairées et à plat.</div>
             <div class="tuto-apps">
-              <span class="tuto-app">📱 CamScanner</span>
-              <span class="tuto-app">📱 Adobe Scan</span>
-              <span class="tuto-app">📱 Microsoft Lens</span>
-              <span class="tuto-app">🍎 Notes iPhone</span>
-              <span class="tuto-app">🤖 Google Drive</span>
+              <span class="tuto-app">📱 Application Scan</span>
+              <span class="tuto-app">📷 Photos smartphone</span>
+              <span class="tuto-app">📄 Document PDF</span>
             </div>
-            <div class="tuto-step-tip">💡 <span><strong>Astuce</strong> : nommez chaque fichier avec le nom de l'élève (ex : <em>Kouassi_Jean.pdf</em>) — l'app l'utilisera automatiquement.</span></div>
           </div>
         </div>
-
         <div class="tuto-step">
           <div class="tuto-step-num">2</div>
           <div class="tuto-step-content">
-            <div class="tuto-step-title">📄 Exportez en PDF</div>
-            <div class="tuto-step-desc">Dans votre app de scan, exportez en <strong style="color:rgba(255,255,255,.85)">PDF</strong>. Recommandé pour la qualité et la vitesse. Un fichier par élève, ou un seul PDF de toute la classe à la suite.</div>
-            <div class="tuto-step-tip">📋 <span><strong>PDF de classe</strong> : scannez toutes les copies ensemble et utilisez l'option <em>"PDF de classe (auto-découpage)"</em> — l'IA détectera chaque élève.</span></div>
+            <div class="tuto-step-title">⚙️ Choisissez la matière et le barème</div>
+            <div class="tuto-step-desc">L'IA adapte automatiquement ses critères (orthographe, démarche de calcul, niveau de classe de primaire, collège ou lycée).</div>
           </div>
         </div>
-
         <div class="tuto-step">
           <div class="tuto-step-num">3</div>
           <div class="tuto-step-content">
-            <div class="tuto-step-title">⬆️ Importez dans le correcteur</div>
-            <div class="tuto-step-desc">Glissez-déposez vos PDF dans la zone de dépôt (Étape 1), ou cliquez pour sélectionner. Vérifiez le nom de chaque élève — vous pouvez le modifier.</div>
-            <div class="tuto-step-tip">🔄 <span><strong>Depuis le téléphone</strong> : envoyez les PDF par WhatsApp ou email sur votre ordinateur, puis importez-les ici.</span></div>
+            <div class="tuto-step-title">✨ Récupérez les copies annotées</div>
+            <div class="tuto-step-desc">Obtenez les notes, appréciations bienveillantes, détection des fautes et l'export direct vers vos tableaux Excel / Pronote.</div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <div class="tuto-step">
-          <div class="tuto-step-num">4</div>
-          <div class="tuto-step-content">
-            <div class="tuto-step-title">⚙️ Configurez la correction</div>
-            <div class="tuto-step-desc">Renseignez la matière, le niveau, la note maximale (/10, /20, /50, /100) et vos instructions de correction si besoin (barème strict, pénalités ortho, démarche comptée…).</div>
-            <div class="tuto-step-tip">✏️ <span><strong>Sans corrigé ?</strong> Laissez le <em>Mode A (autonome)</em> — l'IA génère elle-même les critères selon le niveau détecté.</span></div>
+  <!-- ── ÉTAPE 1 : IMPORTATION DES COPIES ── -->
+  <div id="wizStep1View">
+    <div class="card">
+      <div class="ct-flex">
+        <div class="ct"><span class="sn">1</span> Déposez les copies des élèves <span id="ccnt" class="cc" style="display:none">0</span></div>
+        <div class="mode-toggle">
+          <button class="mt-btn on" id="mt-sep" onclick="setUploadMode('sep')">📄 Une copie par élève</button>
+          <button class="mt-btn" id="mt-pdf" onclick="setUploadMode('pdf')">📚 Classe entière (1 seul fichier)</button>
+        </div>
+      </div>
+      <p class="hint">Glissez vos fichiers ou cliquez pour sélectionner. Photos (JPG, PNG) ou documents PDF acceptés.</p>
+      
+      <!-- Upload fichiers séparés -->
+      <div id="upload-sep">
+        <div class="dz" id="dz0" ondragover="dg(event,true,'dz0')" ondragleave="dg(event,false,'dz0')" ondrop="dp0(event)">
+          <input type="file" accept="image/*,.pdf" multiple onchange="af(event)">
+          <div class="dz-icon">📂</div>
+          <p><strong>Glisser-déposer ou cliquer pour importer</strong><br>Photos ou PDF — un ou plusieurs élèves</p>
+          <span class="dz-subpill">JPG, PNG, PDF</span>
+        </div>
+        <div class="slist" id="sl" style="display:none"></div>
+        <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <label class="add-more" id="addMoreBtn" style="display:none">
+            <input type="file" accept="image/*,.pdf" multiple onchange="af(event)">
+            ➕ Ajouter d'autres copies
+          </label>
+        </div>
+      </div>
+
+      <!-- Upload PDF Unique de classe -->
+      <div id="upload-pdf" style="display:none">
+        <div class="dz" id="dzPDF" ondragover="dg(event,true,'dzPDF')" ondragleave="dg(event,false,'dzPDF')" ondrop="dpPDF(event)">
+          <input type="file" accept=".pdf" id="pdfClassInput" onchange="afPDF(event)">
+          <div class="dz-icon">📋</div>
+          <p><strong>Fichier PDF groupé de toute la classe</strong><br>L'IA sépare et identifie automatiquement chaque copie</p>
+          <span class="pdf-rec">✨ Découpage automatique intelligent</span>
+        </div>
+        <div id="pdfClassPreview" style="display:none;margin-top:.65rem">
+          <div style="background:var(--pd);border-radius:var(--rad);padding:.6rem .9rem;font-size:.85rem;color:var(--inkm);display:flex;align-items:center;gap:8px">
+            <span>📄</span><span id="pdfClassName" style="flex:1;font-weight:600"></span>
+            <button onclick="rmPDFClass()" style="background:none;border:none;cursor:pointer;color:var(--inkl);font-size:14px">✕</button>
           </div>
         </div>
-
-        <div class="tuto-step">
-          <div class="tuto-step-num">5</div>
-          <div class="tuto-step-content">
-            <div class="tuto-step-title">✅ Lancez et récupérez les résultats</div>
-            <div class="tuto-step-desc">Cliquez <strong style="color:rgba(255,255,255,.85)">"Lancer la correction"</strong>. L'IA corrige 3 copies simultanément. Une fois terminé :</div>
-            <div class="tuto-apps" style="margin-top:.5rem">
-              <span class="tuto-app">📊 Stats de classe</span>
-              <span class="tuto-app">👆 Détail par élève</span>
-              <span class="tuto-app">📄 Fiches élèves</span>
-              <span class="tuto-app">📥 Export CSV Pronote</span>
-            </div>
+        <div style="margin-top:.75rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:160px">
+            <div class="fl" style="margin-bottom:4px">Pages par copie</div>
+            <select id="pagesPerStudent">
+              <option value="auto">Détection automatique</option>
+              <option value="1">1 page par élève</option>
+              <option value="2">2 pages par élève</option>
+              <option value="3">3 pages par élève</option>
+              <option value="4">4 pages par élève</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:160px">
+            <div class="fl" style="margin-bottom:4px">Associer à une classe enregistrée (optionnel)</div>
+            <select id="classSelect" onchange="loadClassStudents()">
+              <option value="">Aucune</option>
+            </select>
           </div>
         </div>
+      </div>
+    </div>
 
-      </div>
-      <div class="tuto-divider"></div>
-      <div class="tuto-footer">
-        <span class="tuto-footer-ico">⚡</span>
-        <span><strong style="color:rgba(255,255,255,.75)">Temps moyen</strong> : ~20 secondes par copie. Une classe de 30 élèves = environ 3 à 4 minutes. L'IA lit l'écriture manuscrite au bic — veillez à ce que le scan soit net et bien éclairé.</span>
-      </div>
+    <!-- Bottom Action Step 1 -->
+    <div class="wiz-action-bar">
+      <button class="bp wiz-btn-next" id="btnGoStep2" onclick="goToStep(2)" disabled>
+        <span>Continuer vers Corrigé & Barème</span>
+        <span style="font-size:1.1rem">→</span>
+      </button>
     </div>
   </div>
 
-  <div class="card">
-    <div class="ct"><span class="sn">1</span> Copies des élèves <span id="ccnt" class="cc" style="display:none">0</span></div>
-    <p class="hint">Déposez <strong>plusieurs copies séparées</strong>, ou un <strong>PDF de classe entière</strong> — l'IA détecte automatiquement chaque élève et sa copie.</p>
-    <div class="mode-toggle">
-      <button class="mt-btn on" id="mt-sep" onclick="setUploadMode('sep')">📄 Copies séparées</button>
-      <button class="mt-btn" id="mt-pdf" onclick="setUploadMode('pdf')">📚 PDF de classe (auto-découpage)</button>
-    </div>
-    <div id="upload-sep">
-      <div class="dz" id="dz0" ondragover="dg(event,true,'dz0')" ondragleave="dg(event,false,'dz0')" ondrop="dp0(event)">
-        <input type="file" accept="image/*,.pdf" multiple onchange="af(event)">
-        <div style="font-size:1.6rem;color:var(--inkl);margin-bottom:.32rem">📂</div>
-        <p><strong>Déposer ou cliquer</strong><br>JPG, PNG, PDF — un fichier par élève</p>
-      </div>
-      <div class="slist" id="sl" style="display:none"></div>
-      <label class="add-more" id="addMoreBtn" style="display:none"><input type="file" accept="image/*,.pdf" multiple onchange="af(event)">➕ Ajouter des copies</label>
-    </div>
-    <div id="upload-pdf" style="display:none">
-      <div class="dz" id="dzPDF" ondragover="dg(event,true,'dzPDF')" ondragleave="dg(event,false,'dzPDF')" ondrop="dpPDF(event)">
-        <input type="file" accept=".pdf" id="pdfClassInput" onchange="afPDF(event)">
-        <div style="font-size:1.6rem;color:var(--inkl);margin-bottom:.32rem">📋</div>
-        <p><strong>Un seul PDF contenant toutes les copies</strong><br>L'IA détecte chaque élève et sa copie automatiquement</p>
-        <span class="pdf-rec">📄 PDF de classe recommandé</span>
-      </div>
-      <div id="pdfClassPreview" style="display:none;margin-top:.65rem">
-        <div style="background:var(--pd);border-radius:var(--rad);padding:.55rem .82rem;font-size:.79rem;color:var(--inkm);display:flex;align-items:center;gap:8px">
-          <span>📄</span><span id="pdfClassName" style="flex:1"></span>
-          <button onclick="rmPDFClass()" style="background:none;border:none;cursor:pointer;color:var(--inkl);font-size:12px">✕</button>
+  <!-- ── ÉTAPE 2 : CORRIGÉ TYPE & PARAMÈTRES ── -->
+  <div id="wizStep2View" style="display:none">
+    
+    <!-- 1er BLOC : MODE DE CORRECTION & CORRIGÉ TYPE -->
+    <div class="card" id="cardCorrigeType" style="border-left:4px solid var(--blue);">
+      <div class="ct-flex" style="margin-bottom:10px">
+        <div class="ct" style="margin-bottom:0">
+          <span class="sn" style="background:var(--blue);color:white">1</span> 📋 Mode de correction & Corrigé
         </div>
+        <span id="modeBadge" style="background:rgba(231,76,60,0.12);color:var(--red,#e74c3c);border:1px solid rgba(231,76,60,0.35);padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;letter-spacing:0.3px;display:flex;align-items:center;gap:4px">
+          <span>*</span> Obligatoire
+        </span>
       </div>
-      <div style="margin-top:.65rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div style="flex:1;min-width:150px">
-          <div class="fl" style="margin-bottom:4px">Nombre de pages par élève</div>
-          <select id="pagesPerStudent">
-            <option value="auto">Détection automatique</option>
-            <option value="1">1 page par élève</option>
-            <option value="2">2 pages par élève</option>
-            <option value="3">3 pages par élève</option>
-            <option value="4">4 pages par élève</option>
-          </select>
-        </div>
-        <div style="flex:1;min-width:150px">
-          <div class="fl" style="margin-bottom:4px">Classe pré-enregistrée (optionnel)</div>
-          <select id="classSelect" onchange="loadClassStudents()">
-            <option value="">Aucune</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="card">
-    <div class="ct"><span class="sn">2</span> Contexte pédagogique</div>
-    <div class="fl">Nom de l'évaluation <span style="font-weight:300;text-transform:none">(optionnel)</span></div>
-    <input type="text" id="evalName" placeholder="Ex : Contrôle Maths — Chapitre 3 — Novembre 2024" style="margin-bottom:.75rem" oninput="updateTimeEst()">
-    <div class="fl">Matière(s) <span style="font-weight:300;text-transform:none;font-size:.67rem">— sélection multiple</span></div>
-    <div class="mat-grid" id="mg2"></div>
-    <div class="cadd"><input type="text" id="cm" placeholder="Autre (Latin, NSI, Arabe…)" onkeydown="if(event.key==='Enter')addCM()"><button onclick="addCM()">+ Ajouter</button></div>
-    <div class="sum" id="sum"></div>
-    <div class="fl">Niveau</div>
-    <div class="niv-row" id="nr"></div>
-    <div class="fl" style="margin-top:.6rem">Note maximale</div>
-    <div class="note-chips" id="noteChips">
-      <div class="note-chip on" data-val="auto" onclick="setNote('auto')">🔍 Auto-détection</div>
-      <div class="note-chip" data-val="10" onclick="setNote('10')">/10</div>
-      <div class="note-chip" data-val="20" onclick="setNote('20')">/20</div>
-      <div class="note-chip" data-val="50" onclick="setNote('50')">/50</div>
-      <div class="note-chip" data-val="100" onclick="setNote('100')">/100</div>
-      <div class="note-chip" data-val="custom" onclick="setNote('custom')">Autre…</div>
-    </div>
-    <div id="noteCustomWrap" style="display:none;margin-top:5px;margin-bottom:.65rem">
-      <input type="number" id="noteCustomVal" placeholder="Ex : 30, 40, 15…" style="max-width:160px" min="1" max="1000">
-    </div>
-    <div class="fl" style="margin-top:.1rem">Informations complémentaires <span style="font-weight:300;text-transform:none">(optionnel)</span></div>
-    <textarea id="ei" placeholder="Ex : Total sur 20, barème strict, pas de pénalité ortho…" rows="2"></textarea>
-  </div>
-
-  <div class="card">
-    <div class="ct"><span class="sn">3</span> Mode de correction</div>
-    <div class="mg">
-      <div class="mmc on" id="ma" onclick="setM('A')"><div class="mml">Mode A</div><div class="mmt">Correction autonome</div><div class="mmd">L'IA génère les critères selon matière et niveau détectés.</div></div>
-      <div class="mmc" id="mb" onclick="setM('B')"><div class="mml">Mode B</div><div class="mmt">Avec corrigé professeur</div><div class="mmd">Fournissez votre barème et réponses attendues.</div></div>
-    </div>
-    <div id="mbf" style="display:none">
-      <div class="fl" style="margin-bottom:4px">Corrigé officiel — texte</div>
-      <textarea id="ct2" placeholder="Barème, réponses attendues, critères…" rows="3" style="margin-bottom:6px"></textarea>
-      <div class="dz" id="rdzB" style="padding:.82rem" ondragover="dg(event,true,'rdzB')" ondragleave="dg(event,false,'rdzB')" ondrop="dpRefB(event)">
-        <input type="file" accept="image/*,.pdf" id="rfiB" onchange="loadRefB(event.target.files[0])">
-        <div style="font-size:1rem;color:var(--inkl);margin-bottom:.2rem">🖼</div>
-        <p style="font-size:.72rem">Image ou PDF du corrigé prof</p>
-      </div>
-      <div id="rpB" style="display:none;margin-top:5px">
-        <div style="background:var(--pd);border-radius:var(--rad);padding:.52rem .78rem;font-size:.78rem;color:var(--inkm);display:flex;align-items:center;gap:8px">
-          <span>📄</span><span id="rpBName" style="flex:1"></span>
-          <button onclick="rmRefB()" style="background:none;border:none;cursor:pointer;color:var(--inkl);font-size:12px">✕</button>
+      <div class="fl" style="margin-bottom:6px">Choisissez votre méthode d'évaluation</div>
+      <div class="mg" style="margin-bottom:14px">
+        <div class="mmc on" id="mb" onclick="setM('B')">
+          <div class="mml">🎯 Personnalisé (Recommandé)</div>
+          <div class="mmt">Avec corrigé professeur</div>
+          <div class="mmd">L'IA applique fidèlement vos réponses attendues et votre barème officiel.</div>
+        </div>
+        <div class="mmc" id="ma" onclick="setM('A')">
+          <div class="mml">⚡ Mode Rapide</div>
+          <div class="mmt">Correction IA autonome</div>
+          <div class="mmd">Sans corrigé fourni. L'IA évalue les copies selon le programme scolaire officiel.</div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- STEP 4 : Instructions correction -->
-  <div class="card">
-    <div class="ct"><span class="sn">4</span> Instructions de correction <span style="font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:300;color:var(--inkl);margin-left:4px">— optionnel mais recommandé</span></div>
-    <div class="instr-tip">💡 Plus vous détaillez comment corriger, plus l'IA sera fidèle à votre pédagogie. Ces instructions s'appliquent à <strong>toutes les copies</strong> de la session.</div>
-    <div class="instr-tabs">
-      <button class="instr-tab on" id="itab-rules" onclick="swInstr('rules')">⚡ Règles rapides</button>
-      <button class="instr-tab" id="itab-custom" onclick="swInstr('custom')">✍️ Instructions libres</button>
-    </div>
-    <!-- Règles rapides -->
-    <div id="iview-rules">
+      <!-- Zone saisie corrigé (Mode B) -->
+      <div id="refInputContainer">
+        <div class="fl" style="margin-bottom:5px;font-weight:600">
+          Votre corrigé officiel / Réponses attendues <span style="color:var(--red,#e74c3c);font-weight:700">*</span>
+        </div>
+        <textarea id="ct2" placeholder="Écrivez ou collez ici vos réponses attendues et le barème par question (ex : Q1 : Paris (2 pts) — Q2 : Schéma légendé (3 pts) — Q3 : Démonstration mathématique complète...)" rows="4" style="margin-bottom:10px" oninput="if(this.value.trim()){document.getElementById('em').style.display='none';}"></textarea>
+        
+        <div class="fl" style="margin-bottom:4px;font-size:.78rem;color:var(--label2)">Ou déposez la photo ou le PDF de votre corrigé</div>
+        <div class="dz" id="rdzB" style="padding:.9rem" ondragover="dg(event,true,'rdzB')" ondragleave="dg(event,false,'rdzB')" ondrop="dpRefB(event)">
+          <input type="file" accept="image/*,.pdf" id="rfiB" onchange="loadRefB(event.target.files[0])">
+          <div style="font-size:1.25rem;color:var(--inkl);margin-bottom:.2rem">📸 / 📄</div>
+          <p style="font-size:.82rem;font-weight:600">Glisser ou cliquer pour importer le corrigé prof</p>
+          <span style="font-size:.72rem;color:var(--label3)">Photo de votre feuille manuscrite, document scanné ou PDF</span>
+        </div>
+        <div id="rpB" style="display:none;margin-top:8px">
+          <div style="background:var(--pd);border:1px solid var(--blue);border-radius:var(--rad);padding:.6rem .9rem;font-size:.82rem;color:var(--inkm);display:flex;align-items:center;gap:8px">
+            <span>📄</span><span id="rpBName" style="flex:1;font-weight:600"></span>
+            <button onclick="rmRefB()" style="background:none;border:none;cursor:pointer;color:var(--inkl);font-size:14px">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message informatif Mode Automatique -->
+      <div id="modeAutoNotice" style="display:none;background:var(--blue-light,#edf3fd);border:1px solid var(--blue);border-radius:var(--r,10px);padding:12px 14px;margin-bottom:12px;font-size:0.83rem;color:var(--blue);line-height:1.45">
+        ✨ <strong>Mode IA Autonome activé :</strong> L'IA analysera le sujet de la copie d'élève et appliquera une grille d'évaluation académique rigoureuse et bienveillante adaptée au niveau sélectionné.
+      </div>
+
+      <div class="fl" style="margin-top:16px">Consignes pédagogiques pour l'IA</div>
       <div class="quick-rules">
         <label class="qr-item"><input type="checkbox" id="qr1"> Ne pas pénaliser les fautes d'orthographe</label>
-        <label class="qr-item"><input type="checkbox" id="qr2"> Accepter les réponses partiellement correctes (demi-point possible)</label>
-        <label class="qr-item"><input type="checkbox" id="qr3"> Barème strict — pas d'interprétation, uniquement ce qui est écrit</label>
-        <label class="qr-item"><input type="checkbox" id="qr4"> Appréciation bienveillante et encourageante</label>
-        <label class="qr-item"><input type="checkbox" id="qr5"> La présentation et la mise en page sont prises en compte</label>
-        <label class="qr-item"><input type="checkbox" id="qr6"> Accepter les synonymes et formulations équivalentes</label>
+        <label class="qr-item"><input type="checkbox" id="qr2" checked> Accepter les réponses partielles (demi-points)</label>
+        <label class="qr-item"><input type="checkbox" id="qr3"> Barème strict et sans complaisance</label>
+        <label class="qr-item"><input type="checkbox" id="qr4" checked> Appréciation bienveillante et encourageante</label>
+        <label class="qr-item"><input type="checkbox" id="qr6" checked> Accepter les synonymes et formulations équivalentes</label>
         <label class="qr-item"><input type="checkbox" id="qr7"> La démarche compte même si le résultat final est faux</label>
-        <label class="qr-item"><input type="checkbox" id="qr8"> Ne pas pénaliser les erreurs de calcul si la méthode est correcte</label>
+      </div>
+
+      <div class="fl" style="margin-top:14px">Instructions libres supplémentaires <span style="font-weight:300;text-transform:none;color:var(--label3)">(optionnel)</span></div>
+      <textarea id="corrInstr" rows="2" placeholder="Ex : La question 3 est bonus, valoriser les arguments bien construits et la rigueur de rédaction..."></textarea>
+    </div>
+
+    <!-- 2ème BLOC : MATIÈRE, NIVEAU & BARÈME -->
+    <div class="card">
+      <div class="ct"><span class="sn">2</span> Matière, Niveau & Barème</div>
+      
+      <div class="fl">Nom de l'évaluation <span style="font-weight:300;text-transform:none;color:var(--label3)">(optionnel)</span></div>
+      <input type="text" id="evalName" placeholder="Ex : Devoir de Français — Poésie — 3ème A" style="margin-bottom:.85rem" oninput="updateTimeEst()">
+
+      <div class="fl">Matière(s) <span style="font-weight:300;text-transform:none;font-size:.75rem;color:var(--label2)">— cliquez pour sélectionner</span></div>
+      <div class="mat-grid" id="mg2"></div>
+      <div class="cadd">
+        <input type="text" id="cm" placeholder="Autre matière (Latin, NSI, Musique…)" onkeydown="if(event.key==='Enter')addCM()">
+        <button onclick="addCM()">+ Ajouter</button>
+      </div>
+      <div class="sum" id="sum"></div>
+
+      <div class="fl" style="margin-top:.75rem">Niveau de classe</div>
+      <div class="niv-row" id="nr"></div>
+
+      <div class="fl" style="margin-top:.85rem">Barème de notation</div>
+      <div class="note-chips" id="noteChips">
+        <div class="note-chip on" data-val="20" onclick="setNote('20')">Sur 20 (/20)</div>
+        <div class="note-chip" data-val="10" onclick="setNote('10')">Sur 10 (/10)</div>
+        <div class="note-chip" data-val="50" onclick="setNote('50')">Sur 50 (/50)</div>
+        <div class="note-chip" data-val="100" onclick="setNote('100')">Sur 100 (/100)</div>
+        <div class="note-chip" data-val="auto" onclick="setNote('auto')">🔍 Détection auto</div>
+        <div class="note-chip" data-val="custom" onclick="setNote('custom')">Autre total…</div>
+      </div>
+      <div id="noteCustomWrap" style="display:none;margin-top:6px;margin-bottom:.65rem">
+        <input type="number" id="noteCustomVal" placeholder="Ex : 15, 30, 40…" style="max-width:160px" min="1" max="1000">
       </div>
     </div>
-    <!-- Instructions libres -->
-    <div id="iview-custom" style="display:none">
-      <textarea id="corrInstr" rows="5" placeholder="Exemples :
-- La question 3 est bonus, ne pas dépasser 20/20
-- Compter 0,5 point par bonne réponse au QCM
-- La réponse doit citer au moins 2 exemples pour avoir les points
-- Accepter Napoléon I et Napoléon Bonaparte comme réponse valide
-- Le plan du développement compte pour 3 points indépendamment du contenu"></textarea>
+
+    <div class="eb2" id="em" style="display:none"></div>
+
+    <!-- Bottom Action Bar Step 2 -->
+    <div class="wiz-action-bar" style="display:flex;gap:10px;justify-content:space-between;align-items:center">
+      <button class="bs2" onclick="goToStep(1)">
+        <span>← Modifier les copies</span>
+      </button>
+      <button class="bp" id="sb" onclick="sub()">
+        <span>✨ Lancer la correction IA</span>
+      </button>
     </div>
+    <p id="timeEst" style="display:none;text-align:center;font-size:.78rem;color:var(--inkl);margin-top:.6rem">⏱ Durée estimée : <strong id="timeEstVal">—</strong></p>
   </div>
 
-  <div class="eb2" id="em" style="display:none"></div>
-  <button class="bp" id="sb" onclick="sub()" disabled>✨ Lancer la correction</button>
-  <p id="timeEst" style="display:none;text-align:center;font-size:.76rem;color:var(--inkl);margin-top:.55rem">⏱ Durée estimée : <strong id="timeEstVal">—</strong></p>
 </div>
 
 <!-- ══ LOADING ══ -->
 <div id="vl" style="display:none">
   <div class="ldg">
     <div class="spin-lg"></div>
-    <p style="font-family:'Playfair Display',serif;font-size:1.05rem">Correction en cours…</p>
-    <p style="font-size:.78rem;color:var(--inkl);margin-top:3px" id="batchSub">Préparation…</p>
+    <p style="font-family:var(--font-display);font-size:1.15rem;font-weight:700">Correction intelligente en cours…</p>
+    <p style="font-size:.85rem;color:var(--label2);margin-top:4px" id="batchSub">Lecture et analyse des copies…</p>
     <div class="pb"><div class="pf" id="pf" style="width:0%"></div></div>
     <div class="pb-label"><span id="batchLabel">0 / 0</span><span id="batchPct">0%</span></div>
     <div class="bi-list" id="biList"></div>
   </div>
 </div>
 
-<!-- ══ RESULTS ══ -->
+<!-- ══ RESULTS (MODERN DRIBBLE / SPLIT-SCREEN VIEW) ══ -->
 <div id="vr" style="display:none" class="fa">
-  <div class="class-hdr">
-    <div><div style="font-size:.69rem;opacity:.48;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Résultats</div><div style="font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:700" id="evalTitle">—</div></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="bs2" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2)" onclick="back()">← Nouveau</button>
-      <button class="btn-pdf-export" onclick="exportEvaluationPDF()">📥 Exporter PDF</button>
-      <button class="bs2" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2)" onclick="printClass()">🖨 Imprimer PDF</button>
-      <button class="btn-csv" onclick="exportCSV()">📊 Export CSV</button>
-      <button class="bs2" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2)" onclick="printAllSheets()">📄 Fiches élèves</button>
-      <button class="ba" id="svbtn" onclick="sav()">🔖 Sauvegarder</button>
+  
+  <!-- Header de résultat moderne comme la capture d'écran -->
+  <div class="res-top-header">
+    <div class="res-header-titles">
+      <div class="res-kicker">CORRECTION INTELLIGENTE</div>
+      <h2 class="res-main-title" id="evalTitle">Votre copie est prête.</h2>
+      <p class="res-subtitle" id="evalSubtitle">Voici l'analyse automatique et le barème pédagogique de la copie.</p>
+    </div>
+    <div class="res-header-actions">
+      <button class="btn-new-corr-cta" onclick="back()">
+        <span>+ Nouvelle correction</span>
+      </button>
     </div>
   </div>
-  <div class="class-stats" id="cs"></div>
-  <div class="histo-wrap">
-    <div class="histo-title">📊 Distribution des notes</div>
-    <div class="histo-bars" id="histoBars"></div>
-    <div style="display:flex;justify-content:space-around;margin-top:4px">
-      <span style="font-size:.64rem;color:var(--inkl)">0–5</span>
-      <span style="font-size:.64rem;color:var(--inkl)">5–10</span>
-      <span style="font-size:.64rem;color:var(--inkl)">10–15</span>
-      <span style="font-size:.64rem;color:var(--inkl)">15–20</span>
+
+  <!-- Barre d'outils et sélecteur d'élèves (si classe) -->
+  <div class="res-toolbar-strip">
+    <div class="res-students-switcher" id="studentSwitcherWrap"></div>
+    <div class="res-export-buttons">
+      <button class="btn-tool-outline" onclick="exportCSV()">📊 Exporter pour Excel</button>
+      <button class="btn-tool-outline" onclick="exportEvaluationPDF()">📥 Télécharger PDF</button>
+      <button class="btn-tool-outline" onclick="printClass()">🖨 Imprimer</button>
+      <button class="btn-tool-save" id="svbtn" onclick="sav()">🔖 Sauvegarder</button>
     </div>
   </div>
-  <div class="analysis-card" id="analysisSec">
-    <div class="analysis-title">🔍 Analyse des erreurs communes</div>
-    <div id="analysisContent"></div>
-  </div>
-  <div class="teacher-notes-card" id="teacherNotesSec">
-    <div class="teacher-notes-hdr">
-      <div class="teacher-notes-title">
-        <span>✍️ Remarques et observations de l'enseignant</span>
-        <span class="teacher-notes-opt">— optionnel</span>
+
+  <!-- SPLIT SCREEN : Copie de l'élève (gauche) vs Résultat de la correction (droite) -->
+  <div class="split-correction-view" id="splitViewContainer">
+    
+    <!-- Colonne Gauche : Copie de l'élève annotée -->
+    <div class="split-pane student-copy-pane">
+      <div class="pane-card">
+        <div class="pane-header">
+          <div class="pane-title">
+            <span class="pane-icon">📄</span>
+            <span>Copie de l'élève</span>
+          </div>
+          <span class="badge-done">Analyse terminée</span>
+        </div>
+
+        <!-- Profil Élève -->
+        <div class="student-profile-bar" id="paneStudentProfile">
+          <div class="st-avatar" id="paneStudentAvatar">JK</div>
+          <div class="st-info">
+            <div class="st-name" id="paneStudentName">Jean Kouassi</div>
+            <div class="st-sub" id="paneStudentMeta">Français · 3ème A</div>
+          </div>
+          <div class="st-view-toggle" id="paneViewToggleWrap" style="display:none">
+            <button class="st-vt-btn on" id="vt-txt" onclick="setDocView('txt')">Texte annoté</button>
+            <button class="st-vt-btn" id="vt-img" onclick="setDocView('img')">Scan original</button>
+          </div>
+        </div>
+
+        <!-- Document Sheet -->
+        <div class="document-sheet-container" id="docSheetContainer">
+          <div class="document-sheet">
+            <h3 class="doc-title" id="paneDocTitle">Copie de l'élève</h3>
+            <div class="doc-annotated-text" id="paneDocText">
+              <!-- Le texte transcrit et surligné sera injecté ici dynamiquement -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode Image Originale (si photo scannée disponible) -->
+        <div class="document-scan-container" id="docScanContainer" style="display:none">
+          <div class="annot-wrap" id="annotWrap">
+            <canvas id="annotCanvas"></canvas>
+          </div>
+          <div class="ann-legend">
+            <span class="al-item"><span class="al-dot" style="background:#2d6a4f"></span>Correct</span>
+            <span class="al-item"><span class="al-dot" style="background:#b5860d"></span>Partiel</span>
+            <span class="al-item"><span class="al-dot" style="background:#c0392b"></span>Incorrect</span>
+          </div>
+        </div>
+
       </div>
-      <span class="teacher-notes-badge" id="teacherNotesSavedBadge" style="display:none">✓ Pris en compte</span>
     </div>
-    <p class="teacher-notes-sub">Ajoutez vos commentaires personnalisés, appréciations générales sur la promotion ou ajustements sur l'analyse de l'IA.</p>
-    <textarea id="teacherEvalComments" class="teacher-notes-input" rows="3" placeholder="Ex : Bon niveau d'ensemble sur le cours. Difficultés récurrentes identifiées sur la question 3 (à retravailler en classe). Rappeler la rigueur de rédaction pour la prochaine séance..." oninput="onTeacherCommentsInput()"></textarea>
+
+    <!-- Colonne Droite : Résultat de la correction & Erreurs détectées -->
+    <div class="split-pane correction-result-pane">
+      <div class="pane-card">
+        <div class="pane-header">
+          <div class="pane-title">
+            <span class="pane-icon">✨</span>
+            <span>Résultat de la correction</span>
+          </div>
+          <span class="badge-err-count" id="paneErrorCountBadge">0 corrections</span>
+        </div>
+
+        <!-- Score proposée -->
+        <div class="proposed-score-card">
+          <div class="psc-left">
+            <div class="psc-label">Note proposée</div>
+            <div class="psc-score" id="paneProposedScore">15,5 / 20</div>
+          </div>
+          <div class="psc-right">
+            <div class="score-circle-gauge" id="paneScoreGauge">
+              <span id="paneScorePercent">78%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Corrections détectées -->
+        <div class="corrections-section">
+          <div class="sec-heading">Corrections détectées</div>
+          <div class="detected-errors-list" id="paneDetectedErrorsList">
+            <!-- Liste injectée dynamiquement -->
+          </div>
+        </div>
+
+        <!-- Détail par question ou exercice (accordéon repliable) -->
+        <div class="questions-accordion-wrap" id="paneQuestionsWrap" style="display:none">
+          <div class="sec-heading" style="margin-top:14px">Détail des questions et points</div>
+          <div id="paneQuestionsList"></div>
+        </div>
+
+        <!-- Commentaire général / Appréciation -->
+        <div class="general-comment-section">
+          <div class="sec-heading">Commentaire général</div>
+          <div class="comment-box" id="paneCommentBox">
+            <!-- Commentaire injecté -->
+          </div>
+        </div>
+
+        <!-- Remarques additionnelles enseignant -->
+        <div class="teacher-custom-note-wrap">
+          <div style="font-size:12px;font-weight:600;color:var(--label2);margin-bottom:4px">
+            Remarque personnalisée de l'enseignant (optionnel)
+          </div>
+          <input type="text" id="paneTeacherNoteInput" class="teacher-inline-input" placeholder="Ajouter une appréciation spécifique pour cet élève..." onchange="updateActiveStudentTeacherNote(this.value)">
+        </div>
+
+        <!-- Actions de bas de carte -->
+        <div class="pane-actions-bar">
+          <button class="btn-pane-outline" onclick="openStudentEditMode()">✏️ Modifier la note</button>
+          <button class="btn-pane-outline" onclick="exportStudentSheetPDF(_activeStudentIdx)">📥 Exporter PDF</button>
+          <button class="btn-pane-primary" onclick="confirmValidateStudent()">Valider ✓</button>
+        </div>
+
+      </div>
+    </div>
+
   </div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
-    <p style="font-size:.71rem;color:var(--inkl)">👆 Cliquez sur un élève pour voir la correction détaillée</p>
+
+  <!-- VUE RÉCAPITULATIVE DE CLASSE (Affichée quand on clique sur l'onglet Classe) -->
+  <div id="classOverviewContainer" style="display:none;margin-top:14px">
+    <div class="class-stats" id="cs"></div>
+    <div class="histo-wrap">
+      <div class="histo-title">📊 Distribution des notes de la classe</div>
+      <div class="histo-bars" id="histoBars"></div>
+      <div style="display:flex;justify-content:space-around;margin-top:4px">
+        <span style="font-size:.72rem;color:var(--label3)">0–5</span>
+        <span style="font-size:.72rem;color:var(--label3)">5–10</span>
+        <span style="font-size:.72rem;color:var(--label3)">10–15</span>
+        <span style="font-size:.72rem;color:var(--label3)">15–20</span>
+      </div>
+    </div>
+    <div class="analysis-card" id="analysisSec">
+      <div class="analysis-title">🔍 Analyse des points à retravailler en classe</div>
+      <div id="analysisContent"></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="ct">Liste des copies corrigées</div>
+      <div class="rt-list" id="rt"></div>
+    </div>
   </div>
-  <div class="rt-list" id="rt"></div>
+
 </div>
 
 <!-- ══ CLASSES VIEW ══ -->

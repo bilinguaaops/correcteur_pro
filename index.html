@@ -7,7 +7,14 @@
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
-<button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Thème sombre/clair">🌙</button>
+<div class="top-bar-controls">
+  <button class="btn-tour-trigger" id="btnTourTrigger" onclick="startInteractiveTour()" title="Visite guidée interactive">🎯 Visite guidée</button>
+  <div class="autosave-status-bar" id="autoSaveIndicator">
+    <span class="as-dot"></span>
+    <span id="autoSaveText">Sauvegarde auto active</span>
+  </div>
+  <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Thème sombre/clair">🌙</button>
+</div>
 <div class="wrap">
 <header>
   <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#faf8f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="21" height="21"><path d="M12 2L2 7l10 5 10-5-10-5M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
@@ -76,6 +83,11 @@
           </div>
         </div>
       </div>
+      <div style="margin-top: 14px; text-align: center; border-top: 1px dashed var(--separator); padding-top: 12px;">
+        <button type="button" onclick="startInteractiveTour()" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:8px 20px;border-radius:20px;background:var(--blue);color:white;border:none;box-shadow:0 3px 10px rgba(0,122,255,0.25);cursor:pointer">
+          🎯 Lancer la visite interactive pas-à-pas (1 min)
+        </button>
+      </div>
     </div>
   </div>
 
@@ -123,18 +135,18 @@
           </div>
         </div>
         <div style="margin-top:.75rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div style="flex:1;min-width:160px">
-            <div class="fl" style="margin-bottom:4px">Pages par copie</div>
+          <div style="flex:1;min-width:220px">
+            <div class="fl" style="margin-bottom:4px">📄 Pages par copie & Agrafes</div>
             <select id="pagesPerStudent">
-              <option value="auto">Détection automatique</option>
-              <option value="1">1 page par élève</option>
-              <option value="2">2 pages par élève</option>
-              <option value="3">3 pages par élève</option>
-              <option value="4">4 pages par élève</option>
+              <option value="auto">✨ Détection intelligente des agrafes & noms (Recommandé)</option>
+              <option value="2">📎 2 pages par élève (Feuille double / Agrafée / Recto-Verso)</option>
+              <option value="3">📎 3 pages par élève (Agrafées)</option>
+              <option value="1">📄 1 page par élève</option>
+              <option value="4">📎 4 pages par élève</option>
             </select>
           </div>
-          <div style="flex:1;min-width:160px">
-            <div class="fl" style="margin-bottom:4px">Associer à une classe enregistrée (optionnel)</div>
+          <div style="flex:1;min-width:180px">
+            <div class="fl" style="margin-bottom:4px">👥 Associer à une classe enregistrée</div>
             <select id="classSelect" onchange="loadClassStudents()">
               <option value="">Aucune</option>
             </select>
@@ -302,8 +314,10 @@
   <div class="res-toolbar-strip">
     <div class="res-students-switcher" id="studentSwitcherWrap"></div>
     <div class="res-export-buttons">
+      <button class="btn-tool-zip" id="btnZipExportTop" onclick="exportCompleteClassZip()">📦 Tout télécharger (ZIP)</button>
       <button class="btn-tool-outline" onclick="exportCSV()">📊 Exporter Excel</button>
-      <button class="btn-tool-outline" onclick="exportStudentSheetPDF(_activeStudentIdx)">📥 Télécharger PDF</button>
+      <button class="btn-tool-outline" onclick="exportStudentSheetPDF(_activeStudentIdx)">📥 Fiche PDF</button>
+      <button class="btn-tool-outline" onclick="openStudentEditMode(_activeStudentIdx)">✏️ Modifier note</button>
       <button class="btn-tool-outline" onclick="printOne(_activeStudentIdx)">🖨 Imprimer</button>
       <button class="btn-tool-save" id="svbtn" onclick="sav()">🔖 Sauvegarder</button>
     </div>
@@ -364,8 +378,9 @@
 
       <!-- Barre d'actions rapide en bas de fiche -->
       <div class="sheet-bottom-actions">
-        <button class="btn-sheet-secondary" onclick="openStudentEditMode()">✏️ Modifier la note</button>
-        <button class="btn-sheet-secondary" onclick="exportStudentSheetPDF(_activeStudentIdx)">📥 Télécharger PDF</button>
+        <button class="btn-sheet-secondary" onclick="openStudentEditMode(_activeStudentIdx)">✏️ Modifier la note</button>
+        <button class="btn-sheet-zip" onclick="exportCompleteClassZip()">📦 Tout télécharger (ZIP)</button>
+        <button class="btn-sheet-secondary" onclick="exportStudentSheetPDF(_activeStudentIdx)">📥 Fiche PDF</button>
         <button class="btn-sheet-secondary" onclick="printOne(_activeStudentIdx)">🖨 Imprimer</button>
         <button class="btn-sheet-primary" onclick="confirmValidateStudent()">Valider la copie ✓</button>
       </div>
@@ -389,6 +404,13 @@
 
   <!-- VUE RÉCAPITULATIVE DE CLASSE (Affichée quand on clique sur l'onglet Classe) -->
   <div id="classOverviewContainer" style="display:none;margin-top:14px">
+    <div class="class-overview-header-actions" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:700">Vue d'ensemble de la classe</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-tool-zip" onclick="exportCompleteClassZip()">📦 Télécharger tout le paquet (ZIP)</button>
+        <button class="btn-tool-outline" onclick="exportCSV()">📊 Exporter tableau Excel</button>
+      </div>
+    </div>
     <div class="class-stats" id="cs"></div>
     <div class="histo-wrap">
       <div class="histo-title">📊 Distribution des notes de la classe</div>
@@ -507,6 +529,66 @@
 <div class="mo" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal"><div id="modalContent"></div></div>
 </div>
+
+<!-- QUICK EDIT MODAL -->
+<div class="mo" id="quickEditModal" style="display:none" onclick="if(event.target===this)closeStudentQuickEditModal()">
+  <div class="modal" style="max-width:680px;width:95%">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--separator)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">✏️</span>
+        <div>
+          <h3 id="qeModalTitle" style="font-size:17px;font-weight:700;margin:0;color:var(--label)">Modifier la copie & l'évaluation</h3>
+          <div style="font-size:12px;color:var(--label3)">Ajustement en direct avec recalcul instantané de la moyenne</div>
+        </div>
+      </div>
+      <button class="m-bcl" onclick="closeStudentQuickEditModal()" style="font-size:16px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;background:var(--fill3);border:none;cursor:pointer">✕</button>
+    </div>
+    <div id="qeModalBody" class="qe-modal-body"></div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid var(--separator);background:var(--fill3)">
+      <button class="bs2" onclick="closeStudentQuickEditModal()" style="padding:8px 16px;border-radius:8px">Annuler</button>
+      <button class="btn-tool-zip" onclick="saveStudentQuickEdit()" style="padding:9px 20px;border-radius:8px;font-size:14px">
+        ✓ Enregistrer et actualiser
+      </button>
+    </div>
+  </div>
+</div>
+<!-- ══ VISITE GUIDÉE INTERACTIVE (ONBOARDING) ══ -->
+<div id="tourBackdrop" class="tour-backdrop" style="display:none" onclick="exitInteractiveTour()"></div>
+<div id="tourSpotlight" class="tour-spotlight" style="display:none"></div>
+<div id="tourCard" class="tour-card" style="display:none">
+  <div class="tour-header">
+    <span class="tour-step-badge" id="tourStepBadge">Étape 1 / 5</span>
+    <button type="button" class="tour-close-btn" onclick="exitInteractiveTour()" title="Quitter la visite">✕</button>
+  </div>
+  <div class="tour-progress-bar">
+    <div class="tour-progress-fill" id="tourProgressFill" style="width: 20%"></div>
+  </div>
+  <div class="tour-title" id="tourTitle">Titre de l'étape</div>
+  <div class="tour-desc" id="tourDesc">Description détaillée...</div>
+  <div class="tour-actions">
+    <button type="button" class="tour-btn-skip" onclick="exitInteractiveTour()">Passer</button>
+    <div class="tour-btn-group">
+      <button type="button" class="tour-btn-prev" id="tourBtnPrev" onclick="prevTourStep()">← Précédent</button>
+      <button type="button" class="tour-btn-next" id="tourBtnNext" onclick="nextTourStep()">Suivant →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tour Welcome Toast (first visit) -->
+<div id="tourWelcomeToast" class="tour-welcome-toast" style="display:none">
+  <div class="tour-welcome-title">
+    <span>👋</span>
+    <span>Bienvenue sur ProfCorrec' IA</span>
+  </div>
+  <div class="tour-welcome-desc">
+    Découvrez en 1 minute comment importer vos copies et configurer le barème officiel.
+  </div>
+  <div class="tour-welcome-btns">
+    <button type="button" class="tour-welcome-btn-dismiss" onclick="dismissTourWelcome()">Plus tard</button>
+    <button type="button" class="tour-welcome-btn-start" onclick="startTourFromWelcome()">🎯 Démarrer la visite</button>
+  </div>
+</div>
+
 <div id="pz"></div>
 
 <script type="module" src="/src/app.js"></script>

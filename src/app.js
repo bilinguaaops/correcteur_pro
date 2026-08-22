@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import JSZip from 'jszip';
 
 var MATS = [
   { id: 'math', l: 'Mathématiques', e: '📐' },
@@ -45,6 +46,9 @@ function init() {
   loadDB();
   populateClassSelect();
   fetchRemoteLeads();
+  checkAndRestoreAutoSave();
+  setInterval(autoSaveCurrentSession, 40000);
+  setTimeout(checkTourFirstVisit, 1200);
 }
 
 /* ── DB ── */
@@ -270,20 +274,75 @@ async function compressImage(b64, mime) {
 }
 
 function af2(fl) {
-  Array.from(fl).forEach(function (f) {
-    var r = new FileReader();
-    r.onload = function (e) {
-      var id = Date.now() + '_' + Math.random().toString(36).slice(2);
-      var isPdf = f.type === 'application/pdf';
-      var rawB64 = e.target.result.split(',')[1];
-      var nm = f.name.replace(/\.[^.]+$/, '').replace(/[_\-]/g, ' ');
-      (isPdf ? Promise.resolve(rawB64) : compressImage(rawB64, f.type)).then(function (b64) {
-        ST.students.push({ id: id, name: nm, base64: b64, type: isPdf ? f.type : 'image/jpeg', isPdf: isPdf, status: 'wait', result: null });
+  var fileArray = Array.from(fl);
+  var pagesMode = (document.getElementById('pagesPerStudent') || {}).value || 'auto';
+
+  // Group files if multiple files with page indicators are uploaded
+  var groups = {};
+  fileArray.forEach(function(f, idx) {
+    var rawName = f.name.replace(/\.[^.]+$/, '').replace(/[_\-]/g, ' ').trim();
+    // Check if filename ends with page indicator e.g. "p1", "page 1", "recto", "verso", "(1)", "1/2"
+    var pageMatch = rawName.match(/^(.*?)(?:\s*(?:p(?:age)?\s*(\d+)|recto|verso|\((\d+)\)|_(\d+)))$/i);
+    var baseKey = rawName;
+    if (pageMatch && pageMatch[1]) {
+      baseKey = pageMatch[1].trim();
+    }
+    if (!groups[baseKey]) {
+      groups[baseKey] = [];
+    }
+    groups[baseKey].push(f);
+  });
+
+  Object.keys(groups).forEach(function(baseName) {
+    var files = groups[baseName];
+    if (files.length === 1) {
+      var f = files[0];
+      var r = new FileReader();
+      r.onload = function (e) {
+        var id = Date.now() + '_' + Math.random().toString(36).slice(2);
+        var isPdf = f.type === 'application/pdf';
+        var rawB64 = e.target.result.split(',')[1];
+        var nm = f.name.replace(/\.[^.]+$/, '').replace(/[_\-]/g, ' ');
+        (isPdf ? Promise.resolve(rawB64) : compressImage(rawB64, f.type)).then(function (b64) {
+          ST.students.push({ id: id, name: nm, base64: b64, type: isPdf ? f.type : 'image/jpeg', isPdf: isPdf, pages: [{ base64: b64, type: isPdf ? f.type : 'image/jpeg', isPdf: isPdf, name: f.name }], status: 'wait', result: null });
+          rStudents();
+          updateNextStepButton();
+        });
+      };
+      r.readAsDataURL(f);
+    } else {
+      // Multiple pages for this student
+      var pagePromises = files.map(function(f) {
+        return new Promise(function(resolve) {
+          var r = new FileReader();
+          r.onload = function(e) {
+            var isPdf = f.type === 'application/pdf';
+            var rawB64 = e.target.result.split(',')[1];
+            (isPdf ? Promise.resolve(rawB64) : compressImage(rawB64, f.type)).then(function(b64) {
+              resolve({ base64: b64, type: isPdf ? f.type : 'image/jpeg', isPdf: isPdf, name: f.name });
+            });
+          };
+          r.readAsDataURL(f);
+        });
+      });
+
+      Promise.all(pagePromises).then(function(pages) {
+        var id = Date.now() + '_' + Math.random().toString(36).slice(2);
+        var first = pages[0];
+        ST.students.push({
+          id: id,
+          name: baseName || 'Élève multi-pages',
+          base64: first.base64,
+          type: first.type,
+          isPdf: first.isPdf,
+          pages: pages,
+          status: 'wait',
+          result: null
+        });
         rStudents();
         updateNextStepButton();
       });
-    };
-    r.readAsDataURL(f);
+    }
   });
 }
 function rmStudent(id) {
@@ -311,9 +370,10 @@ function rStudents() {
   updateNextStepButton();
   sl.innerHTML = ST.students.map(function (s, i) {
     var stL = { wait: 'En attente', run: 'Correction…', retry: 'Nouvel essai…', ok: s.result ? ((s.result.note_obtenue !== undefined ? s.result.note_obtenue : '?') + '/' + s.result.note_total) : '✓', err: 'Erreur' };
+    var pageBadge = (s.pages && s.pages.length > 1) ? '<span style="font-size:11px;background:var(--blue-light);color:var(--blue);padding:2px 8px;border-radius:10px;font-weight:600;margin-left:6px">📎 ' + s.pages.length + ' pages</span>' : '';
     return '<div class="si" id="si-' + s.id + '">' +
       '<div class="si-ico ' + (s.isPdf ? 'si-pdf' : 'si-img') + '">' + (s.isPdf ? '📄' : '🖼') + '</div>' +
-      '<div class="si-name"><input type="text" value="' + escH(s.name) + '" onchange="ST.students[' + i + '].name=this.value" placeholder="Élève ' + (i + 1) + '"></div>' +
+      '<div class="si-name" style="display:flex;align-items:center"><input type="text" value="' + escH(s.name) + '" onchange="ST.students[' + i + '].name=this.value" placeholder="Élève ' + (i + 1) + '">' + pageBadge + '</div>' +
       '<span class="' + (stMap[s.status] || 'st-wait') + '">' + (stL[s.status] || 'En attente') + '</span>' +
       '<button class="si-rm" onclick="rmStudent(\'' + s.id + '\')">✕</button>' +
       '</div>';
@@ -384,6 +444,8 @@ function buildPrompt(forClass) {
   var matList = Array.from(ST.mats).map(function (id) { return getL(id); }).join(', ');
   var ctEl = document.getElementById('ct2');
   var ct = ctEl ? ctEl.value.trim() : '';
+  var pagesSelect = document.getElementById('pagesPerStudent');
+  var pagesMode = pagesSelect ? pagesSelect.value : 'auto';
 
   var p = '';
   if (ST.mode === 'B') {
@@ -401,7 +463,13 @@ function buildPrompt(forClass) {
   var ci = getCorrInstr();
   if (ci) p += '\n\n' + ci;
   if (forClass) {
-    p += '\n\nCe PDF contient les copies de PLUSIEURS élèves scannées à la suite. Identifie chaque élève (lis leur nom sur la copie, sinon utilise "Élève 1", "Élève 2"…). Pour chaque élève, corrige sa copie.';
+    if (pagesMode === 'auto') {
+      p += '\n\nIMPORTANT DÉCOUPAGE MULTI-PAGES & AGRAFES : Ce document contient plusieurs copies scannées. Utilise une détection intelligente : repère les agrafes, en-têtes de noms, styles d\'écriture et continuités des exercices (ex: page 1 et page 2 appartenant au même élève). Rapproche automatiquement les pages d\'un même élève pour produire un seul bilan complet par élève.';
+    } else if (pagesMode === '1') {
+      p += '\n\nCe PDF contient exactement 1 page par élève. Identifie chaque élève et corrige sa copie.';
+    } else {
+      p += '\n\nCe PDF contient ' + pagesMode + ' pages par élève (recto-verso / agrafé). Regroupe chaque bloc de ' + pagesMode + ' pages en une seule correction globale par élève.';
+    }
     p += '\n\nRetourne UNIQUEMENT du JSON valide :\n{"students":[{"name":"","nom_eleve_detecte":"","matiere":"","niveau":"","type_exercice":"","mode":"' + ST.mode + '","transcription_copie":"","corrections_detectees":[{"categorie":"Accord","texte_original":"","texte_corrige":"","statut":"Corrigé","explication":""}],"questions":[{"titre":"","zone":"haut","reponse_eleve":"","attendu":"","points_obtenus":0,"points_total":0,"commentaire":""}],"note_obtenue":0,"note_total":0,"appreciation":"","remarques":""}]}';
   } else {
     p += '\n\nRetourne UNIQUEMENT du JSON valide (pas de backtick) :\n{"nom_eleve_detecte":"","matiere":"","niveau":"","type_exercice":"","mode":"' + ST.mode + '","transcription_copie":"","corrections_detectees":[{"categorie":"Accord","texte_original":"","texte_corrige":"","statut":"Corrigé","explication":""}],"questions":[{"titre":"","zone":"haut","reponse_eleve":"","attendu":"","points_obtenus":0,"points_total":0,"commentaire":""}],"note_obtenue":0,"note_total":0,"appreciation":"","remarques":""}';
@@ -462,8 +530,16 @@ async function callAPI(messages) {
 
 async function correctOne(student) {
   var mc = [];
-  mc.push(bldBlk(student.base64, student.type, student.isPdf));
-  mc.push({ type: 'text', text: '[Copie de : ' + student.name + ']\n' + buildPrompt(false) });
+  if (student.pages && student.pages.length > 1) {
+    student.pages.forEach(function(pg, pIdx) {
+      mc.push({ type: 'text', text: '[Page ' + (pIdx + 1) + ' / ' + student.pages.length + ' de la copie de ' + student.name + ']' });
+      mc.push(bldBlk(pg.base64, pg.type, pg.isPdf));
+    });
+    mc.push({ type: 'text', text: '[Copie multi-pages de ' + student.name + ' - ' + student.pages.length + ' pages agrafées/liées]\n' + buildPrompt(false) });
+  } else {
+    mc.push(bldBlk(student.base64, student.type, student.isPdf));
+    mc.push({ type: 'text', text: '[Copie de : ' + student.name + ']\n' + buildPrompt(false) });
+  }
   if (ST.mode === 'B' && ST.refB) {
     mc.push({ type: 'text', text: '[Document officiel du corrigé professeur :]' });
     mc.push(bldBlk(ST.refB.base64, ST.refB.type, ST.refB.isPdf));
@@ -858,20 +934,322 @@ function confirmValidateStudent() {
   }
 }
 
-function openStudentEditMode() {
-  var s = ST.students[_activeStudentIdx];
-  if (!s || !s.result) return;
-  var currentScore = s.result.note_obtenue !== undefined ? s.result.note_obtenue : 15;
-  var maxScore = s.result.note_total || 20;
-  var newScoreStr = prompt("Modifier la note de " + s.name + " (sur " + maxScore + ") :", currentScore);
-  if (newScoreStr !== null) {
-    var newScore = parseFloat(newScoreStr.replace(',', '.'));
-    if (!isNaN(newScore)) {
-      s.result.note_obtenue = Math.min(Math.max(0, newScore), maxScore);
-      renderResults();
-      renderActiveStudentPane();
-    }
+/* ── AUTOSAVE SYSTEM ── */
+var _lastAutoSaveTs = null;
+
+function updateAutoSaveStatus(status, text) {
+  var bar = document.getElementById('autoSaveStatusBar');
+  var txtEl = document.getElementById('autoSaveText');
+  if (!bar || !txtEl) return;
+  if (status === 'saving') {
+    bar.classList.remove('saved');
+    txtEl.textContent = text || 'Sauvegarde en cours…';
+  } else if (status === 'saved') {
+    bar.classList.add('saved');
+    var timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    txtEl.textContent = text || ('💾 Enregistré à ' + timeStr);
+  } else {
+    txtEl.textContent = text || '💾 Sauvegarde auto active';
   }
+}
+
+function autoSaveCurrentSession() {
+  if (!ST.students || !ST.students.length) return;
+  var hasResults = ST.students.some(function(s) { return s.status === 'ok' && s.result; });
+  if (!hasResults) return;
+
+  updateAutoSaveStatus('saving');
+  try {
+    var evalNameVal = (document.getElementById('evalName') || {}).value || '';
+    var sessionData = {
+      ts: Date.now(),
+      evalName: evalNameVal,
+      teacherComments: ST.teacherComments || '',
+      mode: ST.mode,
+      niv: ST.niv,
+      students: ST.students
+    };
+    localStorage.setItem('cpro_autosave_session', JSON.stringify(sessionData));
+
+    // Also sync into DB.evals automatically
+    var ok = ST.students.filter(function (s) { return s.status === 'ok' && s.result; });
+    if (ok.length) {
+      var matList = Array.from(new Set(ok.map(function (s) { return s.result.matiere || ''; }).filter(Boolean))).join(', ') || 'Évaluation';
+      if (evalNameVal) matList = evalNameVal;
+      var niv = Array.from(new Set(ok.map(function (s) { return s.result.niveau || ''; }).filter(Boolean))).join(', ') || '';
+      var wn = ok.filter(function (s) { return s.result.note_total && s.result.note_obtenue != null; });
+      var avg = wn.length ? Math.round(10 * wn.reduce(function (a, r) { return a + (r.result.note_obtenue / r.result.note_total) * 20; }, 0) / wn.length) / 10 : null;
+      var existingIdx = DB.evals.findIndex(function(e) { return e.sessionAutoKey === 'active_session'; });
+      var evObj = {
+        id: existingIdx >= 0 ? DB.evals[existingIdx].id : Date.now(),
+        sessionAutoKey: 'active_session',
+        ts: new Date().toISOString(),
+        name: matList + (niv ? ' — ' + niv : ''),
+        matiere: matList,
+        niveau: niv,
+        nb: ST.students.length,
+        avg: avg,
+        teacherComments: ST.teacherComments || '',
+        students: ST.students.map(function (s) { return { name: s.name, status: s.status, result: s.result }; })
+      };
+      if (existingIdx >= 0) {
+        DB.evals[existingIdx] = evObj;
+      } else {
+        DB.evals.unshift(evObj);
+        if (DB.evals.length > 30) DB.evals = DB.evals.slice(0, 30);
+      }
+      saveDB();
+      upBadge();
+    }
+    _lastAutoSaveTs = Date.now();
+    setTimeout(function() {
+      updateAutoSaveStatus('saved');
+    }, 300);
+  } catch (err) {
+    console.warn('Erreur autosave:', err);
+  }
+}
+
+function checkAndRestoreAutoSave() {
+  try {
+    var raw = localStorage.getItem('cpro_autosave_session');
+    if (!raw) return;
+    var data = JSON.parse(raw);
+    if (data && data.students && data.students.length && (!ST.students || !ST.students.length)) {
+      // Don't auto-overwrite if user hasn't asked, but keep session available
+      var ageMinutes = (Date.now() - (data.ts || 0)) / (1000 * 60);
+      if (ageMinutes < 1440 && data.students.some(function(s) { return s.result; })) {
+        ST.students = data.students;
+        ST.teacherComments = data.teacherComments || '';
+        var evEl = document.getElementById('evalName');
+        if (evEl && data.evalName) evEl.value = data.evalName;
+        updateAutoSaveStatus('saved', '💾 Session restaurée');
+      }
+    }
+  } catch (e) {
+    console.warn('Erreur restauration session:', e);
+  }
+}
+
+/* ── QUICK EDIT MODAL LOGIC ── */
+var _quickEditStudentIdx = null;
+var _quickEditQuestions = [];
+
+function openStudentEditMode(idx) {
+  var targetIdx = (typeof idx === 'number') ? idx : _activeStudentIdx;
+  openStudentQuickEditModal(targetIdx);
+}
+
+function openStudentQuickEditModal(idx) {
+  _quickEditStudentIdx = idx;
+  var s = ST.students[idx];
+  if (!s || !s.result) {
+    alert("Veuillez d'abord corriger cette copie.");
+    return;
+  }
+  var r = s.result;
+  _quickEditQuestions = JSON.parse(JSON.stringify(r.questions || []));
+  if (!_quickEditQuestions.length) {
+    _quickEditQuestions = [
+      { titre: 'Exercice 1', points_obtenus: r.note_obtenue !== undefined ? r.note_obtenue : 10, points_total: r.note_total || 20, commentaire: '' }
+    ];
+  }
+
+  var titleEl = document.getElementById('qeModalTitle');
+  if (titleEl) {
+    titleEl.textContent = 'Modifier la copie de ' + s.name;
+  }
+
+  renderQuickEditModalContent();
+  var modal = document.getElementById('quickEditModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeStudentQuickEditModal() {
+  var modal = document.getElementById('quickEditModal');
+  if (modal) modal.style.display = 'none';
+  _quickEditStudentIdx = null;
+}
+
+function renderQuickEditModalContent() {
+  var s = ST.students[_quickEditStudentIdx];
+  if (!s || !s.result) return;
+  var r = s.result;
+  var no = (r.note_obtenue !== undefined) ? r.note_obtenue : 0;
+  var nt = r.note_total || 20;
+
+  var stamps = [
+    '🌟 Excellent travail, notions parfaitement maîtrisées !',
+    '👏 Bon devoir, méthode comprise et rigoureuse.',
+    '💡 Bon travail d\'ensemble, attention aux étourderies de calcul.',
+    '⚠️ Attention au soin, à la rédaction et aux justifications.',
+    '🔄 Notions fondamentales à revoir et consolider rapidement.'
+  ];
+
+  var stampsHtml = stamps.map(function(st) {
+    return '<button type="button" class="stamp-btn" onclick="applyAppreciationStamp(\'' + escH(st).replace(/'/g, "\\'") + '\')">' + escH(st) + '</button>';
+  }).join('');
+
+  var questionsHtml = _quickEditQuestions.map(function(q, qIdx) {
+    var qPo = q.points_obtenus !== undefined ? q.points_obtenus : 0;
+    var qPt = q.points_total !== undefined ? q.points_total : 1;
+    return '<div class="qe-q-row" id="qerow-' + qIdx + '">' +
+      '<div class="qe-q-header">' +
+        '<input type="text" class="qe-q-title-input" value="' + escH(q.titre || ('Exercice ' + (qIdx + 1))) + '" placeholder="Nom de l\'exercice" onchange="_quickEditQuestions[' + qIdx + '].titre=this.value">' +
+        '<div class="qe-pts-wrap">' +
+          '<input type="number" step="0.25" min="0" max="100" class="qe-pts-input" value="' + qPo + '" oninput="_quickEditQuestions[' + qIdx + '].points_obtenus=parseFloat(this.value)||0;calcQuickEditTotal()">' +
+          '<span>/</span>' +
+          '<input type="number" step="0.25" min="0.25" max="100" class="qe-pts-input" value="' + qPt + '" oninput="_quickEditQuestions[' + qIdx + '].points_total=parseFloat(this.value)||1;calcQuickEditTotal()">' +
+          '<span>pts</span>' +
+        '</div>' +
+        '<button type="button" class="qe-del-btn" onclick="removeQuickEditQuestion(' + qIdx + ')" title="Supprimer cet exercice">✕</button>' +
+      '</div>' +
+      '<input type="text" class="qe-q-comm" value="' + escH(q.commentaire || '') + '" placeholder="Commentaire / Justification pour cet exercice (optionnel)" onchange="_quickEditQuestions[' + qIdx + '].commentaire=this.value">' +
+    '</div>';
+  }).join('');
+
+  var bodyEl = document.getElementById('qeModalBody');
+  if (!bodyEl) return;
+
+  bodyEl.innerHTML =
+    '<div class="qe-section">' +
+      '<div class="qe-label"><span>👤 Nom de l\'élève</span></div>' +
+      '<input type="text" id="qeStudentName" class="qe-input" value="' + escH(s.name) + '">' +
+    '</div>' +
+
+    '<div class="qe-section">' +
+      '<div class="qe-label">' +
+        '<span>📝 Exercices & Barème détaillé</span>' +
+        '<span style="font-size:11.5px;color:var(--label3)">Modifiez les points par exercice ci-dessous</span>' +
+      '</div>' +
+      '<div class="qe-questions-container" id="qeQuestionsContainer">' +
+        questionsHtml +
+      '</div>' +
+      '<button type="button" class="qe-add-q-btn" onclick="addQuickEditQuestion()">+ Ajouter un exercice / question</button>' +
+    '</div>' +
+
+    '<div class="qe-section">' +
+      '<div class="qe-label">' +
+        '<span>💬 Appréciation globale de l\'enseignant</span>' +
+        '<span style="font-size:11.5px;color:var(--label3)">Cliquez sur un modèle rapide ou rédigez librement</span>' +
+      '</div>' +
+      '<textarea id="qeAppreciation" class="qe-textarea">' + escH(r.appreciation || '') + '</textarea>' +
+      '<div class="stamp-list">' + stampsHtml + '</div>' +
+    '</div>' +
+
+    '<div class="qe-live-summary-bar">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--label);cursor:pointer">' +
+          '<input type="checkbox" id="qeAutoSumCheck" checked onchange="calcQuickEditTotal()"> ' +
+          'Somme auto des exercices' +
+        '</label>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:12px">' +
+        '<div style="font-size:13px;color:var(--label2)">Note finale :</div>' +
+        '<div style="display:flex;align-items:center;gap:6px">' +
+          '<input type="number" step="0.25" min="0" max="100" id="qeScoreObtenu" class="qe-pts-input" style="font-size:16px;width:68px" value="' + no + '" oninput="document.getElementById(\'qeAutoSumCheck\').checked=false;updateLiveScorePreview()">' +
+          '<span style="font-weight:700">/</span>' +
+          '<input type="number" step="0.25" min="0.25" max="100" id="qeScoreTotal" class="qe-pts-input" style="font-size:16px;width:68px" value="' + nt + '" oninput="document.getElementById(\'qeAutoSumCheck\').checked=false;updateLiveScorePreview()">' +
+        '</div>' +
+        '<div id="qeLive20Score" class="qe-live-score">' + (Math.round((no / nt) * 200) / 10) + '/20</div>' +
+      '</div>' +
+    '</div>';
+
+  calcQuickEditTotal();
+}
+
+function applyAppreciationStamp(text) {
+  var el = document.getElementById('qeAppreciation');
+  if (el) {
+    el.value = text;
+    el.focus();
+  }
+}
+
+function addQuickEditQuestion() {
+  _quickEditQuestions.push({
+    titre: 'Exercice ' + (_quickEditQuestions.length + 1),
+    points_obtenus: 1,
+    points_total: 1,
+    commentaire: ''
+  });
+  renderQuickEditModalContent();
+}
+
+function removeQuickEditQuestion(qIdx) {
+  if (_quickEditQuestions.length <= 1) {
+    alert("La copie doit comporter au moins un exercice.");
+    return;
+  }
+  _quickEditQuestions.splice(qIdx, 1);
+  renderQuickEditModalContent();
+}
+
+function calcQuickEditTotal() {
+  var autoSumCheck = document.getElementById('qeAutoSumCheck');
+  if (autoSumCheck && autoSumCheck.checked) {
+    var totObt = 0;
+    var totMax = 0;
+    _quickEditQuestions.forEach(function(q) {
+      totObt += (parseFloat(q.points_obtenus) || 0);
+      totMax += (parseFloat(q.points_total) || 0);
+    });
+    totObt = Math.round(totObt * 100) / 100;
+    totMax = Math.round(totMax * 100) / 100 || 20;
+
+    var obtEl = document.getElementById('qeScoreObtenu');
+    var maxEl = document.getElementById('qeScoreTotal');
+    if (obtEl) obtEl.value = totObt;
+    if (maxEl) maxEl.value = totMax;
+  }
+  updateLiveScorePreview();
+}
+
+function updateLiveScorePreview() {
+  var obtEl = document.getElementById('qeScoreObtenu');
+  var maxEl = document.getElementById('qeScoreTotal');
+  var p20El = document.getElementById('qeLive20Score');
+  if (obtEl && maxEl && p20El) {
+    var obt = parseFloat(obtEl.value) || 0;
+    var max = parseFloat(maxEl.value) || 1;
+    var n20 = Math.round((obt / max) * 200) / 10;
+    p20El.textContent = n20.toFixed(1) + '/20';
+    if (n20 >= 14) p20El.style.color = '#10B981';
+    else if (n20 >= 10) p20El.style.color = '#F59E0B';
+    else p20El.style.color = '#EF4444';
+  }
+}
+
+function saveStudentQuickEdit() {
+  if (_quickEditStudentIdx === null) return;
+  var s = ST.students[_quickEditStudentIdx];
+  if (!s || !s.result) return;
+
+  var nameEl = document.getElementById('qeStudentName');
+  var apprecEl = document.getElementById('qeAppreciation');
+  var scoreObtEl = document.getElementById('qeScoreObtenu');
+  var scoreTotEl = document.getElementById('qeScoreTotal');
+
+  if (nameEl && nameEl.value.trim()) {
+    s.name = nameEl.value.trim();
+  }
+  if (apprecEl) {
+    s.result.appreciation = apprecEl.value.trim();
+  }
+  if (scoreObtEl && scoreTotEl) {
+    var no = parseFloat(scoreObtEl.value);
+    var nt = parseFloat(scoreTotEl.value);
+    if (!isNaN(no)) s.result.note_obtenue = no;
+    if (!isNaN(nt) && nt > 0) s.result.note_total = nt;
+  }
+  s.result.questions = JSON.parse(JSON.stringify(_quickEditQuestions));
+
+  closeStudentQuickEditModal();
+
+  // Instant recalculation & rendering
+  renderResults();
+  renderActiveStudentPane();
+  autoSaveCurrentSession();
 }
 
 function drawAnnotSplit(idx) {
@@ -1143,7 +1521,15 @@ function renderResults() {
       var no = r.note_obtenue, nt = r.note_total;
       var pct = nt ? (no / nt) * 100 : 50;
       var sc = scCls(no, nt);
-      return '<div class="rt-row" onclick="switchActiveStudent(' + i + ')"><span class="rt-num">' + (i + 1) + '</span><span class="rt-name">' + escH(s.name) + '</span><span class="rt-mat">' + escH(r.matiere || '') + '</span><div class="rt-bar"><div class="rt-fill ' + sc.f + '" style="width:' + Math.min(pct, 100) + '%"></div></div><span class="rt-score ' + sc.c + '">' + (nt != null ? ((no !== undefined ? no : '?') + '/' + nt) : '—') + '</span><span class="rt-arr">→</span></div>';
+      return '<div class="rt-row" onclick="switchActiveStudent(' + i + ')">' +
+        '<span class="rt-num">' + (i + 1) + '</span>' +
+        '<span class="rt-name">' + escH(s.name) + '</span>' +
+        '<span class="rt-mat">' + escH(r.matiere || '') + '</span>' +
+        '<div class="rt-bar"><div class="rt-fill ' + sc.f + '" style="width:' + Math.min(pct, 100) + '%"></div></div>' +
+        '<span class="rt-score ' + sc.c + '">' + (nt != null ? ((no !== undefined ? no : '?') + '/' + nt) : '—') + '</span>' +
+        '<button type="button" class="rt-edit-btn" onclick="event.stopPropagation();openStudentQuickEditModal(' + i + ')" title="Édition rapide de la note et appréciation">✏️ Modifier</button>' +
+        '<span class="rt-arr">→</span>' +
+        '</div>';
     }).join('');
   }
 
@@ -1864,13 +2250,10 @@ function printStudentBulletin(studentName, classId) {
   }
 }
 
-/* ── PDF EXPORT UTILITIES WITH JSPDF ── */
-function exportEvaluationPDF() {
+/* ── PDF & ZIP EXPORT UTILITIES WITH JSPDF & JSZIP ── */
+function generateEvaluationPDFDoc() {
   var ok = ST.students.filter(function (s) { return s.status === 'ok' && s.result; });
-  if (!ok.length) {
-    alert('Aucune note disponible à exporter en PDF.');
-    return;
-  }
+  if (!ok.length) return null;
   var wn = ok.filter(function (s) { return s.result.note_total && s.result.note_obtenue != null; });
   var avg = wn.length ? Math.round(10 * wn.reduce(function (a, r) { return a + (r.result.note_obtenue / r.result.note_total) * 20; }, 0) / wn.length) / 10 : null;
   var notes20 = wn.map(function (s) { return Math.round(10 * (s.result.note_obtenue / s.result.note_total) * 20) / 10; });
@@ -2043,8 +2426,251 @@ function exportEvaluationPDF() {
     doc.text('Page ' + p + ' / ' + totalPages, pageWidth - margin, pageHeight - 8, { align: 'right' });
   }
 
-  var safeName = evalNameDisp.toLowerCase().replace(/[^a-z0-9_-]/g, '_').substring(0, 35);
+  return doc;
+}
+
+function exportEvaluationPDF() {
+  var doc = generateEvaluationPDFDoc();
+  if (!doc) {
+    alert('Aucune note disponible à exporter en PDF.');
+    return;
+  }
+  var evalNameVal = (document.getElementById('evalName') || {}).value || 'evaluation_classe';
+  var safeName = evalNameVal.toLowerCase().replace(/[^a-z0-9_-]/g, '_').substring(0, 35);
   doc.save('evaluation_' + safeName + '.pdf');
+}
+
+function generateStudentSheetPDFDoc(idx) {
+  var s = ST.students[idx];
+  if (!s || !s.result) return null;
+  var d = s.result;
+  var qs = d.questions || [];
+  var no = d.note_obtenue !== undefined ? d.note_obtenue : 0;
+  var nt = d.note_total || 0;
+  var n20 = nt ? Math.round((no / nt) * 200) / 10 : null;
+  var mat = d.matiere || 'Évaluation';
+  var niv = d.niveau || '';
+  var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var pageWidth = 210;
+  var pageHeight = 297;
+  var margin = 15;
+  var contentWidth = pageWidth - 2 * margin;
+
+  // Header
+  doc.setFillColor(0, 122, 255);
+  doc.roundedRect(margin, 12, contentWidth, 22, 3, 3, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('FICHE DE CORRECTION INDIVIDUELLE', margin + 6, 20);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text(mat + (niv ? ' — ' + niv : '') + '  •  ' + dateStr, margin + 6, 28);
+
+  var curY = 40;
+  doc.setTextColor(20, 20, 20);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.text(s.name, margin, curY);
+
+  // Score badge
+  var scoreText = no + ' / ' + nt + (n20 !== null ? '  (' + n20 + '/20)' : '');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  if (n20 >= 14) doc.setTextColor(45, 138, 70);
+  else if (n20 >= 10) doc.setTextColor(210, 120, 20);
+  else doc.setTextColor(215, 60, 45);
+  doc.text(scoreText, pageWidth - margin, curY, { align: 'right' });
+  curY += 8;
+
+  // Appreciation box
+  if (d.appreciation) {
+    doc.setFillColor(245, 248, 255);
+    doc.setDrawColor(210, 225, 250);
+    var apLines = doc.splitTextToSize('Appréciation : ' + d.appreciation, contentWidth - 8);
+    var bh = Math.max(12, apLines.length * 4.2 + 5);
+    doc.roundedRect(margin, curY, contentWidth, bh, 2, 2, 'FD');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 60, 120);
+    doc.text(apLines, margin + 4, curY + 5);
+    curY += bh + 6;
+  }
+
+  // Questions breakdown
+  if (qs.length) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(30, 30, 30);
+    doc.text('Détail des exercices & questions', margin, curY);
+    curY += 5;
+
+    qs.forEach(function (q, qIdx) {
+      if (curY > pageHeight - 28) {
+        doc.addPage();
+        curY = 16;
+      }
+      var qp = q.points_total ? (q.points_obtenus / q.points_total) : 0.5;
+      var qCol = qp >= 0.99 ? [45, 138, 70] : qp >= 0.5 ? [210, 120, 20] : [215, 60, 45];
+      var qIcon = qp >= 0.99 ? '[ACQUIS]' : qp >= 0.5 ? '[PARTIEL]' : '[A REVOIR]';
+
+      doc.setFillColor(250, 251, 253);
+      doc.setDrawColor(225, 230, 240);
+
+      var qLines = [];
+      if (q.reponse_eleve) qLines.push('Réponse élève : ' + q.reponse_eleve);
+      if (q.attendu) qLines.push('Attendu : ' + q.attendu);
+      if (q.commentaire) qLines.push('Commentaire : ' + q.commentaire);
+
+      var qBlockH = 10 + (qLines.length * 4.2);
+      doc.roundedRect(margin, curY, contentWidth, qBlockH, 2, 2, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(30, 30, 30);
+      doc.text((q.titre || ('Question ' + (qIdx + 1))), margin + 4, curY + 5);
+
+      doc.setTextColor(qCol[0], qCol[1], qCol[2]);
+      doc.text((q.points_obtenus !== undefined ? q.points_obtenus : '?') + ' / ' + q.points_total + ' pt  ' + qIcon, pageWidth - margin - 4, curY + 5, { align: 'right' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(70, 70, 70);
+      var subY = curY + 9.5;
+      qLines.forEach(function (ln) {
+        var wrapped = doc.splitTextToSize(ln, contentWidth - 8);
+        doc.text(wrapped[0], margin + 4, subY);
+        subY += 4.2;
+      });
+
+      curY += qBlockH + 4;
+    });
+  }
+
+  // Footer on all pages
+  var totalPages = doc.getNumberOfPages();
+  for (var p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(140, 140, 140);
+    doc.text('Généré par ProfCorrec\' IA — ' + dateStr, margin, pageHeight - 8);
+    doc.text('Page ' + p + ' / ' + totalPages, pageWidth - margin, pageHeight - 8, { align: 'right' });
+  }
+
+  return doc;
+}
+
+function exportStudentSheetPDF(idx) {
+  var doc = generateStudentSheetPDFDoc(idx);
+  if (!doc) return;
+  var s = ST.students[idx];
+  var safeS = s.name.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  doc.save('copie_' + safeS + '.pdf');
+}
+
+function generateClassCSVContent() {
+  var ok = ST.students.filter(function (s) { return s.status === 'ok' && s.result; });
+  if (!ok.length) return '';
+  var headers = ['Numéro', 'Nom de l\'élève', 'Matière', 'Niveau', 'Note Obtenue', 'Note Totale', 'Note sur 20', 'Appréciation'];
+  var rows = ok.map(function(s, idx) {
+    var r = s.result;
+    var no = r.note_obtenue !== undefined ? r.note_obtenue : '';
+    var nt = r.note_total || '';
+    var n20 = (nt && no !== '') ? (Math.round((no / nt) * 200) / 10).toFixed(1) : '';
+    var app = (r.appreciation || '').replace(/"/g, '""');
+    return [
+      idx + 1,
+      '"' + (s.name || '').replace(/"/g, '""') + '"',
+      '"' + (r.matiere || '').replace(/"/g, '""') + '"',
+      '"' + (r.niveau || '').replace(/"/g, '""') + '"',
+      no,
+      nt,
+      n20,
+      '"' + app + '"'
+    ].join(';');
+  });
+  return [headers.join(';')].concat(rows).join('\r\n');
+}
+
+async function exportCompleteClassZip() {
+  var ok = ST.students.filter(function (s) { return s.status === 'ok' && s.result; });
+  if (!ok.length) {
+    alert('Aucune copie corrigée disponible à exporter en archive ZIP.');
+    return;
+  }
+
+  var zipBtns = document.querySelectorAll('#zipExportBtn, #zipExportBtn2');
+  zipBtns.forEach(function(b) {
+    b.dataset.origText = b.innerHTML;
+    b.innerHTML = '⏳ Création du ZIP en cours…';
+    b.disabled = true;
+  });
+
+  try {
+    var zip = new JSZip();
+    var evalNameVal = (document.getElementById('evalName') || {}).value || '';
+    var matList = Array.from(new Set(ok.map(function (s) { return s.result.matiere || ''; }).filter(Boolean))).join('_') || 'Evaluation';
+    var safeTitle = (evalNameVal || matList).toLowerCase().replace(/[^a-z0-9_-]/g, '_').substring(0, 35) || 'classe';
+
+    // 1. Add Class Evaluation Summary PDF
+    var evalDoc = generateEvaluationPDFDoc();
+    if (evalDoc) {
+      var evalBlob = evalDoc.output('blob');
+      zip.file('00_Recapitulatif_Classe_' + safeTitle + '.pdf', evalBlob);
+    }
+
+    // 2. Add CSV Table
+    var csvContent = generateClassCSVContent();
+    if (csvContent) {
+      zip.file('00_Tableau_Notes_' + safeTitle + '.csv', '\uFEFF' + csvContent);
+    }
+
+    // 3. Add Individual Student PDFs inside a dedicated folder
+    var folder = zip.folder('copies_individuelles_pdf');
+    ST.students.forEach(function(s, idx) {
+      if (s.status === 'ok' && s.result) {
+        var sDoc = generateStudentSheetPDFDoc(idx);
+        if (sDoc) {
+          var sBlob = sDoc.output('blob');
+          var sSafe = (s.name || ('eleve_' + (idx + 1))).toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+          var scoreTag = s.result.note_total ? ('_' + s.result.note_obtenue + 'sur' + s.result.note_total) : '';
+          var numStr = (idx + 1 < 10 ? '0' : '') + (idx + 1);
+          folder.file(numStr + '_' + sSafe + scoreTag + '.pdf', sBlob);
+        }
+      }
+    });
+
+    // 4. Generate ZIP
+    var zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    var url = URL.createObjectURL(zipBlob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'Pack_Complet_Correction_' + safeTitle + '.zip';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 2000);
+
+    zipBtns.forEach(function(b) {
+      b.innerHTML = '✅ Archive ZIP téléchargée !';
+      setTimeout(function() {
+        b.innerHTML = b.dataset.origText || '📦 Télécharger Pack ZIP complet';
+        b.disabled = false;
+      }, 3500);
+    });
+  } catch (err) {
+    console.error('Erreur export ZIP:', err);
+    alert('Erreur lors de la génération du fichier ZIP : ' + err.message);
+    zipBtns.forEach(function(b) {
+      b.innerHTML = b.dataset.origText || '📦 Télécharger Pack ZIP complet';
+      b.disabled = false;
+    });
+  }
 }
 
 function exportStudentBulletinPDF(studentName, classId) {
@@ -2205,129 +2831,6 @@ function exportStudentBulletinPDF(studentName, classId) {
 
   var safeS = studentName.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
   doc.save('bulletin_' + safeS + '.pdf');
-}
-
-function exportStudentSheetPDF(idx) {
-  var s = ST.students[idx];
-  if (!s || !s.result) return;
-  var d = s.result;
-  var qs = d.questions || [];
-  var no = d.note_obtenue || 0, nt = d.note_total || 0;
-  var n20 = nt ? Math.round((no / nt) * 200) / 10 : null;
-  var mat = d.matiere || 'Évaluation';
-  var niv = d.niveau || '';
-  var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-
-  var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  var pageWidth = 210;
-  var pageHeight = 297;
-  var margin = 15;
-  var contentWidth = pageWidth - 2 * margin;
-
-  // Header
-  doc.setFillColor(0, 122, 255);
-  doc.roundedRect(margin, 12, contentWidth, 22, 3, 3, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text('FICHE DE CORRECTION INDIVIDUELLE', margin + 6, 20);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(mat + (niv ? ' — ' + niv : '') + '  •  ' + dateStr, margin + 6, 28);
-
-  var curY = 40;
-  doc.setTextColor(20, 20, 20);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.text(s.name, margin, curY);
-
-  // Score badge
-  var scoreText = no + ' / ' + nt + (n20 !== null ? '  (' + n20 + '/20)' : '');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  if (n20 >= 14) doc.setTextColor(45, 138, 70);
-  else if (n20 >= 10) doc.setTextColor(210, 120, 20);
-  else doc.setTextColor(215, 60, 45);
-  doc.text(scoreText, pageWidth - margin, curY, { align: 'right' });
-  curY += 8;
-
-  // Appreciation box
-  if (d.appreciation) {
-    doc.setFillColor(245, 248, 255);
-    doc.setDrawColor(210, 225, 250);
-    var apLines = doc.splitTextToSize('Appréciation : ' + d.appreciation, contentWidth - 8);
-    var bh = Math.max(12, apLines.length * 4.2 + 5);
-    doc.roundedRect(margin, curY, contentWidth, bh, 2, 2, 'FD');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(30, 60, 120);
-    doc.text(apLines, margin + 4, curY + 5);
-    curY += bh + 6;
-  }
-
-  // Questions breakdown
-  if (qs.length) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.5);
-    doc.setTextColor(30, 30, 30);
-    doc.text('Détail des questions', margin, curY);
-    curY += 5;
-
-    qs.forEach(function (q, qIdx) {
-      if (curY > pageHeight - 25) {
-        doc.addPage();
-        curY = 16;
-      }
-      var qp = q.points_total ? (q.points_obtenus / q.points_total) : 0.5;
-      var qCol = qp >= 0.99 ? [45, 138, 70] : qp >= 0.5 ? [210, 120, 20] : [215, 60, 45];
-      var qIcon = qp >= 0.99 ? '[ACQUIS]' : qp >= 0.5 ? '[PARTIEL]' : '[A REVOIR]';
-
-      doc.setFillColor(250, 251, 253);
-      doc.setDrawColor(225, 230, 240);
-
-      var qLines = [];
-      if (q.reponse_eleve) qLines.push('Réponse élève : ' + q.reponse_eleve);
-      if (q.attendu) qLines.push('Attendu : ' + q.attendu);
-      if (q.commentaire) qLines.push('Commentaire : ' + q.commentaire);
-
-      var qBlockH = 10 + (qLines.length * 4.2);
-      doc.roundedRect(margin, curY, contentWidth, qBlockH, 2, 2, 'FD');
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(30, 30, 30);
-      doc.text((q.titre || ('Question ' + (qIdx + 1))), margin + 4, curY + 5);
-
-      doc.setTextColor(qCol[0], qCol[1], qCol[2]);
-      doc.text((q.points_obtenus !== undefined ? q.points_obtenus : '?') + ' / ' + q.points_total + ' pt  ' + qIcon, pageWidth - margin - 4, curY + 5, { align: 'right' });
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(70, 70, 70);
-      var subY = curY + 9.5;
-      qLines.forEach(function (ln) {
-        var wrapped = doc.splitTextToSize(ln, contentWidth - 8);
-        doc.text(wrapped[0], margin + 4, subY);
-        subY += 4.2;
-      });
-
-      curY += qBlockH + 4;
-    });
-  }
-
-  // Footer on all pages
-  var totalPages = doc.getNumberOfPages();
-  for (var p = 1; p <= totalPages; p++) {
-    doc.setPage(p);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(140, 140, 140);
-    doc.text('Généré par ProfCorrec\' IA — ' + dateStr, margin, pageHeight - 8);
-    doc.text('Page ' + p + ' / ' + totalPages, pageWidth - margin, pageHeight - 8, { align: 'right' });
-  }
-
-  var safeS = s.name.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-  doc.save('copie_' + safeS + '.pdf');
 }
 
 function editClass(i) {
@@ -3178,11 +3681,282 @@ window.setSuiviFilter = setSuiviFilter;
 window.exportEvaluationPDF = exportEvaluationPDF;
 window.exportStudentBulletinPDF = exportStudentBulletinPDF;
 window.exportStudentSheetPDF = exportStudentSheetPDF;
+window.exportCompleteClassZip = exportCompleteClassZip;
 window.openStudentDashboard = openStudentDashboard;
 window.printStudentBulletin = printStudentBulletin;
 window.getAllStudentEvaluations = getAllStudentEvaluations;
 window.getStudentMetrics = getStudentMetrics;
 window.renderClassList = renderClassList;
+
+// Quick edit & split view bindings
+window.setDocView = setDocView;
+window.switchResultView = switchResultView;
+window.switchActiveStudent = switchActiveStudent;
+window.prevStudent = prevStudent;
+window.nextStudent = nextStudent;
+window.confirmValidateStudent = confirmValidateStudent;
+window.openStudentEditMode = openStudentEditMode;
+window.updateActiveStudentTeacherNote = updateActiveStudentTeacherNote;
+window.openStudentQuickEditModal = openStudentQuickEditModal;
+window.closeStudentQuickEditModal = closeStudentQuickEditModal;
+window.saveStudentQuickEdit = saveStudentQuickEdit;
+window.addQuickEditQuestion = addQuickEditQuestion;
+window.removeQuickEditQuestion = removeQuickEditQuestion;
+window.calcQuickEditTotal = calcQuickEditTotal;
+window.applyAppreciationStamp = applyAppreciationStamp;
+window.autoSaveCurrentSession = autoSaveCurrentSession;
+
+/* ── INTERACTIVE ONBOARDING TOUR FOR TEACHERS ── */
+var TOUR = {
+  currentStep: 0,
+  isActive: false,
+  steps: [
+    {
+      id: 'step-welcome',
+      title: '👋 Bienvenue sur votre Correcteur Pédagogique !',
+      desc: 'Découvrez en 1 minute comment importer vos copies d\'élèves, configurer un barème académique précis et générer vos fiches de correction personnalisées.',
+      target: '#tutoBanner',
+      tab: 'corr',
+      step: 1,
+      placement: 'bottom'
+    },
+    {
+      id: 'step-import-copies',
+      title: '📄 1. Importation des copies & Mode Classe',
+      desc: 'Déposez ici vos photos (JPG, PNG) ou vos fichiers PDF.<br><br>💡 <strong>Astuce Pro</strong> : Vous pouvez basculer en mode <em>« Classe entière »</em> pour importer <strong>un seul gros fichier PDF scanné</strong> : l\'IA découpera automatiquement les agrafes, le recto/verso et attribuera chaque page au bon élève.',
+      target: '#upload-sep',
+      tab: 'corr',
+      step: 1,
+      placement: 'bottom'
+    },
+    {
+      id: 'step-bareme-mode',
+      title: '📋 2. Choix du Corrigé Professeur & Mode',
+      desc: 'Choisissez votre méthode :<br>• <strong>🎯 Mode Personnalisé (Recommandé)</strong> : Saisissez vos réponses attendues ou déposez la photo de votre corrigé manuscrit.<br>• <strong>⚡ Mode Rapide</strong> : L\'IA évalue selon le programme officiel.',
+      target: '#cardCorrigeType',
+      tab: 'corr',
+      step: 2,
+      placement: 'bottom'
+    },
+    {
+      id: 'step-rules-pedagogiques',
+      title: '⚙️ 3. Consignes pédagogiques & Tolérance',
+      desc: 'Personnalisez la notation en un clic : tolérance de l\'orthographe, valorisation de la démarche de calcul (points intermédiaires), barème strict ou appréciations bienveillantes.',
+      target: '.quick-rules',
+      tab: 'corr',
+      step: 2,
+      placement: 'top'
+    },
+    {
+      id: 'step-launch-export',
+      title: '✨ 4. Lancement IA, Fiches & Pack ZIP',
+      desc: 'Cliquez sur <strong>✨ Lancer la correction IA</strong> !<br><br>Vous profiterez ensuite de :<br>• <strong>Vue partagée Dribble</strong> : copie scannée à gauche / correction à droite.<br>• <strong>✏️ Modification directe</strong> des notes et appréciations.<br>• <strong>📦 Export ZIP complet</strong> en un clic (PDFs + CSV).',
+      target: '#sb',
+      tab: 'corr',
+      step: 2,
+      placement: 'top'
+    }
+  ]
+};
+
+function checkTourFirstVisit() {
+  try {
+    var done = localStorage.getItem('cpro_tour_done');
+    var isResultsOpen = document.getElementById('vr') && document.getElementById('vr').style.display !== 'none';
+    if (!done && !isResultsOpen) {
+      var toast = document.getElementById('tourWelcomeToast');
+      if (toast) toast.style.display = 'flex';
+    }
+  } catch (e) {}
+}
+
+function startTourFromWelcome() {
+  dismissTourWelcome();
+  startInteractiveTour(0);
+}
+
+function dismissTourWelcome() {
+  var toast = document.getElementById('tourWelcomeToast');
+  if (toast) toast.style.display = 'none';
+  try { localStorage.setItem('cpro_tour_done', 'true'); } catch (e) {}
+}
+
+function startInteractiveTour(startIndex) {
+  dismissTourWelcome();
+  TOUR.isActive = true;
+  TOUR.currentStep = (typeof startIndex === 'number') ? startIndex : 0;
+
+  // Make sure we are on correction tab
+  if (typeof gNav === 'function') gNav('corr');
+
+  var backdrop = document.getElementById('tourBackdrop');
+  var spotlight = document.getElementById('tourSpotlight');
+  var card = document.getElementById('tourCard');
+
+  if (backdrop) {
+    backdrop.style.display = 'block';
+    setTimeout(function() { backdrop.classList.add('active'); }, 10);
+  }
+  if (spotlight) spotlight.style.display = 'block';
+  if (card) card.style.display = 'block';
+
+  renderCurrentTourStep();
+
+  // Attach global keyboard listeners
+  window.removeEventListener('keydown', handleTourKeydown);
+  window.addEventListener('keydown', handleTourKeydown);
+  window.removeEventListener('resize', handleTourResize);
+  window.addEventListener('resize', handleTourResize);
+}
+
+function exitInteractiveTour() {
+  TOUR.isActive = false;
+  var backdrop = document.getElementById('tourBackdrop');
+  var spotlight = document.getElementById('tourSpotlight');
+  var card = document.getElementById('tourCard');
+
+  if (backdrop) {
+    backdrop.classList.remove('active');
+    setTimeout(function() { backdrop.style.display = 'none'; }, 250);
+  }
+  if (spotlight) spotlight.style.display = 'none';
+  if (card) card.style.display = 'none';
+
+  try { localStorage.setItem('cpro_tour_done', 'true'); } catch (e) {}
+  window.removeEventListener('keydown', handleTourKeydown);
+  window.removeEventListener('resize', handleTourResize);
+}
+
+function nextTourStep() {
+  if (TOUR.currentStep < TOUR.steps.length - 1) {
+    TOUR.currentStep++;
+    renderCurrentTourStep();
+  } else {
+    exitInteractiveTour();
+  }
+}
+
+function prevTourStep() {
+  if (TOUR.currentStep > 0) {
+    TOUR.currentStep--;
+    renderCurrentTourStep();
+  }
+}
+
+function handleTourKeydown(e) {
+  if (!TOUR.isActive) return;
+  if (e.key === 'Escape') {
+    exitInteractiveTour();
+  } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+    nextTourStep();
+  } else if (e.key === 'ArrowLeft') {
+    prevTourStep();
+  }
+}
+
+function handleTourResize() {
+  if (TOUR.isActive) {
+    positionTourElements();
+  }
+}
+
+function renderCurrentTourStep() {
+  var s = TOUR.steps[TOUR.currentStep];
+  if (!s) return;
+
+  // Switch wizard view if step requires it
+  if (s.step === 1 && typeof goToStep === 'function') {
+    goToStep(1);
+  } else if (s.step === 2 && typeof goToStep === 'function') {
+    goToStep(2);
+  }
+
+  // Update UI contents
+  var badge = document.getElementById('tourStepBadge');
+  var title = document.getElementById('tourTitle');
+  var desc = document.getElementById('tourDesc');
+  var pfill = document.getElementById('tourProgressFill');
+  var prevBtn = document.getElementById('tourBtnPrev');
+  var nextBtn = document.getElementById('tourBtnNext');
+
+  if (badge) badge.textContent = 'Étape ' + (TOUR.currentStep + 1) + ' / ' + TOUR.steps.length;
+  if (title) title.textContent = s.title;
+  if (desc) desc.innerHTML = s.desc;
+  if (pfill) pfill.style.width = Math.round(((TOUR.currentStep + 1) / TOUR.steps.length) * 100) + '%';
+  if (prevBtn) prevBtn.disabled = (TOUR.currentStep === 0);
+  if (nextBtn) nextBtn.textContent = (TOUR.currentStep === TOUR.steps.length - 1) ? '✓ Terminer la visite' : 'Suivant →';
+
+  setTimeout(positionTourElements, 100);
+}
+
+function positionTourElements() {
+  if (!TOUR.isActive) return;
+  var s = TOUR.steps[TOUR.currentStep];
+  if (!s) return;
+
+  var targetEl = document.querySelector(s.target);
+  var spotlight = document.getElementById('tourSpotlight');
+  var card = document.getElementById('tourCard');
+  if (!card) return;
+
+  if (targetEl && targetEl.offsetParent !== null) {
+    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(function() {
+      var rect = targetEl.getBoundingClientRect();
+      var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+
+      var pad = 8;
+      var spotTop = rect.top + scrollY - pad;
+      var spotLeft = rect.left + scrollX - pad;
+      var spotWidth = rect.width + (pad * 2);
+      var spotHeight = rect.height + (pad * 2);
+
+      if (spotlight) {
+        spotlight.style.top = spotTop + 'px';
+        spotlight.style.left = spotLeft + 'px';
+        spotlight.style.width = spotWidth + 'px';
+        spotlight.style.height = spotHeight + 'px';
+      }
+
+      var cardWidth = Math.min(360, window.innerWidth - 32);
+      var cardLeft = Math.max(16, Math.min(window.innerWidth - cardWidth - 16, spotLeft + (spotWidth / 2) - (cardWidth / 2)));
+      var cardTop;
+
+      if (s.placement === 'top' || (rect.bottom + 220 > window.innerHeight && rect.top > 240)) {
+        cardTop = Math.max(20, spotTop - 210);
+      } else {
+        cardTop = spotTop + spotHeight + 14;
+      }
+
+      card.style.top = cardTop + 'px';
+      card.style.left = cardLeft + 'px';
+      card.style.width = cardWidth + 'px';
+    }, 120);
+  } else {
+    // Fallback: center in viewport
+    if (spotlight) {
+      spotlight.style.top = '50%';
+      spotlight.style.left = '50%';
+      spotlight.style.width = '0px';
+      spotlight.style.height = '0px';
+    }
+    var cardWidth = Math.min(360, window.innerWidth - 32);
+    card.style.position = 'fixed';
+    card.style.top = '50%';
+    card.style.left = '50%';
+    card.style.transform = 'translate(-50%, -50%)';
+    card.style.width = cardWidth + 'px';
+  }
+}
+
+window.startInteractiveTour = startInteractiveTour;
+window.exitInteractiveTour = exitInteractiveTour;
+window.nextTourStep = nextTourStep;
+window.prevTourStep = prevTourStep;
+window.startTourFromWelcome = startTourFromWelcome;
+window.dismissTourWelcome = dismissTourWelcome;
+window.checkTourFirstVisit = checkTourFirstVisit;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

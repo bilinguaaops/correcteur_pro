@@ -174,6 +174,30 @@
       cursor: pointer;
       outline: none;
     }
+    .sortable-th {
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+    .sortable-th:hover {
+      color: #fff;
+      background: rgba(59, 130, 246, 0.12);
+    }
+    .sortable-th.active-sort {
+      color: var(--blue);
+      background: rgba(59, 130, 246, 0.18);
+    }
+    .sort-icon {
+      display: inline-block;
+      font-size: 11px;
+      margin-left: 4px;
+      opacity: 0.6;
+    }
+    .sortable-th.active-sort .sort-icon {
+      opacity: 1;
+      font-weight: bold;
+    }
+
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -185,6 +209,7 @@
     }
     .status-active { background: var(--green-light); color: var(--green); }
     .status-trial { background: var(--orange-light); color: var(--orange); }
+    .status-revoked { background: var(--red-light); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
 
     .wa-btn {
       color: #34d399;
@@ -277,36 +302,78 @@
         <div class="stat-val" id="stPro" style="color:var(--purple)">0</div>
       </div>
       <div class="stat-card" style="--accent-color: var(--orange)">
-        <div class="stat-lbl">Utilisateurs Essai Gratuit</div>
+        <div class="stat-lbl">Early Access / Essai Gratuit</div>
         <div class="stat-val" id="stFree" style="color:var(--orange)">0</div>
+      </div>
+      <div class="stat-card" style="--accent-color: var(--red)">
+        <div class="stat-lbl">Accès Révoqués / Bloqués</div>
+        <div class="stat-val" id="stBlocked" style="color:var(--red)">0</div>
       </div>
     </div>
 
-    <!-- TABLE -->
+    <!-- TABLE & ADVANCED FILTERS -->
     <div class="card-table">
       <div class="table-header">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <input type="text" class="search-input" id="searchBox" placeholder="🔍 Rechercher (nom, email, tel, école)..." oninput="filterTable()">
-          <select id="filterPlan" class="plan-select" onchange="filterTable()" style="padding:8px 12px">
-            <option value="all">Tous les forfaits</option>
-            <option value="free">Essai Gratuit</option>
-            <option value="pro">Abonnement Pro</option>
-            <option value="ecole">Pack Établissement</option>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1">
+          <!-- Text Search -->
+          <input type="text" class="search-input" id="searchBox" placeholder="🔍 Rechercher (nom, email, tel, école)..." oninput="applyFiltersAndSort()">
+          
+          <!-- Subscription / Status Filter -->
+          <select id="filterPlan" class="plan-select" onchange="applyFiltersAndSort()" style="padding:8px 12px">
+            <option value="all">Tous les statuts d'accès</option>
+            <option value="free">🟢 Essai Gratuit / Early Access</option>
+            <option value="pro">⭐ Abonnement Pro</option>
+            <option value="ecole">🏫 Pack Établissement</option>
+            <option value="blocked">🚫 Accès Révoqués / Bloqués</option>
           </select>
+
+          <!-- Date Filter Preset -->
+          <select id="filterDatePreset" class="plan-select" onchange="onDatePresetChange()" style="padding:8px 12px">
+            <option value="all">📅 Toutes les dates</option>
+            <option value="today">Aujourd'hui</option>
+            <option value="7d">7 derniers jours</option>
+            <option value="30d">30 derniers jours</option>
+            <option value="month">Ce mois-ci</option>
+            <option value="custom">Plage personnalisée...</option>
+          </select>
+
+          <!-- Custom Date Range (hidden by default) -->
+          <div id="customDateRange" style="display:none;align-items:center;gap:6px">
+            <input type="date" id="dateStart" class="search-input" style="min-width:130px;padding:6px 10px;font-size:12px" onchange="applyFiltersAndSort()">
+            <span style="color:var(--text-muted);font-size:12px">au</span>
+            <input type="date" id="dateEnd" class="search-input" style="min-width:130px;padding:6px 10px;font-size:12px" onchange="applyFiltersAndSort()">
+          </div>
+
+          <span id="filterCountBadge" style="font-size:12px;color:var(--text-muted);margin-left:4px"></span>
         </div>
-        <button class="btn" onclick="fetchLeads()">🔄 Actualiser</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" onclick="resetFilters()" title="Réinitialiser les filtres">↺ Réinitialiser</button>
+          <button class="btn btn-blue" onclick="fetchLeads()">🔄 Actualiser</button>
+        </div>
       </div>
       <div style="overflow-x:auto">
-        <table>
+        <table id="sortableTable">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Enseignant / Nom</th>
-              <th>Email</th>
-              <th>WhatsApp (Action directe)</th>
-              <th>Établissement</th>
-              <th>Forfait Actuel</th>
-              <th>Actions</th>
+              <th onclick="handleSort('createdAt')" class="sortable-th" title="Cliquer pour trier par date">
+                Date d'inscription <span id="sort_createdAt" class="sort-icon">↕</span>
+              </th>
+              <th onclick="handleSort('name')" class="sortable-th" title="Cliquer pour trier par nom">
+                Enseignant / Nom <span id="sort_name" class="sort-icon">↕</span>
+              </th>
+              <th onclick="handleSort('email')" class="sortable-th" title="Cliquer pour trier par email">
+                Email <span id="sort_email" class="sort-icon">↕</span>
+              </th>
+              <th onclick="handleSort('whatsapp')" class="sortable-th" title="Cliquer pour trier par téléphone">
+                WhatsApp <span id="sort_whatsapp" class="sort-icon">↕</span>
+              </th>
+              <th onclick="handleSort('school')" class="sortable-th" title="Cliquer pour trier par école">
+                Établissement <span id="sort_school" class="sort-icon">↕</span>
+              </th>
+              <th onclick="handleSort('plan')" class="sortable-th" title="Cliquer pour trier par statut">
+                Statut / Forfait <span id="sort_plan" class="sort-icon">↕</span>
+              </th>
+              <th style="cursor:default">Actions & Révocation</th>
             </tr>
           </thead>
           <tbody id="leadsBody">
@@ -322,7 +389,7 @@
   <!-- EDIT MODAL -->
   <div id="editModal" class="modal-backdrop" style="display:none">
     <div class="modal-box">
-      <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:16px">Modifier l'utilisateur</h3>
+      <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:16px">Modifier l'utilisateur & Autorisations</h3>
       <form id="editForm" onsubmit="event.preventDefault();saveEditUser();" style="display:flex;flex-direction:column;gap:12px">
         <input type="hidden" id="editUserId">
         <div>
@@ -330,11 +397,12 @@
           <input type="text" id="editUserName" style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff" required>
         </div>
         <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Forfait / Abonnement</label>
+          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Statut d'accès / Abonnement</label>
           <select id="editUserPlan" style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff">
-            <option value="free">Essai Gratuit (Free)</option>
-            <option value="pro">Pro Enseignant (19€ / mois)</option>
-            <option value="ecole">Pack Établissement / École</option>
+            <option value="free">🟢 Essai Gratuit / Early Access</option>
+            <option value="pro">⭐ Pro Enseignant (19€ / mois)</option>
+            <option value="ecole">🏫 Pack Établissement / École</option>
+            <option value="blocked">🚫 Accès Révoqué / Dégagé (Bloqué)</option>
           </select>
         </div>
         <div>
@@ -343,11 +411,11 @@
         </div>
         <div>
           <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Notes internes (Privé)</label>
-          <textarea id="editUserNotes" rows="3" placeholder="Ex: Contacté sur WhatsApp le 19/08, intéressé par la formule annuelle..." style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff"></textarea>
+          <textarea id="editUserNotes" rows="3" placeholder="Ex: Early access expiré, contacté le 19/08..." style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff"></textarea>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
           <button type="button" class="btn" onclick="closeEditModal()">Annuler</button>
-          <button type="submit" class="btn btn-blue">Enregistrer</button>
+          <button type="submit" class="btn btn-blue">Enregistrer les modifications</button>
         </div>
       </form>
     </div>
@@ -397,6 +465,9 @@
   <script>
     const ADMIN_SECRET = 'admin123';
     let allLeads = [];
+    let currentSortedFilteredLeads = [];
+    let sortColumn = 'createdAt';
+    let sortDirection = 'desc'; // 'asc' | 'desc'
 
     function checkAuth() {
       const input = document.getElementById('adminPassInput').value;
@@ -453,23 +524,172 @@
       });
 
       allLeads = Array.from(mergedMap.values());
-      // Sort newest first
-      allLeads.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-      render(allLeads);
+      updateGlobalStats(allLeads);
+      applyFiltersAndSort();
     }
 
-    function render(list) {
+    function updateGlobalStats(list) {
       document.getElementById('stTotal').textContent = list.length;
       document.getElementById('stWA').textContent = list.filter(l => l.whatsapp).length;
       
       const proCount = list.filter(l => l.plan === 'pro' || l.plan === 'ecole').length;
-      const freeCount = list.length - proCount;
+      const blockedCount = list.filter(l => l.plan === 'blocked' || l.status === 'revoked').length;
+      const freeCount = list.filter(l => (!l.plan || l.plan === 'free') && l.status !== 'revoked').length;
+
       document.getElementById('stPro').textContent = proCount;
       document.getElementById('stFree').textContent = freeCount;
+      document.getElementById('stBlocked').textContent = blockedCount;
+    }
 
+    function onDatePresetChange() {
+      const preset = document.getElementById('filterDatePreset').value;
+      const customDiv = document.getElementById('customDateRange');
+      if (customDiv) {
+        customDiv.style.display = preset === 'custom' ? 'inline-flex' : 'none';
+      }
+      applyFiltersAndSort();
+    }
+
+    function handleSort(col) {
+      if (sortColumn === col) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortColumn = col;
+        sortDirection = (col === 'createdAt') ? 'desc' : 'asc';
+      }
+      updateSortHeadersUI();
+      applyFiltersAndSort();
+    }
+
+    function updateSortHeadersUI() {
+      const cols = ['createdAt', 'name', 'email', 'whatsapp', 'school', 'plan'];
+      cols.forEach(c => {
+        const th = document.getElementById('sort_' + c);
+        if (th) {
+          const parentTh = th.parentElement;
+          if (c === sortColumn) {
+            parentTh.classList.add('active-sort');
+            th.textContent = sortDirection === 'asc' ? '▲' : '▼';
+          } else {
+            parentTh.classList.remove('active-sort');
+            th.textContent = '↕';
+          }
+        }
+      });
+    }
+
+    function resetFilters() {
+      document.getElementById('searchBox').value = '';
+      document.getElementById('filterPlan').value = 'all';
+      document.getElementById('filterDatePreset').value = 'all';
+      document.getElementById('dateStart').value = '';
+      document.getElementById('dateEnd').value = '';
+      document.getElementById('customDateRange').style.display = 'none';
+      sortColumn = 'createdAt';
+      sortDirection = 'desc';
+      updateSortHeadersUI();
+      applyFiltersAndSort();
+    }
+
+    function applyFiltersAndSort() {
+      const q = (document.getElementById('searchBox').value || '').toLowerCase().trim();
+      const planFilter = document.getElementById('filterPlan').value;
+      const datePreset = document.getElementById('filterDatePreset').value;
+      const dateStartVal = document.getElementById('dateStart').value;
+      const dateEndVal = document.getElementById('dateEnd').value;
+
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      let filtered = allLeads.filter(l => {
+        // Search Query
+        const matchQuery = !q || (
+          (l.name && l.name.toLowerCase().includes(q)) ||
+          (l.email && l.email.toLowerCase().includes(q)) ||
+          (l.whatsapp && l.whatsapp.includes(q)) ||
+          (l.school && l.school.toLowerCase().includes(q)) ||
+          (l.notes && l.notes.toLowerCase().includes(q))
+        );
+
+        // Plan / Status Filter
+        let matchPlan = true;
+        const currentPlan = l.plan || 'free';
+        if (planFilter !== 'all') {
+          if (planFilter === 'blocked') {
+            matchPlan = currentPlan === 'blocked' || l.status === 'revoked';
+          } else {
+            matchPlan = currentPlan === planFilter && l.status !== 'revoked';
+          }
+        }
+
+        // Date Filter
+        let matchDate = true;
+        if (l.createdAt) {
+          const leadDate = new Date(l.createdAt);
+          if (datePreset === 'today') {
+            matchDate = leadDate >= startOfToday;
+          } else if (datePreset === '7d') {
+            matchDate = leadDate >= sevenDaysAgo;
+          } else if (datePreset === '30d') {
+            matchDate = leadDate >= thirtyDaysAgo;
+          } else if (datePreset === 'month') {
+            matchDate = leadDate >= startOfMonth;
+          } else if (datePreset === 'custom') {
+            if (dateStartVal) {
+              const dStart = new Date(dateStartVal);
+              matchDate = matchDate && leadDate >= dStart;
+            }
+            if (dateEndVal) {
+              const dEnd = new Date(dateEndVal);
+              dEnd.setHours(23, 59, 59, 999);
+              matchDate = matchDate && leadDate <= dEnd;
+            }
+          }
+        }
+
+        return matchQuery && matchPlan && matchDate;
+      });
+
+      // Sorting
+      filtered.sort((a, b) => {
+        let valA = a[sortColumn];
+        let valB = b[sortColumn];
+
+        if (sortColumn === 'createdAt') {
+          const timeA = valA ? new Date(valA).getTime() : 0;
+          const timeB = valB ? new Date(valB).getTime() : 0;
+          return sortDirection === 'asc' ? timeA - timeB : timeB - timeA;
+        }
+
+        valA = (valA || '').toString().toLowerCase();
+        valB = (valB || '').toString().toLowerCase();
+
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      currentSortedFilteredLeads = filtered;
+      
+      const badge = document.getElementById('filterCountBadge');
+      if (badge) {
+        if (filtered.length !== allLeads.length) {
+          badge.textContent = `(${filtered.length} sur ${allLeads.length} affichés)`;
+        } else {
+          badge.textContent = `(${filtered.length} utilisateurs)`;
+        }
+      }
+
+      render(filtered);
+    }
+
+    function render(list) {
       const tbody = document.getElementById('leadsBody');
       if (!list || list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:30px">Aucun utilisateur enregistré pour le moment.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:30px">Aucun utilisateur ne correspond à vos filtres.</td></tr>';
         return;
       }
 
@@ -481,25 +701,36 @@
           : '<span style="color:var(--text-muted)">-</span>';
 
         const plan = l.plan || 'free';
+        const isBlocked = plan === 'blocked' || l.status === 'revoked';
 
         return `
-          <tr>
+          <tr style="${isBlocked ? 'background: rgba(239, 68, 68, 0.06);' : ''}">
             <td style="color:var(--text-muted);font-size:12px">${dateStr}</td>
-            <td style="font-weight:600;color:#fff">${l.name || 'Enseignant anonyme'}</td>
+            <td style="font-weight:600;color:#fff">
+              ${l.name || 'Enseignant anonyme'}
+              ${isBlocked ? '<span class="status-badge status-revoked" style="margin-left:6px;font-size:10px">🚫 Révoqué</span>' : ''}
+            </td>
             <td><a href="mailto:${l.email}" style="color:var(--blue);text-decoration:none">${l.email || '-'}</a></td>
             <td>${waLink}</td>
             <td style="color:var(--text-muted)">${l.school || '-'}</td>
             <td>
-              <select class="plan-select" onchange="quickUpdatePlan('${l.id}', this.value)">
-                <option value="free" ${plan === 'free' ? 'selected' : ''}>Essai Free</option>
-                <option value="pro" ${plan === 'pro' ? 'selected' : ''}>⭐ Plan Pro</option>
-                <option value="ecole" ${plan === 'ecole' ? 'selected' : ''}>🏫 École</option>
+              <select class="plan-select" onchange="quickUpdatePlan('${l.id}', this.value)" style="${isBlocked ? 'border-color:var(--red);color:var(--red)' : ''}">
+                <option value="free" ${plan === 'free' && !isBlocked ? 'selected' : ''}>🟢 Essai Gratuit (Early Access)</option>
+                <option value="pro" ${plan === 'pro' ? 'selected' : ''}>⭐ Plan Pro Enseignant</option>
+                <option value="ecole" ${plan === 'ecole' ? 'selected' : ''}>🏫 Pack École</option>
+                <option value="blocked" ${isBlocked ? 'selected' : ''}>🚫 Accès Révoqué (Dégagé)</option>
               </select>
             </td>
             <td>
-              <div style="display:flex;gap:6px">
-                <button class="btn" style="padding:4px 8px;font-size:12px" onclick="openEditModal('${l.id}')">✏️ Modifier</button>
-                <button class="btn btn-red" style="padding:4px 8px;font-size:12px" onclick="deleteUser('${l.id}')">🗑️</button>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn" style="padding:4px 8px;font-size:12px" onclick="openEditModal('${l.id}')" title="Modifier nom, école, notes">✏️ Modifier</button>
+                
+                ${isBlocked 
+                  ? `<button class="btn btn-green" style="padding:4px 8px;font-size:12px" onclick="toggleRevokeAccess('${l.id}', false)" title="Rétablir l'accès">✅ Réactiver</button>`
+                  : `<button class="btn btn-red" style="padding:4px 8px;font-size:12px" onclick="toggleRevokeAccess('${l.id}', true)" title="Dégager / Bloquer l'accès immédiatement">🚫 Dégager / Révoquer</button>`
+                }
+                
+                <button class="btn" style="padding:4px 8px;font-size:12px;color:var(--text-muted);border-color:transparent" onclick="deleteUser('${l.id}')" title="Supprimer définitivement">🗑️</button>
               </div>
             </td>
           </tr>
@@ -507,17 +738,59 @@
       }).join('');
     }
 
-    async function quickUpdatePlan(id, newPlan) {
+    async function toggleRevokeAccess(id, shouldRevoke) {
+      const actionName = shouldRevoke ? 'révoquer l’accès (dégager)' : 'rétablir l’accès';
+      if (!confirm(`Voulez-vous vraiment ${actionName} de cet utilisateur ?`)) return;
+
+      const newPlan = shouldRevoke ? 'blocked' : 'free';
+      const newStatus = shouldRevoke ? 'revoked' : 'active';
+
       try {
         const res = await fetch('/api/leads/' + id, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, plan: newPlan })
+          body: JSON.stringify({ id, plan: newPlan, status: newStatus })
+        });
+        if (res.ok) {
+          const user = allLeads.find(l => l.id === id);
+          if (user) {
+            user.plan = newPlan;
+            user.status = newStatus;
+          }
+          // Also sync to local lead user if it's the current user
+          try {
+            const currentUser = JSON.parse(localStorage.getItem('cpro_lead_user') || 'null');
+            if (currentUser && currentUser.id === id) {
+              currentUser.plan = newPlan;
+              currentUser.status = newStatus;
+              localStorage.setItem('cpro_lead_user', JSON.stringify(currentUser));
+            }
+          } catch(e) {}
+
+          updateGlobalStats(allLeads);
+          applyFiltersAndSort();
+        }
+      } catch (e) {
+        alert('Erreur lors de la mise à jour du statut.');
+      }
+    }
+
+    async function quickUpdatePlan(id, newPlan) {
+      try {
+        const newStatus = (newPlan === 'blocked') ? 'revoked' : 'active';
+        const res = await fetch('/api/leads/' + id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, plan: newPlan, status: newStatus })
         });
         if (res.ok) {
           const updated = allLeads.find(l => l.id === id);
-          if (updated) updated.plan = newPlan;
-          render(allLeads);
+          if (updated) {
+            updated.plan = newPlan;
+            updated.status = newStatus;
+          }
+          updateGlobalStats(allLeads);
+          applyFiltersAndSort();
         }
       } catch (e) {
         alert('Erreur lors de la mise à jour du forfait.');
@@ -525,12 +798,21 @@
     }
 
     async function deleteUser(id) {
-      if (!confirm('Voulez-vous vraiment supprimer cet utilisateur ?')) return;
+      if (!confirm('Voulez-vous vraiment supprimer définitivement cet utilisateur ?')) return;
       try {
         const res = await fetch('/api/leads/' + id, { method: 'DELETE' });
         if (res.ok) {
           allLeads = allLeads.filter(l => l.id !== id);
-          render(allLeads);
+          
+          // Also remove from local leads if present
+          try {
+            let localLeads = JSON.parse(localStorage.getItem('cpro_all_leads') || '[]');
+            localLeads = localLeads.filter(l => l.id !== id);
+            localStorage.setItem('cpro_all_leads', JSON.stringify(localLeads));
+          } catch(e) {}
+
+          updateGlobalStats(allLeads);
+          applyFiltersAndSort();
         }
       } catch (e) {
         alert('Erreur lors de la suppression.');
@@ -558,12 +840,13 @@
       const plan = document.getElementById('editUserPlan').value;
       const school = document.getElementById('editUserSchool').value;
       const notes = document.getElementById('editUserNotes').value;
+      const status = plan === 'blocked' ? 'revoked' : 'active';
 
       try {
         const res = await fetch('/api/leads/' + id, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, name, plan, school, notes })
+          body: JSON.stringify({ id, name, plan, school, notes, status })
         });
         if (res.ok) {
           const user = allLeads.find(l => l.id === id);
@@ -572,36 +855,22 @@
             user.plan = plan;
             user.school = school;
             user.notes = notes;
+            user.status = status;
           }
           closeEditModal();
-          render(allLeads);
+          updateGlobalStats(allLeads);
+          applyFiltersAndSort();
         }
       } catch (e) {
         alert('Erreur de sauvegarde.');
       }
     }
 
-    function filterTable() {
-      const q = (document.getElementById('searchBox').value || '').toLowerCase();
-      const planFilter = document.getElementById('filterPlan').value;
-
-      const filtered = allLeads.filter(l => {
-        const matchQuery = 
-          (l.name && l.name.toLowerCase().includes(q)) ||
-          (l.email && l.email.toLowerCase().includes(q)) ||
-          (l.whatsapp && l.whatsapp.includes(q)) ||
-          (l.school && l.school.toLowerCase().includes(q));
-        
-        const matchPlan = planFilter === 'all' || (l.plan || 'free') === planFilter;
-        return matchQuery && matchPlan;
-      });
-      render(filtered);
-    }
-
     function exportCSV() {
-      if (!allLeads.length) return alert('Aucune donnée à exporter');
-      const headers = ['Date', 'Nom', 'Email', 'WhatsApp', 'Etablissement', 'Plan', 'Notes'];
-      const rows = allLeads.map(l => [
+      const dataToExport = currentSortedFilteredLeads.length ? currentSortedFilteredLeads : allLeads;
+      if (!dataToExport.length) return alert('Aucune donnée à exporter');
+      const headers = ['Date Inscription', 'Nom', 'Email', 'WhatsApp', 'Etablissement', 'Statut / Plan', 'Notes'];
+      const rows = dataToExport.map(l => [
         l.createdAt || '',
         `"${(l.name || '').replace(/"/g, '""')}"`,
         `"${(l.email || '').replace(/"/g, '""')}"`,
@@ -616,14 +885,16 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `utilisateurs_et_abonnements_${new Date().toISOString().slice(0,10)}.csv`;
+      a.download = `leads_filtres_${new Date().toISOString().slice(0,10)}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     }
+
     function exportJSON() {
-      if (!allLeads.length) return alert('Aucune donnée à exporter.');
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(allLeads, null, 2));
+      const dataToExport = currentSortedFilteredLeads.length ? currentSortedFilteredLeads : allLeads;
+      if (!dataToExport.length) return alert('Aucune donnée à exporter.');
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(dataToExport, null, 2));
       const a = document.createElement('a');
       a.href = dataStr;
       a.download = `leads_${new Date().toISOString().slice(0,10)}.json`;

@@ -46,6 +46,7 @@ function init() {
   loadDB();
   populateClassSelect();
   fetchRemoteLeads();
+  updateAccountHeaderUI();
   checkAndRestoreAutoSave();
   setInterval(autoSaveCurrentSession, 40000);
   setTimeout(checkTourFirstVisit, 1200);
@@ -579,39 +580,155 @@ async function correctPDFClass() {
   return list.map(normalizeStudentResult);
 }
 
-/* ── SUBMIT ── */
+/* ── SUBMIT & AUTH GATE ── */
 var _pendingSubmit = false;
+var _authTab = 'signup'; // 'signup' | 'login'
 
-function hasUserRegisteredLead() {
+function getCurrentLeadUser() {
   try {
     var storedUser = localStorage.getItem('cpro_lead_user');
-    return Boolean(storedUser);
+    return storedUser ? JSON.parse(storedUser) : null;
   } catch (e) {
-    return false;
+    return null;
   }
 }
 
-function openLeadGateModal() {
+function hasUserRegisteredLead() {
+  return Boolean(getCurrentLeadUser());
+}
+
+function updateAccountHeaderUI() {
+  var user = getCurrentLeadUser();
+  var labelEl = document.getElementById('userAccountLabel');
+  var iconEl = document.getElementById('userAccountIcon');
+  var btnEl = document.getElementById('userAccountBtn');
+
+  if (user && user.email) {
+    var displayName = user.name ? user.name.split(' ')[0] : user.email.split('@')[0];
+    if (labelEl) labelEl.textContent = displayName;
+    if (iconEl) iconEl.textContent = '🟢';
+    if (btnEl) btnEl.title = 'Connecté : ' + (user.name || user.email) + ' (cliquer pour gérer)';
+  } else {
+    if (labelEl) labelEl.textContent = "S'inscrire / Connexion";
+    if (iconEl) iconEl.textContent = '👤';
+    if (btnEl) btnEl.title = 'Mon Compte / Inscription';
+  }
+}
+
+function setAuthTab(tab) {
+  _authTab = tab;
+  var btnSignup = document.getElementById('tabAuthSignup');
+  var btnLogin = document.getElementById('tabAuthLogin');
+  var nameWrap = document.getElementById('leadFieldNameWrap');
+  var nameInput = document.getElementById('leadInputName');
+  var whatsappWrap = document.getElementById('leadFieldWhatsapp');
+  var schoolWrap = document.getElementById('leadFieldSchool');
+  var subtext = document.getElementById('leadModalSubtext');
+  var btnTxt = document.getElementById('leadBtnTxt');
+  var errEl = document.getElementById('leadGateErr');
+
+  if (errEl) errEl.style.display = 'none';
+
+  if (tab === 'login') {
+    if (btnSignup) {
+      btnSignup.style.background = 'transparent';
+      btnSignup.style.color = 'var(--label2)';
+      btnSignup.style.fontWeight = '500';
+      btnSignup.style.boxShadow = 'none';
+    }
+    if (btnLogin) {
+      btnLogin.style.background = 'var(--card)';
+      btnLogin.style.color = 'var(--label)';
+      btnLogin.style.fontWeight = '600';
+      btnLogin.style.boxShadow = '0 2px 4px rgba(0,0,0,0.06)';
+    }
+    if (nameWrap) nameWrap.style.display = 'none';
+    if (nameInput) nameInput.required = false;
+    if (whatsappWrap) whatsappWrap.style.display = 'none';
+    if (schoolWrap) schoolWrap.style.display = 'none';
+    if (subtext) subtext.textContent = 'Entrez votre adresse email pour vous reconnecter et retrouver vos classes et corrections.';
+    if (btnTxt) btnTxt.textContent = '🔑 Se connecter';
+  } else {
+    if (btnSignup) {
+      btnSignup.style.background = 'var(--card)';
+      btnSignup.style.color = 'var(--label)';
+      btnSignup.style.fontWeight = '600';
+      btnSignup.style.boxShadow = '0 2px 4px rgba(0,0,0,0.06)';
+    }
+    if (btnLogin) {
+      btnLogin.style.background = 'transparent';
+      btnLogin.style.color = 'var(--label2)';
+      btnLogin.style.fontWeight = '500';
+      btnLogin.style.boxShadow = 'none';
+    }
+    if (nameWrap) nameWrap.style.display = 'block';
+    if (nameInput) nameInput.required = true;
+    if (whatsappWrap) whatsappWrap.style.display = 'block';
+    if (schoolWrap) schoolWrap.style.display = 'block';
+    if (subtext) subtext.textContent = 'Renseignez vos coordonnées pour activer la correction IA instantanée et sauvegarder les notes de votre classe.';
+    if (btnTxt) btnTxt.textContent = '🚀 Activer et commencer la correction';
+  }
+}
+
+function openLeadGateModal(manualOpen) {
   var modal = document.getElementById('leadGateModal');
+  var closeBtn = document.getElementById('leadGateCloseBtn');
+  var form = document.getElementById('leadGateForm');
+  var profilePanel = document.getElementById('leadUserProfilePanel');
+  var user = getCurrentLeadUser();
+
+  if (closeBtn) closeBtn.style.display = 'flex';
+
+  if (user && manualOpen) {
+    // Show logged-in profile details
+    if (form) form.style.display = 'none';
+    if (profilePanel) {
+      profilePanel.style.display = 'block';
+      var pName = document.getElementById('userProfileName');
+      var pEmail = document.getElementById('userProfileEmail');
+      var pExtra = document.getElementById('userProfileExtra');
+      if (pName) pName.textContent = '👤 ' + (user.name || 'Enseignant');
+      if (pEmail) pEmail.textContent = '✉️ ' + (user.email || '');
+      if (pExtra) pExtra.textContent = (user.whatsapp ? '📱 ' + user.whatsapp : '📱 Pas de WhatsApp') + (user.school ? '  |  🏫 ' + user.school : '');
+    }
+  } else {
+    if (form) form.style.display = 'flex';
+    if (profilePanel) profilePanel.style.display = 'none';
+    setAuthTab('signup');
+  }
+
   if (modal) modal.style.display = 'flex';
 }
 
 function closeLeadGateModal() {
   var modal = document.getElementById('leadGateModal');
   if (modal) modal.style.display = 'none';
+  _pendingSubmit = false;
+}
+
+function logoutLeadUser() {
+  try {
+    localStorage.removeItem('cpro_lead_user');
+  } catch (e) {}
+  updateAccountHeaderUI();
+  setAuthTab('login');
+  var form = document.getElementById('leadGateForm');
+  var profilePanel = document.getElementById('leadUserProfilePanel');
+  if (form) form.style.display = 'flex';
+  if (profilePanel) profilePanel.style.display = 'none';
 }
 
 async function submitLeadCapture() {
-  var name = document.getElementById('leadInputName').value.trim();
   var email = document.getElementById('leadInputEmail').value.trim();
+  var name = document.getElementById('leadInputName').value.trim();
   var whatsapp = document.getElementById('leadInputWhatsapp').value.trim();
   var school = document.getElementById('leadInputSchool').value.trim();
   var errEl = document.getElementById('leadGateErr');
   var btn = document.getElementById('leadGateBtn');
 
-  if (!email && !whatsapp) {
+  if (!email && (_authTab === 'login' || !whatsapp)) {
     if (errEl) {
-      errEl.textContent = 'Veuillez saisir au moins une adresse email ou un numéro WhatsApp.';
+      errEl.textContent = 'Veuillez saisir votre adresse email.';
       errEl.style.display = 'block';
     }
     return;
@@ -620,22 +737,45 @@ async function submitLeadCapture() {
   if (errEl) errEl.style.display = 'none';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span>⏳ Enregistrement…</span>';
+    btn.innerHTML = '<span>⏳ Vérification…</span>';
   }
 
-  var leadData = {
-    id: 'lead_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-    name: name,
-    email: email,
-    whatsapp: whatsapp,
-    school: school,
-    createdAt: new Date().toISOString()
-  };
+  var leadData = null;
+
+  if (_authTab === 'login') {
+    // Check if user exists in local leads
+    var storedLeads = [];
+    try {
+      storedLeads = JSON.parse(localStorage.getItem('cpro_all_leads') || '[]');
+    } catch (e) {}
+    var found = storedLeads.find(function(l) { return l.email && l.email.toLowerCase() === email.toLowerCase(); });
+    
+    if (found) {
+      leadData = found;
+    } else {
+      leadData = {
+        id: 'lead_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        name: email.split('@')[0],
+        email: email,
+        whatsapp: '',
+        school: '',
+        createdAt: new Date().toISOString()
+      };
+    }
+  } else {
+    leadData = {
+      id: 'lead_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      name: name || email.split('@')[0],
+      email: email,
+      whatsapp: whatsapp,
+      school: school,
+      createdAt: new Date().toISOString()
+    };
+  }
 
   // Save in local DB
   if (!DB.leads) DB.leads = [];
-  // Avoid duplicate by email or phone
-  var exists = DB.leads.some(function(l) { return (email && l.email === email.toLowerCase()) || (whatsapp && l.whatsapp === whatsapp); });
+  var exists = DB.leads.some(function(l) { return (email && l.email === email.toLowerCase()); });
   if (!exists) {
     DB.leads.unshift(leadData);
     saveDB();
@@ -643,47 +783,53 @@ async function submitLeadCapture() {
 
   try {
     localStorage.setItem('cpro_lead_user', JSON.stringify(leadData));
-    var storedLeads = JSON.parse(localStorage.getItem('cpro_all_leads') || '[]');
-    storedLeads.unshift(leadData);
-    localStorage.setItem('cpro_all_leads', JSON.stringify(storedLeads));
+    var allLocal = JSON.parse(localStorage.getItem('cpro_all_leads') || '[]');
+    if (!allLocal.some(function(l) { return l.email && l.email.toLowerCase() === leadData.email.toLowerCase(); })) {
+      allLocal.unshift(leadData);
+      localStorage.setItem('cpro_all_leads', JSON.stringify(allLocal));
+    }
   } catch (e) {}
 
-  // Webhook / Google Sheets Dispatch if configured
-  try {
-    var webhookUrl = localStorage.getItem('cpro_leads_webhook_url');
-    if (webhookUrl) {
-      fetch(webhookUrl, {
+  updateAccountHeaderUI();
+
+  // Webhook / Google Sheets Dispatch if signup
+  if (_authTab === 'signup') {
+    try {
+      var webhookUrl = localStorage.getItem('cpro_leads_webhook_url');
+      if (webhookUrl) {
+        fetch(webhookUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'new_lead',
+            timestamp: new Date().toISOString(),
+            data: leadData
+          })
+        }).catch(function(e) {});
+      }
+    } catch (we) {}
+
+    // Post to backend server / API
+    try {
+      var targetUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL)
+        ? import.meta.env.VITE_BACKEND_URL + '/api/leads'
+        : '/api/leads';
+
+      await fetch(targetUrl, {
         method: 'POST',
-        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'new_lead',
-          timestamp: new Date().toISOString(),
-          data: leadData
-        })
-      }).catch(function(e) {});
+        body: JSON.stringify(leadData)
+      });
+    } catch (err) {
+      console.warn('Could not post lead to server (saved locally):', err);
     }
-  } catch (we) {}
-
-  // Post to backend server / API
-  try {
-    var targetUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL)
-      ? import.meta.env.VITE_BACKEND_URL + '/api/leads'
-      : '/api/leads';
-
-    await fetch(targetUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(leadData)
-    });
-  } catch (err) {
-    console.warn('Could not post lead to server (saved locally in DB):', err);
   }
 
   closeLeadGateModal();
   if (btn) {
     btn.disabled = false;
-    btn.innerHTML = '<span>🚀 Accéder à la correction</span>';
+    btn.innerHTML = '<span>' + (_authTab === 'login' ? '🔑 Se connecter' : '🚀 Activer et commencer la correction') + '</span>';
   }
 
   // Continue to start correction if user was launching one
@@ -724,6 +870,18 @@ async function sub() {
     openLeadGateModal();
     return;
   }
+
+  var currentLead = getCurrentLeadUser();
+  if (currentLead && (currentLead.plan === 'blocked' || currentLead.status === 'revoked')) {
+    var em = document.getElementById('em');
+    if (em) {
+      em.innerHTML = '🚫 <strong>Accès Early Access suspendu :</strong> Votre accès a été révoqué par l’administrateur de l’application. Veuillez contacter le support pour réactiver votre compte.';
+      em.style.display = 'block';
+    }
+    alert('🚫 Votre accès à l’application a été révoqué ou suspendu par l’administrateur.');
+    return;
+  }
+
   executeSub();
 }
 
@@ -4005,6 +4163,12 @@ window.prevTourStep = prevTourStep;
 window.startTourFromWelcome = startTourFromWelcome;
 window.dismissTourWelcome = dismissTourWelcome;
 window.checkTourFirstVisit = checkTourFirstVisit;
+window.openLeadGateModal = openLeadGateModal;
+window.closeLeadGateModal = closeLeadGateModal;
+window.setAuthTab = setAuthTab;
+window.submitLeadCapture = submitLeadCapture;
+window.logoutLeadUser = logoutLeadUser;
+window.updateAccountHeaderUI = updateAccountHeaderUI;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

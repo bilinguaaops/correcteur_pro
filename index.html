@@ -9,6 +9,9 @@
 <body>
 <div class="top-bar-controls">
   <button class="btn-tour-trigger" id="btnTourTrigger" onclick="startInteractiveTour()" title="Visite guidée interactive">🎯 Visite guidée</button>
+  <button class="btn-tour-trigger" id="userAccountBtn" onclick="openLeadGateModal(true)" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;background:rgba(0,122,255,0.08);color:var(--blue);border-color:rgba(0,122,255,0.25)" title="Mon Compte / Inscription">
+    <span id="userAccountIcon">👤</span> <span id="userAccountLabel">S'inscrire / Connexion</span>
+  </button>
   <div class="autosave-status-bar" id="autoSaveIndicator">
     <span class="as-dot"></span>
     <span id="autoSaveText">Sauvegarde auto active</span>
@@ -484,15 +487,24 @@
 
 <!-- LEAD CAPTURE POPUP / MODAL -->
 <div class="mo" id="leadGateModal" style="display:none;z-index:99999;backdrop-filter:blur(8px);background:rgba(0,0,0,0.55)">
-  <div class="modal" style="max-width:440px;padding:24px;text-align:center;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.25)">
+  <div class="modal" style="max-width:460px;padding:24px;text-align:center;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.25);position:relative">
+    <button type="button" onclick="closeLeadGateModal()" id="leadGateCloseBtn" style="display:none;position:absolute;top:16px;right:16px;background:var(--fill3);border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;color:var(--label);font-size:14px;align-items:center;justify-content:center">✕</button>
     <div style="font-size:36px;margin-bottom:8px">🎓</div>
-    <h3 style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;margin-bottom:6px;color:var(--label)">Bienvenue sur Correcteur Pro</h3>
-    <p style="font-size:13.5px;color:var(--label2);margin-bottom:20px;line-height:1.4">
-      Renseignez vos coordonnées pour activer la correction IA instantanée et recevoir le compte-rendu pédagogique de votre classe.
+    <h3 id="leadModalHeading" style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;margin-bottom:6px;color:var(--label)">Bienvenue sur Correcteur Pro</h3>
+    
+    <!-- Mode Tabs: Inscription vs Connexion -->
+    <div style="display:flex;background:var(--fill3);padding:4px;border-radius:12px;margin-bottom:16px;gap:4px">
+      <button type="button" id="tabAuthSignup" onclick="setAuthTab('signup')" style="flex:1;padding:8px 12px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:var(--card);color:var(--label);box-shadow:0 2px 4px rgba(0,0,0,0.06);cursor:pointer">✨ Créer mon compte</button>
+      <button type="button" id="tabAuthLogin" onclick="setAuthTab('login')" style="flex:1;padding:8px 12px;border:none;border-radius:8px;font-size:13px;font-weight:500;background:transparent;color:var(--label2);cursor:pointer">🔑 Déjà inscrit(e)</button>
+    </div>
+
+    <p id="leadModalSubtext" style="font-size:13.5px;color:var(--label2);margin-bottom:18px;line-height:1.4">
+      Renseignez vos coordonnées pour activer la correction IA instantanée et sauvegarder les notes de votre classe.
     </p>
 
+    <!-- Form for Signup / Login -->
     <form id="leadGateForm" onsubmit="event.preventDefault();submitLeadCapture();" style="display:flex;flex-direction:column;gap:12px;text-align:left">
-      <div>
+      <div id="leadFieldNameWrap">
         <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Nom complet ou Titre</label>
         <input type="text" id="leadInputName" placeholder="Ex: M. Dupont / Mme Traoré" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none" required>
       </div>
@@ -502,26 +514,37 @@
         <input type="email" id="leadInputEmail" placeholder="votre.email@ecole.fr" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none" required>
       </div>
 
-      <div>
-        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Numéro WhatsApp <span style="color:var(--green)">📱</span></label>
-        <input type="tel" id="leadInputWhatsapp" placeholder="+33 6 12 34 56 78 ou +225 07..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none" required>
+      <div id="leadFieldWhatsapp">
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Numéro WhatsApp <span style="font-size:11px;font-weight:normal;color:var(--label3)">(optionnel 📱)</span></label>
+        <input type="tel" id="leadInputWhatsapp" placeholder="+33 6 12 34 56 78 ou +225 07..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none">
       </div>
 
-      <div>
-        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Établissement / Ville (optionnel)</label>
+      <div id="leadFieldSchool">
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Établissement / Ville <span style="font-size:11px;font-weight:normal;color:var(--label3)">(optionnel)</span></label>
         <input type="text" id="leadInputSchool" placeholder="Ex: Collège Jean Jaurès, Abidjan, Paris..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none">
       </div>
 
       <div id="leadGateErr" style="display:none;color:var(--red);font-size:12px;text-align:center;margin-top:2px"></div>
 
       <button type="submit" id="leadGateBtn" style="margin-top:8px;padding:12px;border-radius:12px;background:var(--blue);color:#fff;border:none;font-weight:600;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-        <span>🚀 Accéder à la correction</span>
+        <span id="leadBtnTxt">🚀 Activer et commencer la correction</span>
       </button>
       
       <div style="font-size:11px;color:var(--label3);text-align:center;margin-top:4px">
         🔒 Vos données restent confidentielles et ne sont jamais partagées.
       </div>
     </form>
+
+    <!-- Connected User Profile Panel (if already logged in and opened manually) -->
+    <div id="leadUserProfilePanel" style="display:none;text-align:left;background:var(--bg-secondary);padding:14px;border-radius:12px;border:1px solid var(--separator);margin-top:10px">
+      <div style="font-weight:600;font-size:14px;color:var(--label);margin-bottom:4px" id="userProfileName">Enseignant connecté</div>
+      <div style="font-size:13px;color:var(--label2);margin-bottom:2px" id="userProfileEmail">email@ecole.fr</div>
+      <div style="font-size:12px;color:var(--label3);margin-bottom:12px" id="userProfileExtra">WhatsApp: - | Établissement: -</div>
+      <div style="display:flex;gap:8px">
+        <button type="button" onclick="closeLeadGateModal()" class="bs2" style="flex:1;padding:8px">Fermer</button>
+        <button type="button" onclick="logoutLeadUser()" style="flex:1;padding:8px;background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.25);border-radius:8px;font-weight:600;cursor:pointer">Se déconnecter</button>
+      </div>
+    </div>
   </div>
 </div>
 

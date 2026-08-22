@@ -2213,13 +2213,13 @@ body.dark .student-avatar {
 .mo {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.48);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  z-index: 1000;
+  z-index: 100000;
   padding: 20px 16px;
   overflow-y: auto;
 }

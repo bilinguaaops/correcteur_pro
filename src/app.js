@@ -643,7 +643,27 @@ async function submitLeadCapture() {
 
   try {
     localStorage.setItem('cpro_lead_user', JSON.stringify(leadData));
+    var storedLeads = JSON.parse(localStorage.getItem('cpro_all_leads') || '[]');
+    storedLeads.unshift(leadData);
+    localStorage.setItem('cpro_all_leads', JSON.stringify(storedLeads));
   } catch (e) {}
+
+  // Webhook / Google Sheets Dispatch if configured
+  try {
+    var webhookUrl = localStorage.getItem('cpro_leads_webhook_url');
+    if (webhookUrl) {
+      fetch(webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'new_lead',
+          timestamp: new Date().toISOString(),
+          data: leadData
+        })
+      }).catch(function(e) {});
+    }
+  } catch (we) {}
 
   // Post to backend server / API
   try {
@@ -1036,16 +1056,37 @@ var _quickEditStudentIdx = null;
 var _quickEditQuestions = [];
 
 function openStudentEditMode(idx) {
-  var targetIdx = (typeof idx === 'number') ? idx : _activeStudentIdx;
+  var targetIdx = (typeof idx === 'number' && !isNaN(idx)) ? idx : (typeof _activeStudentIdx === 'number' ? _activeStudentIdx : 0);
   openStudentQuickEditModal(targetIdx);
 }
 
 function openStudentQuickEditModal(idx) {
-  _quickEditStudentIdx = idx;
-  var s = ST.students[idx];
-  if (!s || !s.result) {
-    alert("Veuillez d'abord corriger cette copie.");
+  var targetIdx = (typeof idx === 'number' && !isNaN(idx)) ? idx : (typeof _activeStudentIdx === 'number' ? _activeStudentIdx : 0);
+  if (!ST.students || !ST.students.length) {
+    alert("Aucune copie chargée pour le moment.");
     return;
+  }
+  if (targetIdx < 0 || targetIdx >= ST.students.length) {
+    targetIdx = 0;
+  }
+  _quickEditStudentIdx = targetIdx;
+  _activeStudentIdx = targetIdx;
+  try { window._activeStudentIdx = targetIdx; } catch(e) {}
+
+  var s = ST.students[targetIdx];
+  if (!s) {
+    alert("Copie introuvable.");
+    return;
+  }
+  if (!s.result) {
+    s.result = {
+      note_obtenue: 10,
+      note_total: 20,
+      appreciation: 'Bon travail global.',
+      questions: [
+        { titre: 'Exercice 1', points_obtenus: 10, points_total: 20, commentaire: '' }
+      ]
+    };
   }
   var r = s.result;
   _quickEditQuestions = JSON.parse(JSON.stringify(r.questions || []));
@@ -1057,12 +1098,16 @@ function openStudentQuickEditModal(idx) {
 
   var titleEl = document.getElementById('qeModalTitle');
   if (titleEl) {
-    titleEl.textContent = 'Modifier la copie de ' + s.name;
+    titleEl.textContent = 'Modifier la copie de ' + (s.name || 'l\'élève');
   }
 
   renderQuickEditModalContent();
   var modal = document.getElementById('quickEditModal');
-  if (modal) modal.style.display = 'flex';
+  if (modal) {
+    modal.style.display = 'flex';
+    var bodyEl = document.getElementById('qeModalBody');
+    if (bodyEl) bodyEl.scrollTop = 0;
+  }
 }
 
 function closeStudentQuickEditModal() {
@@ -2441,7 +2486,8 @@ function exportEvaluationPDF() {
 }
 
 function generateStudentSheetPDFDoc(idx) {
-  var s = ST.students[idx];
+  var targetIdx = (typeof idx === 'number' && !isNaN(idx)) ? idx : (typeof _activeStudentIdx === 'number' ? _activeStudentIdx : 0);
+  var s = ST.students[targetIdx];
   if (!s || !s.result) return null;
   var d = s.result;
   var qs = d.questions || [];
@@ -2564,10 +2610,11 @@ function generateStudentSheetPDFDoc(idx) {
 }
 
 function exportStudentSheetPDF(idx) {
-  var doc = generateStudentSheetPDFDoc(idx);
+  var targetIdx = (typeof idx === 'number' && !isNaN(idx)) ? idx : (typeof _activeStudentIdx === 'number' ? _activeStudentIdx : 0);
+  var doc = generateStudentSheetPDFDoc(targetIdx);
   if (!doc) return;
-  var s = ST.students[idx];
-  var safeS = s.name.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  var s = ST.students[targetIdx];
+  var safeS = ((s && s.name) || 'copie').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
   doc.save('copie_' + safeS + '.pdf');
 }
 
@@ -3204,7 +3251,8 @@ function saveEdits(idx) {
 
 /* -- FICHE RETOUR ELEVE OFFICIELLE -- */
 function printStudentSheet(idx) {
-  var s = ST.students[idx];
+  var targetIdx = (typeof idx === 'number' && !isNaN(idx)) ? idx : (typeof _activeStudentIdx === 'number' ? _activeStudentIdx : 0);
+  var s = ST.students[targetIdx];
   if (!s || !s.result) return;
   var d = s.result;
   var apText = d.appreciation || 'Bon travail global.';

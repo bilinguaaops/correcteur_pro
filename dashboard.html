@@ -254,8 +254,10 @@
         </p>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <a href="/" class="btn" target="_blank">🚀 Ouvrir le SaaS Client</a>
-        <button class="btn btn-green" onclick="exportCSV()">📥 Exporter CSV / Excel</button>
+        <a href="/" class="btn" target="_blank">🚀 Ouvrir l'App</a>
+        <button class="btn btn-blue" onclick="exportJSON()">📥 Télécharger leads.json</button>
+        <button class="btn btn-green" onclick="exportCSV()">📊 Exporter CSV / Excel</button>
+        <button class="btn" onclick="toggleWebhookModal()">⚡ Webhook / Google Sheets</button>
         <button class="btn btn-red" onclick="logout()" title="Verrouiller la session">🔒 Verrouiller</button>
       </div>
     </header>
@@ -351,6 +353,47 @@
     </div>
   </div>
 
+  <!-- WEBHOOK / GOOGLE SHEETS MODAL -->
+  <div id="webhookModal" class="modal-backdrop" style="display:none">
+    <div class="modal-box" style="max-width:580px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin:0">⚡ Synchronisation Webhook & Google Sheets</h3>
+        <button type="button" onclick="toggleWebhookModal()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button>
+      </div>
+      <p style="color:var(--text-muted);font-size:13px;line-height:1.4;margin-bottom:16px">
+        Recevez instantanément chaque nouveau professeur dans <strong>Google Sheets, Zapier, Make, Telegram ou Formspree</strong> dès qu'il s'inscrit.
+      </p>
+
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px">URL du Webhook (Google Apps Script / Zapier / Make / n8n / Discord)</label>
+        <input type="url" id="webhookUrlInput" placeholder="https://script.google.com/macros/s/... ou https://hook.eu1.make.com/..." style="width:100%;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff;font-size:13px">
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <button type="button" class="btn btn-blue" onclick="saveWebhookConfig()">💾 Sauvegarder l'URL</button>
+        <button type="button" class="btn" onclick="testWebhookTrigger()">🧪 Envoyer un test</button>
+      </div>
+
+      <div id="webhookStatusMsg" style="font-size:12px;display:none;margin-bottom:12px;padding:8px 12px;border-radius:6px"></div>
+
+      <details style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px">
+        <summary style="cursor:pointer;font-weight:600;color:var(--blue)">📋 Comment créer un Google Sheet en 1 minute (Code Google Apps Script)</summary>
+        <div style="margin-top:10px;color:var(--text-muted);line-height:1.5">
+          1. Ouvrez un nouveau <a href="https://sheets.new" target="_blank" style="color:var(--blue)">Google Sheet</a>.<br>
+          2. Allez dans <strong>Extensions &gt; Apps Script</strong>, collez le code ci-dessous et cliquez sur <strong>Déployer &gt; Nouveau déploiement &gt; Application Web</strong> (Accès : <em>Tout le monde</em>) :
+          <pre style="background:#0F172A;color:#38BDF8;padding:10px;border-radius:6px;overflow-x:auto;margin-top:6px;font-size:11px"><code>function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var d = JSON.parse(e.postData.contents);
+  var lead = d.data || d;
+  sheet.appendRow([new Date(), lead.name||'', lead.email||'', lead.whatsapp||'', lead.school||'', lead.plan||'free']);
+  return ContentService.createTextOutput(JSON.stringify({result: 'ok'})).setMimeType(ContentService.MimeType.JSON);
+}</code></pre>
+          3. Copiez l'URL de l'application Web et collez-la dans le champ ci-dessus !
+        </div>
+      </details>
+    </div>
+  </div>
+
   <script>
     const ADMIN_SECRET = 'admin123';
     let allLeads = [];
@@ -380,16 +423,39 @@
     }
 
     async function fetchLeads() {
+      let remoteLeads = [];
       try {
         const res = await fetch('/api/leads');
         if (res.ok) {
           const data = await res.json();
-          allLeads = data.leads || [];
-          render(allLeads);
+          remoteLeads = data.leads || [];
         }
       } catch (e) {
-        console.error('Erreur chargement leads:', e);
+        console.warn('API leads non disponible, fallback local:', e);
       }
+
+      // Merge with client-side backups
+      let localBackup = [];
+      try {
+        localBackup = JSON.parse(localStorage.getItem('cpro_all_leads') || '[]');
+        const singleLead = JSON.parse(localStorage.getItem('cpro_lead_user') || 'null');
+        if (singleLead) localBackup.unshift(singleLead);
+      } catch (e) {}
+
+      // Deduplicate by email or whatsapp
+      const mergedMap = new Map();
+      [...remoteLeads, ...localBackup].forEach(l => {
+        if (!l) return;
+        const key = (l.email ? l.email.toLowerCase() : '') || (l.whatsapp || l.id || Math.random());
+        if (!mergedMap.has(key)) {
+          mergedMap.set(key, l);
+        }
+      });
+
+      allLeads = Array.from(mergedMap.values());
+      // Sort newest first
+      allLeads.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      render(allLeads);
     }
 
     function render(list) {
@@ -554,6 +620,81 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+    }
+    function exportJSON() {
+      if (!allLeads.length) return alert('Aucune donnée à exporter.');
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(allLeads, null, 2));
+      const a = document.createElement('a');
+      a.href = dataStr;
+      a.download = `leads_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function toggleWebhookModal() {
+      const modal = document.getElementById('webhookModal');
+      const input = document.getElementById('webhookUrlInput');
+      const saved = localStorage.getItem('cpro_leads_webhook_url') || '';
+      if (input) input.value = saved;
+      if (modal) modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    function saveWebhookConfig() {
+      const url = (document.getElementById('webhookUrlInput').value || '').trim();
+      localStorage.setItem('cpro_leads_webhook_url', url);
+      const msg = document.getElementById('webhookStatusMsg');
+      if (msg) {
+        msg.style.display = 'block';
+        msg.style.background = 'rgba(52, 211, 153, 0.15)';
+        msg.style.color = '#34d399';
+        msg.textContent = url ? '✓ URL enregistrée avec succès ! Les futurs inscrits y seront envoyés directement.' : '✓ Webhook désactivé.';
+      }
+    }
+
+    async function testWebhookTrigger() {
+      const url = (document.getElementById('webhookUrlInput').value || '').trim();
+      const msg = document.getElementById('webhookStatusMsg');
+      if (!url) {
+        alert('Veuillez entrer une URL de Webhook.');
+        return;
+      }
+      if (msg) {
+        msg.style.display = 'block';
+        msg.style.background = 'rgba(59, 130, 246, 0.15)';
+        msg.style.color = '#60a5fa';
+        msg.textContent = '⏳ Envoi du test en cours...';
+      }
+
+      try {
+        await fetch(url, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'test_connection',
+            timestamp: new Date().toISOString(),
+            data: {
+              name: 'Test Professeur',
+              email: 'test@professeur.fr',
+              whatsapp: '+33600000000',
+              school: 'Lycée Test',
+              plan: 'free'
+            }
+          })
+        });
+        if (msg) {
+          msg.style.background = 'rgba(52, 211, 153, 0.15)';
+          msg.style.color = '#34d399';
+          msg.textContent = '✓ Signal envoyé au Webhook / Google Sheet ! Vérifiez vos lignes dans Google Sheet / Zapier.';
+        }
+      } catch (err) {
+        if (msg) {
+          msg.style.background = 'rgba(239, 68, 68, 0.15)';
+          msg.style.color = '#f87171';
+          msg.textContent = '⚠️ Erreur d\'envoi : ' + err.message;
+        }
+      }
     }
   </script>
 </body>

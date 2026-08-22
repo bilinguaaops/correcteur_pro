@@ -316,9 +316,9 @@
     <div class="res-export-buttons">
       <button class="btn-tool-zip" id="btnZipExportTop" onclick="exportCompleteClassZip()">📦 Tout télécharger (ZIP)</button>
       <button class="btn-tool-outline" onclick="exportCSV()">📊 Exporter Excel</button>
-      <button class="btn-tool-outline" onclick="exportStudentSheetPDF(_activeStudentIdx)">📥 Fiche PDF</button>
-      <button class="btn-tool-outline" onclick="openStudentEditMode(_activeStudentIdx)">✏️ Modifier note</button>
-      <button class="btn-tool-outline" onclick="printOne(_activeStudentIdx)">🖨 Imprimer</button>
+      <button class="btn-tool-outline" onclick="exportStudentSheetPDF()">📥 Fiche PDF</button>
+      <button class="btn-tool-outline" onclick="openStudentEditMode()">✏️ Modifier note</button>
+      <button class="btn-tool-outline" onclick="printOne()">🖨 Imprimer</button>
       <button class="btn-tool-save" id="svbtn" onclick="sav()">🔖 Sauvegarder</button>
     </div>
   </div>
@@ -378,10 +378,10 @@
 
       <!-- Barre d'actions rapide en bas de fiche -->
       <div class="sheet-bottom-actions">
-        <button class="btn-sheet-secondary" onclick="openStudentEditMode(_activeStudentIdx)">✏️ Modifier la note</button>
+        <button class="btn-sheet-secondary" onclick="openStudentEditMode()">✏️ Modifier la note</button>
         <button class="btn-sheet-zip" onclick="exportCompleteClassZip()">📦 Tout télécharger (ZIP)</button>
-        <button class="btn-sheet-secondary" onclick="exportStudentSheetPDF(_activeStudentIdx)">📥 Fiche PDF</button>
-        <button class="btn-sheet-secondary" onclick="printOne(_activeStudentIdx)">🖨 Imprimer</button>
+        <button class="btn-sheet-secondary" onclick="exportStudentSheetPDF()">📥 Fiche PDF</button>
+        <button class="btn-sheet-secondary" onclick="printOne()">🖨 Imprimer</button>
         <button class="btn-sheet-primary" onclick="confirmValidateStudent()">Valider la copie ✓</button>
       </div>
     </div>

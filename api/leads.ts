@@ -86,6 +86,25 @@ export default function handler(req: ApiRequest, res: ApiResponse) {
 
       leads.unshift(lead);
       saveStoredLeads(leads);
+
+      // Forward to Webhook if configured (Google Sheets, Zapier, Make, Telegram, Discord, etc.)
+      const webhookUrl = process.env.LEADS_WEBHOOK_URL;
+      if (webhookUrl) {
+        try {
+          fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'new_lead',
+              timestamp: new Date().toISOString(),
+              data: lead
+            })
+          }).catch(err => console.error('Webhook error:', err));
+        } catch (we) {
+          console.error('Webhook dispatch error:', we);
+        }
+      }
+
       return res.status(200).json({ success: true, lead });
     } catch (e: any) {
       return res.status(500).json({ error: e.message || 'Erreur serveur' });

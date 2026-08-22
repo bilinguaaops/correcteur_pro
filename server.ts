@@ -77,6 +77,24 @@ app.post("/api/leads", (req, res) => {
     leads.unshift(lead);
     saveStoredLeads(leads);
 
+    // Forward to Webhook if configured (Google Sheets, Zapier, Make, Telegram, Discord, etc.)
+    const webhookUrl = process.env.LEADS_WEBHOOK_URL;
+    if (webhookUrl) {
+      try {
+        fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event: "new_lead",
+            timestamp: new Date().toISOString(),
+            data: lead,
+          }),
+        }).catch((err) => console.error("Webhook error:", err));
+      } catch (we) {
+        console.error("Webhook dispatch error:", we);
+      }
+    }
+
     console.log("✨ Nouveau Lead Enregistré :", lead.email || lead.whatsapp);
     return res.status(200).json({ success: true, lead });
   } catch (e: any) {
@@ -301,8 +319,8 @@ app.post("/api/anthropic/v1/messages", async (req, res) => {
   return app._router.handle(req, res);
 });
 
-// Explicit Admin Dashboard Route
-app.get(["/dashboard", "/dashboard.html"], (req, res) => {
+// Explicit Admin Dashboard Route & Direct Leads Download
+app.get(["/dashboard", "/dashboard.html", "/admin", "/admin.html"], (req, res) => {
   const dashDist = path.join(process.cwd(), "dist", "dashboard.html");
   const dashPublic = path.join(process.cwd(), "public", "dashboard.html");
   const dashRoot = path.join(process.cwd(), "dashboard.html");
@@ -311,6 +329,13 @@ app.get(["/dashboard", "/dashboard.html"], (req, res) => {
   if (fs.existsSync(dashPublic)) return res.sendFile(dashPublic);
   if (fs.existsSync(dashRoot)) return res.sendFile(dashRoot);
   res.status(404).send("Tableau de bord introuvable.");
+});
+
+app.get(["/leads.json", "/api/leads.json"], (req, res) => {
+  const leads = getStoredLeads();
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Content-Disposition", 'attachment; filename="leads.json"');
+  res.json(leads);
 });
 
 async function startServer() {

@@ -281,15 +281,15 @@
   </div>
 </div>
 
-<!-- ══ RESULTS (MODERN DRIBBLE / SPLIT-SCREEN VIEW) ══ -->
+<!-- ══ RESULTS (FICHE DE CORRECTION INDIVIDUELLE & VUE DE CLASSE) ══ -->
 <div id="vr" style="display:none" class="fa">
   
-  <!-- Header de résultat moderne comme la capture d'écran -->
+  <!-- Barre d'actions supérieure -->
   <div class="res-top-header">
     <div class="res-header-titles">
-      <div class="res-kicker">CORRECTION INTELLIGENTE</div>
-      <h2 class="res-main-title" id="evalTitle">Votre copie est prête.</h2>
-      <p class="res-subtitle" id="evalSubtitle">Voici l'analyse automatique et le barème pédagogique de la copie.</p>
+      <div class="res-kicker">CORRECTION PÉDAGOGIQUE</div>
+      <h2 class="res-main-title" id="evalTitle">Fiche de correction prête</h2>
+      <p class="res-subtitle" id="evalSubtitle">Voici la fiche détaillée et le barème pédagogique de la copie.</p>
     </div>
     <div class="res-header-actions">
       <button class="btn-new-corr-cta" onclick="back()">
@@ -302,126 +302,86 @@
   <div class="res-toolbar-strip">
     <div class="res-students-switcher" id="studentSwitcherWrap"></div>
     <div class="res-export-buttons">
-      <button class="btn-tool-outline" onclick="exportCSV()">📊 Exporter pour Excel</button>
-      <button class="btn-tool-outline" onclick="exportEvaluationPDF()">📥 Télécharger PDF</button>
-      <button class="btn-tool-outline" onclick="printClass()">🖨 Imprimer</button>
+      <button class="btn-tool-outline" onclick="exportCSV()">📊 Exporter Excel</button>
+      <button class="btn-tool-outline" onclick="exportStudentSheetPDF(_activeStudentIdx)">📥 Télécharger PDF</button>
+      <button class="btn-tool-outline" onclick="printOne(_activeStudentIdx)">🖨 Imprimer</button>
       <button class="btn-tool-save" id="svbtn" onclick="sav()">🔖 Sauvegarder</button>
     </div>
   </div>
 
-  <!-- SPLIT SCREEN : Copie de l'élève (gauche) vs Résultat de la correction (droite) -->
-  <div class="split-correction-view" id="splitViewContainer">
-    
-    <!-- Colonne Gauche : Copie de l'élève annotée -->
-    <div class="split-pane student-copy-pane">
-      <div class="pane-card">
-        <div class="pane-header">
-          <div class="pane-title">
-            <span class="pane-icon">📄</span>
-            <span>Copie de l'élève</span>
-          </div>
-          <span class="badge-done">Analyse terminée</span>
+  <!-- CONTENEUR PRINCIPAL DE LA FICHE DE CORRECTION -->
+  <div id="splitViewContainer">
+
+    <!-- Onglets de vue (Fiche de correction vs Scan d'origine) -->
+    <div class="sheet-view-toggle-bar" id="paneViewToggleWrap" style="display:none">
+      <button class="sheet-toggle-btn on" id="vt-txt" onclick="setDocView('txt')">
+        📄 Fiche de correction individuelle
+      </button>
+      <button class="sheet-toggle-btn" id="vt-img" onclick="setDocView('img')">
+        📷 Scan / Photo d'origine annotée
+      </button>
+    </div>
+
+    <!-- ── VUE 1 : LA FICHE DE CORRECTION INDIVIDUELLE OFFICIELLE ── -->
+    <div id="docSheetContainer">
+      <div class="official-correction-sheet" id="individualCorrectionSheet">
+        
+        <!-- En-tête bleu de la fiche -->
+        <div class="sheet-header-banner">
+          <div class="shb-title">FICHE DE CORRECTION INDIVIDUELLE</div>
+          <div class="shb-sub" id="sheetHeaderMeta">Mathématiques — Terminale • 20 août 2026</div>
         </div>
 
-        <!-- Profil Élève -->
-        <div class="student-profile-bar" id="paneStudentProfile">
-          <div class="st-avatar" id="paneStudentAvatar">JK</div>
-          <div class="st-info">
-            <div class="st-name" id="paneStudentName">Jean Kouassi</div>
-            <div class="st-sub" id="paneStudentMeta">Français · 3ème A</div>
-          </div>
-          <div class="st-view-toggle" id="paneViewToggleWrap" style="display:none">
-            <button class="st-vt-btn on" id="vt-txt" onclick="setDocView('txt')">Texte annoté</button>
-            <button class="st-vt-btn" id="vt-img" onclick="setDocView('img')">Scan original</button>
-          </div>
+        <!-- Nom de l'élève et Note -->
+        <div class="sheet-student-score-row">
+          <div class="sheet-student-name" id="sheetStudentName">Sass</div>
+          <div class="sheet-score-badge" id="sheetScoreBadge">16 / 20 (16/20)</div>
         </div>
 
-        <!-- Document Sheet -->
-        <div class="document-sheet-container" id="docSheetContainer">
-          <div class="document-sheet">
-            <h3 class="doc-title" id="paneDocTitle">Copie de l'élève</h3>
-            <div class="doc-annotated-text" id="paneDocText">
-              <!-- Le texte transcrit et surligné sera injecté ici dynamiquement -->
-            </div>
-          </div>
+        <!-- Cadre d'appréciation générale -->
+        <div class="sheet-appreciation-box" id="sheetAppreciationBox">
+          <span class="sab-label">Appréciation :</span>
+          <span class="sab-text" id="sheetAppreciationText">Bon travail global, attention à bien vérifier les affirmations dans les exercices de logique.</span>
         </div>
 
-        <!-- Mode Image Originale (si photo scannée disponible) -->
-        <div class="document-scan-container" id="docScanContainer" style="display:none">
-          <div class="annot-wrap" id="annotWrap">
-            <canvas id="annotCanvas"></canvas>
-          </div>
-          <div class="ann-legend">
-            <span class="al-item"><span class="al-dot" style="background:#2d6a4f"></span>Correct</span>
-            <span class="al-item"><span class="al-dot" style="background:#b5860d"></span>Partiel</span>
-            <span class="al-item"><span class="al-dot" style="background:#c0392b"></span>Incorrect</span>
-          </div>
+        <!-- Titre section Détail des questions -->
+        <div class="sheet-questions-heading">
+          <span>Détail des questions</span>
+        </div>
+
+        <!-- Liste des exercices / questions -->
+        <div class="sheet-questions-list" id="sheetQuestionsList">
+          <!-- Injecté dynamiquement par renderActiveStudentPane() -->
+        </div>
+
+        <!-- Pied de page officiel de la fiche -->
+        <div class="sheet-footer-row">
+          <div class="sfr-left" id="sheetFooterDate">Généré par ProfCorrec' IA</div>
+          <div class="sfr-right">Page 1 / 1</div>
         </div>
 
       </div>
+
+      <!-- Barre d'actions rapide en bas de fiche -->
+      <div class="sheet-bottom-actions">
+        <button class="btn-sheet-secondary" onclick="openStudentEditMode()">✏️ Modifier la note</button>
+        <button class="btn-sheet-secondary" onclick="exportStudentSheetPDF(_activeStudentIdx)">📥 Télécharger PDF</button>
+        <button class="btn-sheet-secondary" onclick="printOne(_activeStudentIdx)">🖨 Imprimer</button>
+        <button class="btn-sheet-primary" onclick="confirmValidateStudent()">Valider la copie ✓</button>
+      </div>
     </div>
 
-    <!-- Colonne Droite : Résultat de la correction & Erreurs détectées -->
-    <div class="split-pane correction-result-pane">
-      <div class="pane-card">
-        <div class="pane-header">
-          <div class="pane-title">
-            <span class="pane-icon">✨</span>
-            <span>Résultat de la correction</span>
-          </div>
-          <span class="badge-err-count" id="paneErrorCountBadge">0 corrections</span>
+    <!-- ── VUE 2 : SCAN D'ORIGINE AVEC ANNOTATIONS ── -->
+    <div id="docScanContainer" style="display:none">
+      <div class="scan-sheet-card">
+        <div class="annot-wrap" id="annotWrap">
+          <canvas id="annotCanvas"></canvas>
         </div>
-
-        <!-- Score proposée -->
-        <div class="proposed-score-card">
-          <div class="psc-left">
-            <div class="psc-label">Note proposée</div>
-            <div class="psc-score" id="paneProposedScore">15,5 / 20</div>
-          </div>
-          <div class="psc-right">
-            <div class="score-circle-gauge" id="paneScoreGauge">
-              <span id="paneScorePercent">78%</span>
-            </div>
-          </div>
+        <div class="ann-legend" style="margin-top:14px">
+          <span class="al-item"><span class="al-dot" style="background:#2d6a4f"></span>Correct</span>
+          <span class="al-item"><span class="al-dot" style="background:#b5860d"></span>Partiel</span>
+          <span class="al-item"><span class="al-dot" style="background:#c0392b"></span>Incorrect</span>
         </div>
-
-        <!-- Corrections détectées -->
-        <div class="corrections-section">
-          <div class="sec-heading">Corrections détectées</div>
-          <div class="detected-errors-list" id="paneDetectedErrorsList">
-            <!-- Liste injectée dynamiquement -->
-          </div>
-        </div>
-
-        <!-- Détail par question ou exercice (accordéon repliable) -->
-        <div class="questions-accordion-wrap" id="paneQuestionsWrap" style="display:none">
-          <div class="sec-heading" style="margin-top:14px">Détail des questions et points</div>
-          <div id="paneQuestionsList"></div>
-        </div>
-
-        <!-- Commentaire général / Appréciation -->
-        <div class="general-comment-section">
-          <div class="sec-heading">Commentaire général</div>
-          <div class="comment-box" id="paneCommentBox">
-            <!-- Commentaire injecté -->
-          </div>
-        </div>
-
-        <!-- Remarques additionnelles enseignant -->
-        <div class="teacher-custom-note-wrap">
-          <div style="font-size:12px;font-weight:600;color:var(--label2);margin-bottom:4px">
-            Remarque personnalisée de l'enseignant (optionnel)
-          </div>
-          <input type="text" id="paneTeacherNoteInput" class="teacher-inline-input" placeholder="Ajouter une appréciation spécifique pour cet élève..." onchange="updateActiveStudentTeacherNote(this.value)">
-        </div>
-
-        <!-- Actions de bas de carte -->
-        <div class="pane-actions-bar">
-          <button class="btn-pane-outline" onclick="openStudentEditMode()">✏️ Modifier la note</button>
-          <button class="btn-pane-outline" onclick="exportStudentSheetPDF(_activeStudentIdx)">📥 Exporter PDF</button>
-          <button class="btn-pane-primary" onclick="confirmValidateStudent()">Valider ✓</button>
-        </div>
-
       </div>
     </div>
 

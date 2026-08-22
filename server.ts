@@ -150,8 +150,8 @@ app.get("/api/health", (req, res) => {
 
 // Helper with exponential backoff and model fallback for high-demand / 503 / 429 / timeout quota errors
 async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
-  // Use stable, highly available official models with fallbacks
-  const models = ["gemini-2.5-flash", "gemini-3.7-flash", "gemini-2.5-flash-lite"];
+  // Use available current generation models with automatic fallbacks
+  const models = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
   let lastError: any = null;
 
   for (const modelName of models) {

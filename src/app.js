@@ -476,7 +476,8 @@ async function correctOneWithRetry(student, maxR) {
   var lastErr;
   for (var att = 0; att <= maxR; att++) {
     try {
-      return await correctOne(student);
+      var rawRes = await correctOne(student);
+      return normalizeStudentResult(rawRes);
     } catch (e) {
       lastErr = e;
       if (att < maxR) {
@@ -498,7 +499,8 @@ async function correctPDFClass() {
     mc.push(bldBlk(ST.refB.base64, ST.refB.type, ST.refB.isPdf));
   }
   var res = await callAPI([{ role: 'user', content: mc }]);
-  return res.students || [];
+  var list = res.students || [];
+  return list.map(normalizeStudentResult);
 }
 
 /* ── SUBMIT ── */
@@ -721,8 +723,10 @@ async function executeSub() {
   setTimeout(function () {
     document.getElementById('vl').style.display = 'none';
     document.getElementById('vr').style.display = 'block';
+    _activeResultTab = 'overview';
     renderResults();
     renderClassList();
+    switchResultView('overview');
   }, 400);
   document.getElementById('sb').disabled = false;
 }
@@ -793,7 +797,7 @@ function switchResultView(tab) {
   var swWrap = document.getElementById('studentSwitcherWrap');
   
   if (swWrap) {
-    var tabs = swWrap.querySelectorAll('.student-pill-btn');
+    var tabs = swWrap.querySelectorAll('.student-pill-btn, .student-tab-pill');
     tabs.forEach(function(tb) {
       if (tab === 'overview' && tb.id === 'tab-overview') {
         tb.classList.add('on');
@@ -809,7 +813,7 @@ function switchResultView(tab) {
     if (splitGrid) splitGrid.style.display = 'none';
     if (overviewContainer) overviewContainer.style.display = 'block';
   } else {
-    if (splitGrid) splitGrid.style.display = 'grid';
+    if (splitGrid) splitGrid.style.display = 'block';
     if (overviewContainer) overviewContainer.style.display = 'none';
     renderActiveStudentPane();
   }
@@ -942,13 +946,11 @@ function renderStudentSwitcherTabs() {
     html += statusIco + ' ' + escH(s.name) + (scoreStr ? ' <span style="font-weight:700;margin-left:4px;opacity:0.9">' + scoreStr + '</span>' : '');
     html += '</button>';
   });
-  // Tab for class overview if more than 1 student
-  if (ST.students.length > 1) {
-    var isOverview = (_activeResultTab === 'overview');
-    html += '<button class="student-pill-btn ' + (isOverview ? 'on' : '') + '" id="tab-overview" onclick="switchResultView(\'overview\')" style="background:var(--bg-card);border:1px dashed var(--blue);color:var(--blue);font-weight:600">';
-    html += '📊 Vue d\'ensemble classe';
-    html += '</button>';
-  }
+  // Tab for class overview
+  var isOverview = (_activeResultTab === 'overview');
+  html += '<button class="student-pill-btn ' + (isOverview ? 'on' : '') + '" id="tab-overview" onclick="switchResultView(\'overview\')" style="background:var(--bg-card);border:1px dashed var(--blue);color:var(--blue);font-weight:600">';
+  html += '📊 Vue d\'ensemble classe';
+  html += '</button>';
   wrap.innerHTML = html;
 }
 
@@ -957,18 +959,11 @@ function renderActiveStudentPane() {
   if (!s) return;
   var r = s.result || {};
 
-  // Avatar and header
-  var avatarEl = document.getElementById('paneStudentAvatar');
-  var nameEl = document.getElementById('paneStudentName');
-  var metaEl = document.getElementById('paneStudentMeta');
-  var initials = s.name.split(/\s+/).map(function (w) { return w[0]; }).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'É';
-  if (avatarEl) avatarEl.textContent = initials;
-  if (nameEl) nameEl.textContent = s.name;
-  if (metaEl) {
-    metaEl.textContent = (r.matiere ? r.matiere + ' · ' : '') + (r.niveau ? r.niveau + ' · ' : '') + 'Copie n°' + (_activeStudentIdx + 1) + '/' + ST.students.length;
-  }
+  var mat = r.matiere || (document.getElementById('evalName') || {}).value || 'Mathématiques';
+  var niv = r.niveau || '';
+  var dateFormatted = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  // View toggle between text and scan if image is present
+  // Toggle scan / text if original image exists
   var toggleWrap = document.getElementById('paneViewToggleWrap');
   if (toggleWrap) {
     toggleWrap.style.display = (!s.isPdf && s.base64) ? 'flex' : 'none';
@@ -977,134 +972,121 @@ function renderActiveStudentPane() {
     setDocView('txt');
   }
 
-  // Document Text with Highlighting
-  var docTextEl = document.getElementById('paneDocText');
-  var docTitleEl = document.getElementById('paneDocTitle');
-  if (docTitleEl) {
-    docTitleEl.textContent = (r.type_exercice || 'Transcription de la copie') + ' — ' + s.name;
+  // 1. Header Banner Meta
+  var metaEl = document.getElementById('sheetHeaderMeta');
+  if (metaEl) {
+    metaEl.textContent = mat + (niv ? ' — ' + niv : '') + ' • ' + dateFormatted;
   }
 
-  var rawTrans = r.transcription_copie || '';
-  var detectedErrors = r.corrections_detectees || [];
-
-  // If no explicit detected errors returned, synthesize from questions
-  if (!detectedErrors.length && r.questions && r.questions.length) {
-    r.questions.forEach(function(q) {
-      if (q.points_total && (q.points_obtenus / q.points_total) < 0.9) {
-        detectedErrors.push({
-          categorie: (q.points_obtenus / q.points_total) < 0.5 ? 'Orthographe' : 'Accord',
-          texte_original: q.reponse_eleve || q.titre,
-          texte_corrige: q.attendu || 'À revoir',
-          statut: (q.points_obtenus / q.points_total) < 0.5 ? 'Corrigé' : 'Suggestion',
-          explication: q.commentaire || 'Réponse incomplète ou imprécise par rapport au barème.'
-        });
-      }
-    });
+  // 2. Student Name & Score
+  var nameEl = document.getElementById('sheetStudentName');
+  if (nameEl) {
+    nameEl.textContent = s.name;
   }
 
-  // If no transcription provided by AI, synthesize a formatted student sheet
-  if (!rawTrans.trim()) {
-    if (r.questions && r.questions.length) {
-      rawTrans = r.questions.map(function(q, i) {
-        return 'Question ' + (i + 1) + ' (' + (q.titre || '') + ') :\n' + (q.reponse_eleve ? q.reponse_eleve : 'Réponse manuscrite analysée');
-      }).join('\n\n');
-    } else {
-      rawTrans = "Copie manuscrite numérisée pour " + s.name + ".\nL'IA a évalué le contenu pédagogique et calculé la note ci-contre.";
-    }
-  }
-
-  // Render text with highlight annotations
-  var formattedHtml = escH(rawTrans).replace(/\n/g, '<br>');
-  // Highlight words that match detected errors
-  detectedErrors.forEach(function(err) {
-    if (err.texte_original && err.texte_original.length > 2) {
-      var escapedOrig = escH(err.texte_original);
-      var tagCls = (err.categorie === 'Accord' ? 'annot-orange' : err.categorie === 'Syntaxe' ? 'annot-blue' : err.categorie === 'Style' ? 'annot-purple' : 'annot-red');
-      var highlightSpan = '<span class="annot-tag ' + tagCls + '">' + escapedOrig + '<span class="annot-badge-sub">(' + escH(err.texte_corrige || err.categorie) + ')</span></span>';
-      if (formattedHtml.includes(escapedOrig)) {
-        formattedHtml = formattedHtml.replace(escapedOrig, highlightSpan);
-      }
-    }
-  });
-  if (docTextEl) docTextEl.innerHTML = formattedHtml;
-
-  // Score proposed
-  var scoreEl = document.getElementById('paneProposedScore');
-  var gaugeEl = document.getElementById('paneScoreGauge');
-  var pctEl = document.getElementById('paneScorePercent');
   var no = r.note_obtenue !== undefined ? r.note_obtenue : '?';
   var nt = r.note_total || 20;
-  var pct = r.note_total ? Math.round((r.note_obtenue / r.note_total) * 100) : 75;
-  if (scoreEl) scoreEl.textContent = no + ' / ' + nt;
-  if (pctEl) pctEl.textContent = pct + '%';
-  if (gaugeEl) {
-    gaugeEl.style.borderColor = pct >= 75 ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
-  }
-
-  // Detected errors count & list
-  var countBadge = document.getElementById('paneErrorCountBadge');
-  var listEl = document.getElementById('paneDetectedErrorsList');
-  if (countBadge) {
-    countBadge.textContent = detectedErrors.length + ' correction' + (detectedErrors.length > 1 ? 's' : '');
-  }
-  if (listEl) {
-    if (detectedErrors.length === 0) {
-      listEl.innerHTML = '<div style="padding:12px;background:rgba(45,106,79,.08);border-radius:10px;color:var(--green);font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px">🎉 Aucune faute majeure détectée sur cette copie !</div>';
+  var n20 = (r.note_total && r.note_obtenue !== undefined) ? (Math.round((r.note_obtenue / r.note_total) * 200) / 10) : null;
+  var scoreText = no + ' / ' + nt + (n20 !== null ? ' (' + n20 + '/20)' : '');
+  
+  var scoreEl = document.getElementById('sheetScoreBadge');
+  if (scoreEl) {
+    scoreEl.textContent = scoreText;
+    var ratio = (r.note_total && r.note_obtenue !== undefined) ? (r.note_obtenue / r.note_total) : 0.8;
+    if (ratio >= 0.75) {
+      scoreEl.className = 'sheet-score-badge score-good';
+    } else if (ratio >= 0.5) {
+      scoreEl.className = 'sheet-score-badge score-med';
     } else {
-      listEl.innerHTML = detectedErrors.map(function(err) {
-        var cat = err.categorie || 'Orthographe';
-        var catIco = (cat === 'Accord' ? 'A' : cat === 'Syntaxe' ? 'S' : cat === 'Style' ? 'St' : cat === 'Calcul' ? 'C' : 'O');
-        var icoCls = (cat === 'Accord' ? 'ico-orange' : cat === 'Syntaxe' ? 'ico-blue' : cat === 'Style' ? 'ico-purple' : 'ico-red');
-        return '<div class="detected-err-card">' +
-          '<div class="dec-header">' +
-            '<div class="dec-cat-tag">' +
-              '<span class="cat-ico ' + icoCls + '">' + catIco + '</span>' +
-              '<span>' + escH(cat) + '</span>' +
-            '</div>' +
-            '<span class="dec-status-pill">' + escH(err.statut || 'Corrigé') + '</span>' +
-          '</div>' +
-          '<div class="dec-words-diff">' +
-            (err.texte_original ? '<span class="word-wrong">' + escH(err.texte_original) + '</span>' : '') +
-            (err.texte_corrige ? '<span class="word-arrow">→</span><span class="word-fixed">' + escH(err.texte_corrige) + '</span>' : '') +
-          '</div>' +
-          (err.explication ? '<div class="dec-explanation">' + escH(err.explication) + '</div>' : '') +
-        '</div>';
-      }).join('');
+      scoreEl.className = 'sheet-score-badge score-low';
     }
   }
 
-  // Comment Box
-  var cmtEl = document.getElementById('paneCommentBox');
-  if (cmtEl) {
-    cmtEl.textContent = r.appreciation || "Travail sérieux. Continuer ainsi.";
+  // 3. Appreciation Box
+  var apprecEl = document.getElementById('sheetAppreciationText');
+  if (apprecEl) {
+    apprecEl.textContent = r.appreciation || "Bon travail global, notions bien acquises.";
   }
 
-  // Teacher custom note
-  var noteInput = document.getElementById('paneTeacherNoteInput');
-  if (noteInput) {
-    noteInput.value = s.teacherNote || '';
-  }
+  // 4. Questions & Exercises List
+  var qsListEl = document.getElementById('sheetQuestionsList');
+  if (qsListEl) {
+    var qs = r.questions || [];
+    if (!qs.length) {
+      // If AI didn't return split questions, synthesize items from corrections detected
+      if (r.corrections_detectees && r.corrections_detectees.length) {
+        qs = r.corrections_detectees.map(function(c, i) {
+          return {
+            titre: 'Exercice ' + (i + 1),
+            points_obtenus: c.statut === 'Corrigé' ? 0 : 1,
+            points_total: 2,
+            reponse_eleve: c.texte_original || '—',
+            attendu: c.texte_corrige || '—',
+            commentaire: c.explication || 'Réponse à consolider.'
+          };
+        });
+      } else {
+        qs = [
+          { titre: 'Exercice 1', points_obtenus: no, points_total: nt, reponse_eleve: 'Travail manuscrit', attendu: 'Conforme au barème', commentaire: r.appreciation || 'Correct' }
+        ];
+      }
+    }
 
-  // Questions Detail accordion (optional)
-  var qWrap = document.getElementById('paneQuestionsWrap');
-  var qList = document.getElementById('paneQuestionsList');
-  if (qWrap && qList && r.questions && r.questions.length) {
-    qWrap.style.display = 'block';
-    qList.innerHTML = r.questions.map(function(q) {
-      var qp = q.points_total ? Math.round((q.points_obtenus / q.points_total) * 100) : 50;
-      var ic = qp >= 90 ? '✅' : qp >= 50 ? '⚠️' : '❌';
-      return '<div style="padding:8px 12px;background:var(--bg-secondary);border-radius:8px;margin-bottom:6px;font-size:12.5px">' +
-        '<div style="display:flex;justify-content:space-between;font-weight:600">' +
-          '<span>' + ic + ' ' + escH(q.titre || 'Question') + '</span>' +
-          '<span style="color:var(--blue)">' + (q.points_obtenus !== undefined ? q.points_obtenus : '?') + ' / ' + (q.points_total || 0) + ' pts</span>' +
+    var qsHtml = qs.map(function(q, i) {
+      var titre = q.titre || ('Exercice ' + (i + 1));
+      // Normalize 'Question X' to 'Exercice X' if standard school format
+      if (!titre.toLowerCase().startsWith('exo') && !titre.toLowerCase().startsWith('exercice') && !titre.toLowerCase().startsWith('partie') && !titre.toLowerCase().startsWith('question')) {
+        titre = 'Exercice ' + (i + 1) + ' — ' + titre;
+      }
+      
+      var po = q.points_obtenus !== undefined ? q.points_obtenus : 0;
+      var pt = q.points_total !== undefined ? q.points_total : 1;
+      var pRatio = pt ? (po / pt) : 0.5;
+      
+      var tagCls = 'tag-acquis';
+      var tagLabel = '[ACQUIS]';
+      if (pRatio >= 0.99) {
+        tagCls = 'tag-acquis';
+        tagLabel = '[ACQUIS]';
+      } else if (pRatio >= 0.5) {
+        tagCls = 'tag-partiel';
+        tagLabel = '[PARTIEL]';
+      } else {
+        tagCls = 'tag-revoir';
+        tagLabel = '[A REVOIR]';
+      }
+
+      var pointsStr = po + ' / ' + pt + ' pt ' + tagLabel;
+
+      var linesHtml = '';
+      if (q.reponse_eleve) {
+        linesHtml += '<div class="sqi-line"><span class="sqi-lbl">Réponse élève :</span> <span class="sqi-val">' + escH(q.reponse_eleve) + '</span></div>';
+      }
+      if (q.attendu) {
+        linesHtml += '<div class="sqi-line"><span class="sqi-lbl">Attendu :</span> <span class="sqi-val">' + escH(q.attendu) + '</span></div>';
+      }
+      if (q.commentaire) {
+        linesHtml += '<div class="sqi-line"><span class="sqi-lbl">Commentaire :</span> <span class="sqi-val sqi-comment">' + escH(q.commentaire) + '</span></div>';
+      }
+
+      return '<div class="sheet-question-item">' +
+        '<div class="sqi-top-row">' +
+          '<span class="sqi-title">' + escH(titre) + '</span>' +
+          '<span class="sqi-score-tag ' + tagCls + '">' + pointsStr + '</span>' +
         '</div>' +
-        (q.reponse_eleve ? '<div style="color:var(--label2);font-size:11.5px;margin-top:3px"><strong>Élève :</strong> ' + escH(q.reponse_eleve) + '</div>' : '') +
-        (q.attendu ? '<div style="color:var(--label2);font-size:11.5px;margin-top:2px"><strong>Attendu :</strong> ' + escH(q.attendu) + '</div>' : '') +
-        (q.commentaire ? '<div style="color:var(--label);font-size:11.5px;font-style:italic;margin-top:3px">' + escH(q.commentaire) + '</div>' : '') +
+        '<div class="sqi-details">' +
+          linesHtml +
+        '</div>' +
       '</div>';
     }).join('');
-  } else if (qWrap) {
-    qWrap.style.display = 'none';
+
+    qsListEl.innerHTML = qsHtml;
+  }
+
+  // 5. Footer Date
+  var footDateEl = document.getElementById('sheetFooterDate');
+  if (footDateEl) {
+    footDateEl.textContent = "Généré par ProfCorrec' IA — " + dateFormatted;
   }
 }
 
@@ -1165,9 +1147,13 @@ function renderResults() {
     }).join('');
   }
 
-  // Populate Switcher tabs and Split screen
+  // Populate Switcher tabs and Split screen or Overview
   renderStudentSwitcherTabs();
-  renderActiveStudentPane();
+  if (_activeResultTab === 'overview') {
+    switchResultView('overview');
+  } else {
+    renderActiveStudentPane();
+  }
 }
 
 /* ── HISTOGRAM ── */
@@ -1183,10 +1169,10 @@ function renderHistogram(wn) {
     else slots[3]++;
   });
   var max = Math.max.apply(null, slots) || 1;
-  var colors = ['#e74c3c', '#e67e22', '#3498db', '#27ae60'];
+  var colors = ['#DC2626', '#EA580C', '#007AFF', '#16A34A'];
   el.innerHTML = slots.map(function (v, i) {
     var h = Math.round((v / max) * 85);
-    return '<div class="hbar-wrap"><div class="hbar-count">' + (v || '') + '</div><div class="hbar" style="height:' + Math.max(h, v ? 3 : 0) + 'px;background:' + colors[i] + '"></div></div>';
+    return '<div class="hbar-wrap"><div class="hbar-count">' + (v || '') + '</div><div class="hbar" style="height:' + Math.max(h, v ? 4 : 2) + 'px;background:' + colors[i] + '"></div></div>';
   }).join('');
 }
 
@@ -1221,16 +1207,16 @@ function renderAnalysis(ok) {
   var html = '';
   if (qs.length) {
     html += '<div style="margin-bottom:1rem">';
-    qs.slice(0, 6).forEach(function (q) {
-      var col = q.failPct >= 75 ? 'var(--r2)' : q.failPct >= 50 ? 'var(--g)' : 'var(--a)';
+    qs.slice(0, 8).forEach(function (q) {
+      var col = q.failPct >= 75 ? '#DC2626' : q.failPct >= 50 ? '#EA580C' : q.failPct >= 20 ? '#16A34A' : '#94A3B8';
       html += '<div class="q-fail-row"><span class="qfail-name">' + escH(q.titre) + '</span><div class="qfail-bar"><div class="qfail-fill" style="width:' + q.failPct + '%;background:' + col + '"></div></div><span class="qfail-pct" style="color:' + col + '">' + q.failPct + '%</span></div>';
     });
     html += '</div>';
   }
   if (topFail.length) {
-    html += '<div style="font-size:.75rem;font-weight:600;color:var(--ink);margin-bottom:.5rem">📌 Points de remédiation suggérés</div>';
+    html += '<div style="font-size:12.5px;font-weight:700;color:var(--label);margin-bottom:8px">📌 Points de remédiation suggérés</div>';
     topFail.forEach(function (q) {
-      html += '<div class="remed-item"><span style="font-size:1rem;flex-shrink:0">' + (q.failPct >= 75 ? '🔴' : '🟡') + '</span><div><strong style="font-size:.78rem">' + escH(q.titre) + '</strong> — ' + q.fail + ' élève' + (q.fail > 1 ? 's' : '') + ' en difficulté (' + q.failPct + '%)<br><span style="font-size:.73rem;color:var(--inkm)">Revoir ce point lors du prochain cours. Proposer des exercices supplémentaires ciblés.</span></div></div>';
+      html += '<div class="remed-item"><span style="font-size:1.1rem;flex-shrink:0">' + (q.failPct >= 75 ? '🔴' : '🟡') + '</span><div><strong style="font-size:13px;color:var(--label)">' + escH(q.titre) + '</strong> — ' + q.fail + ' élève' + (q.fail > 1 ? 's' : '') + ' en difficulté (' + q.failPct + '%)<br><span style="font-size:12px;color:var(--label3)">Revoir ce point lors du prochain cours. Proposer des exercices supplémentaires ciblés.</span></div></div>';
     });
   }
   aCnt.innerHTML = html;
@@ -1302,19 +1288,6 @@ function exportCSV() {
 }
 
 /* ── PRINT ── */
-function printOne(idx) {
-  var s = ST.students[idx];
-  if (!s || !s.result) return;
-  var d = s.result;
-  var no = d.note_total != null ? ((d.note_obtenue !== undefined ? d.note_obtenue : '?') + ' / ' + d.note_total) : '—';
-  document.getElementById('pz').innerHTML = '<div style="font-family:sans-serif;max-width:680px;margin:0 auto;padding:2rem;color:#1a1a2e"><div style="text-align:center;border-bottom:1px solid #ddd;padding-bottom:1rem;margin-bottom:1.5rem"><h1 style="font-size:1.2rem;margin-bottom:4px">Correction — ' + escH(s.name) + '</h1><p style="font-size:.8rem;color:#666">' + (d.matiere || '') + ' — ' + (d.niveau || '') + '</p><p style="font-size:.74rem;color:#999">' + new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) + '</p></div>' + (d.questions || []).map(function (q) {
-    var p = q.points_total ? Math.round((q.points_obtenus / q.points_total) * 100) : 50;
-    var bc = p >= 99 ? '#2d6a4f' : p >= 50 ? '#b5860d' : '#c0392b';
-    return '<div style="border-left:3px solid ' + bc + ';border:.5px solid #e5e5e5;border-left-width:3px;padding:.62rem .82rem;margin-bottom:.4rem;border-radius:0 6px 6px 0"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><strong style="font-size:.81rem">' + escH(q.titre || '') + '</strong>' + (q.points_total != null ? '<span style="font-size:.75rem;font-weight:600;color:' + bc + '">' + q.points_obtenus + '/' + q.points_total + '</span>' : '') + '</div>' + (q.reponse_eleve ? '<div style="font-size:.74rem;color:#666">Élève : ' + escH(q.reponse_eleve) + '</div>' : '') + (q.attendu ? '<div style="font-size:.74rem;color:#666">Attendu : ' + escH(q.attendu) + '</div>' : '') + (q.commentaire ? '<div style="font-size:.71rem;color:#888;font-style:italic;margin-top:3px">' + escH(q.commentaire) + '</div>' : '') + '</div>';
-  }).join('') + '<div style="background:#1a1a2e;color:white;border-radius:10px;padding:.85rem 1.2rem;display:flex;justify-content:space-between;align-items:center;margin:1rem 0"><span style="font-size:.74rem;opacity:.5;text-transform:uppercase">Note finale</span><span style="font-size:1.65rem;font-weight:700">' + no + '</span></div>' + (d.appreciation ? '<div style="background:#e8f4ee;border-radius:7px;padding:.72rem;font-size:.79rem;color:#1b4332;line-height:1.65;margin-bottom:.55rem">' + escH(d.appreciation) + '</div>' : '') + (d.remarques && d.remarques.toLowerCase() !== 'aucune' ? '<div style="background:#fef9ec;border-radius:7px;padding:.72rem;font-size:.77rem;color:#5a3e00">' + escH(d.remarques) + '</div>' : '') + '</div>';
-  window.print();
-}
-
 function printClass() {
   var ok = ST.students.filter(function (s) { return s.status === 'ok' && s.result; });
   var matList = Array.from(new Set(ok.map(function (s) { return s.result.matiere || ''; }).filter(Boolean))).join(', ') || 'Correction';
@@ -2726,53 +2699,82 @@ function saveEdits(idx) {
   }
 }
 
-/* -- FICHE RETOUR ELEVE -- */
+/* -- FICHE RETOUR ELEVE OFFICIELLE -- */
 function printStudentSheet(idx) {
   var s = ST.students[idx];
   if (!s || !s.result) return;
   var d = s.result;
-  var ap = document.querySelector('.modal-apprec');
-  var apText = ap ? ap.innerText.trim() : (d.appreciation || '');
+  var apText = d.appreciation || 'Bon travail global.';
   var no = d.note_total != null ? ((d.note_obtenue !== undefined ? d.note_obtenue : '?') + ' / ' + d.note_total) : '—';
   var n20 = d.note_total ? Math.round(d.note_obtenue / d.note_total * 200) / 10 + '/20' : '—';
-  var rows = (d.questions || []).map(function (q, i) {
-    var cmtEl = document.querySelectorAll('.modal-cmt')[i];
-    var cmt = cmtEl ? cmtEl.innerText.trim() : (q.commentaire || '');
-    var p = q.points_total ? Math.round((q.points_obtenus / q.points_total) * 100) : 50;
-    var col = p >= 99 ? '#2d6a4f' : p >= 50 ? '#b5860d' : '#c0392b';
-    return '<tr style="border-bottom:.5px solid #eee;vertical-align:top">' +
-      '<td style="padding:.42rem .6rem;font-size:.8rem;font-weight:500">' + (i + 1) + '. ' + escH(q.titre || '') + '</td>' +
-      '<td style="padding:.42rem .6rem;font-size:.77rem;color:#555">' + escH(q.reponse_eleve || '—') + '</td>' +
-      '<td style="padding:.42rem .6rem;font-size:.77rem;color:#555">' + escH(q.attendu || '—') + '</td>' +
-      '<td style="padding:.42rem .6rem;text-align:center;font-weight:700;color:' + col + '">' + (q.points_total != null ? q.points_obtenus + '/' + q.points_total : '—') + '</td>' +
-      '<td style="padding:.42rem .6rem;font-size:.74rem;color:#666;font-style:italic">' + escH(cmt) + '</td>' +
-      '</tr>';
+  var dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  var mat = d.matiere || (document.getElementById('evalName') || {}).value || 'Mathématiques';
+  var niv = d.niveau || '';
+
+  var qs = d.questions || [];
+  if (!qs.length && d.corrections_detectees && d.corrections_detectees.length) {
+    qs = d.corrections_detectees.map(function(c, i) {
+      return {
+        titre: 'Exercice ' + (i + 1),
+        points_obtenus: c.statut === 'Corrigé' ? 0 : 1,
+        points_total: 2,
+        reponse_eleve: c.texte_original || '—',
+        attendu: c.texte_corrige || '—',
+        commentaire: c.explication || 'Réponse à consolider.'
+      };
+    });
+  }
+
+  var itemsHtml = qs.map(function(q, i) {
+    var titre = q.titre || ('Exercice ' + (i + 1));
+    var po = q.points_obtenus !== undefined ? q.points_obtenus : 0;
+    var pt = q.points_total !== undefined ? q.points_total : 1;
+    var pRatio = pt ? (po / pt) : 0.5;
+    var tagLabel = pRatio >= 0.99 ? '[ACQUIS]' : pRatio >= 0.5 ? '[PARTIEL]' : '[A REVOIR]';
+    var tagCol = pRatio >= 0.99 ? '#16A34A' : pRatio >= 0.5 ? '#D97706' : '#DC2626';
+
+    return '<div style="background:#FAFAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px 14px;margin-bottom:10px;page-break-inside:avoid">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+        '<span style="font-weight:700;font-size:13.5px;color:#0F172A">' + escH(titre) + '</span>' +
+        '<span style="font-weight:700;font-size:12.5px;color:' + tagCol + '">' + po + ' / ' + pt + ' pt ' + tagLabel + '</span>' +
+      '</div>' +
+      '<div style="font-size:12.5px;line-height:1.5;color:#1E293B">' +
+        (q.reponse_eleve ? '<div style="margin-bottom:2px"><strong style="color:#64748B">Réponse élève :</strong> ' + escH(q.reponse_eleve) + '</div>' : '') +
+        (q.attendu ? '<div style="margin-bottom:2px"><strong style="color:#64748B">Attendu :</strong> ' + escH(q.attendu) + '</div>' : '') +
+        (q.commentaire ? '<div><strong style="color:#64748B">Commentaire :</strong> <span style="font-style:italic;color:#475569">' + escH(q.commentaire) + '</span></div>' : '') +
+      '</div>' +
+    '</div>';
   }).join('');
+
   document.getElementById('pz').innerHTML =
-    '<div style="font-family:sans-serif;max-width:700px;margin:0 auto;padding:1.5rem 2rem;color:#1a1a2e">' +
-    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;border-bottom:2px solid #1a1a2e;padding-bottom:1rem;margin-bottom:1.25rem">' +
-    '<div><h1 style="font-size:1.3rem;font-weight:700;margin-bottom:4px">' + escH(s.name) + '</h1>' +
-    '<p style="font-size:.8rem;color:#666">' + escH(d.matiere || '') + ' — ' + escH(d.niveau || '') + '</p>' +
-    '<p style="font-size:.73rem;color:#999">' + new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) + '</p></div>' +
-    '<div style="text-align:center;background:#1a1a2e;color:white;border-radius:12px;padding:.8rem 1.25rem;flex-shrink:0">' +
-    '<div style="font-size:.63rem;text-transform:uppercase;opacity:.5;margin-bottom:4px">Note</div>' +
-    '<div style="font-size:1.9rem;font-weight:700;line-height:1">' + no + '</div>' +
-    '<div style="font-size:.7rem;opacity:.55;margin-top:3px">' + n20 + '</div></div></div>' +
-    '<table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:1.25rem">' +
-    '<thead><tr style="background:#f0ece3">' +
-    '<th style="text-align:left;padding:.42rem .6rem;font-weight:600;font-size:.71rem">Question</th>' +
-    '<th style="text-align:left;padding:.42rem .6rem;font-weight:600;font-size:.71rem">Votre réponse</th>' +
-    '<th style="text-align:left;padding:.42rem .6rem;font-weight:600;font-size:.71rem">Réponse attendue</th>' +
-    '<th style="text-align:center;padding:.42rem .6rem;font-weight:600;font-size:.71rem">Points</th>' +
-    '<th style="text-align:left;padding:.42rem .6rem;font-weight:600;font-size:.71rem">Commentaire</th>' +
-    '</tr></thead><tbody>' + rows + '</tbody></table>' +
-    (apText ? '<div style="background:#e8f4ee;border-radius:8px;padding:.82rem 1rem;font-size:.82rem;color:#1b4332;line-height:1.7"><strong>Appréciation :</strong> ' + escH(apText) + '</div>' : '') +
+    '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;max-width:760px;margin:0 auto;padding:1.5rem 2rem;color:#0F172A">' +
+      '<div style="background:#007AFF;border-radius:8px;padding:12px 18px;color:#FFFFFF;margin-bottom:18px">' +
+        '<div style="font-size:16px;font-weight:800;letter-spacing:0.02em;text-transform:uppercase">FICHE DE CORRECTION INDIVIDUELLE</div>' +
+        '<div style="font-size:12.5px;opacity:0.95">' + escH(mat + (niv ? ' — ' + niv : '') + ' • ' + dateStr) + '</div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<div style="font-size:22px;font-weight:800;color:#0F172A">' + escH(s.name) + '</div>' +
+        '<div style="font-size:18px;font-weight:800;color:#16A34A">' + no + ' (' + n20 + ')</div>' +
+      '</div>' +
+      '<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:13px;line-height:1.5;color:#1E3A8A">' +
+        '<strong>Appréciation :</strong> ' + escH(apText) +
+      '</div>' +
+      '<div style="font-size:14px;font-weight:700;margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid #E2E8F0">Détail des questions</div>' +
+      itemsHtml +
+      '<div style="display:flex;justify-content:space-between;border-top:1px solid #E2E8F0;padding-top:10px;font-size:11px;color:#94A3B8;margin-top:16px">' +
+        '<div>Généré par ProfCorrec\' IA — ' + dateStr + '</div>' +
+        '<div>Page 1 / 1</div>' +
+      '</div>' +
     '</div>';
   window.print();
 }
 
+function printOne(idx) {
+  printStudentSheet(idx !== undefined ? idx : _activeStudentIdx);
+}
+
 /* ── NOTE MAX & INSTRUCTIONS ── */
-var _noteMax = 'auto';
+var _noteMax = '20';
 
 function setNote(val) {
   _noteMax = val;
@@ -2784,11 +2786,59 @@ function setNote(val) {
 
 function getNoteMax() {
   if (_noteMax === 'auto') return 'Détecte automatiquement la note maximale depuis la copie (généralement /10, /20, /50 ou /100).';
+  var target = (_noteMax === 'custom') ? ((document.getElementById('noteCustomVal') || {}).value || '20') : _noteMax;
+  return 'BARÈME TOTAL STRICT SUR ' + target + ' POINTS (note_total = ' + target + ') :\n' +
+         '- Tu DOIS impérativement noter l\'évaluation sur un total de ' + target + ' points (le champ "note_total" dans le JSON DOIT être exactement égal à ' + target + ').\n' +
+         '- Si les exercices sur la copie ne totalisent pas ' + target + ' points (par exemple s\'ils totalisent 11 ou 12 points), ajuste et répartis la pondération de chaque exercice pour que la somme totale fasse exactement ' + target + ' points (ou applique une péréquation stricte sur ' + target + ').';
+}
+
+function normalizeStudentResult(r) {
+  if (!r) return r;
+  var targetTotal = null;
   if (_noteMax === 'custom') {
-    var v = (document.getElementById('noteCustomVal') || {}).value;
-    return v ? 'La note maximale est sur ' + v + '.' : 'Détecte automatiquement la note maximale.';
+    var cv = (document.getElementById('noteCustomVal') || {}).value;
+    if (cv && !isNaN(parseFloat(cv)) && parseFloat(cv) > 0) targetTotal = parseFloat(cv);
+  } else if (_noteMax && _noteMax !== 'auto' && !isNaN(parseFloat(_noteMax)) && parseFloat(_noteMax) > 0) {
+    targetTotal = parseFloat(_noteMax);
   }
-  return 'La note maximale est sur ' + _noteMax + '. Assure-toi que note_total=' + _noteMax + ' dans le JSON.';
+
+  if (targetTotal && targetTotal > 0) {
+    var rawTot = (r.note_total != null && !isNaN(parseFloat(r.note_total)) && parseFloat(r.note_total) > 0) 
+      ? parseFloat(r.note_total) 
+      : null;
+    
+    if (!rawTot && r.questions && r.questions.length) {
+      rawTot = r.questions.reduce(function(acc, q) { return acc + (parseFloat(q.points_total) || 0); }, 0);
+    }
+    
+    var rawObt = (r.note_obtenue !== undefined && r.note_obtenue !== null && !isNaN(parseFloat(r.note_obtenue)))
+      ? parseFloat(r.note_obtenue)
+      : null;
+      
+    if (rawObt === null && r.questions && r.questions.length) {
+      rawObt = r.questions.reduce(function(acc, q) { return acc + (parseFloat(q.points_obtenus) || 0); }, 0);
+    }
+
+    if (rawTot && rawTot !== targetTotal && rawObt !== null) {
+      var ratio = rawObt / rawTot;
+      r.note_obtenue = Math.round(ratio * targetTotal * 4) / 4;
+      r.note_total = targetTotal;
+    } else if (rawTot === targetTotal) {
+      r.note_total = targetTotal;
+      if (rawObt !== null) r.note_obtenue = rawObt;
+    } else {
+      r.note_total = targetTotal;
+      if (rawObt === null) r.note_obtenue = targetTotal;
+    }
+  } else {
+    if (!r.note_total && r.questions && r.questions.length) {
+      r.note_total = r.questions.reduce(function(acc, q) { return acc + (parseFloat(q.points_total) || 0); }, 0) || 20;
+    }
+    if (r.note_obtenue === undefined && r.questions && r.questions.length) {
+      r.note_obtenue = r.questions.reduce(function(acc, q) { return acc + (parseFloat(q.points_obtenus) || 0); }, 0);
+    }
+  }
+  return r;
 }
 
 function swInstr(t) {

@@ -16,24 +16,42 @@ interface ApiResponse {
 import fs from 'fs';
 import path from 'path';
 
-const LEADS_FILE = path.join(process.cwd(), 'leads.json');
+let inMemoryLeads: any[] = [];
+
+function getLeadsFilePath(): string {
+  const rootPath = path.join(process.cwd(), 'leads.json');
+  try {
+    // Check if writable
+    fs.accessSync(process.cwd(), fs.constants.W_OK);
+    return rootPath;
+  } catch (e) {
+    // Fallback to /tmp on serverless environments like Vercel / AWS Lambda
+    return path.join('/tmp', 'leads.json');
+  }
+}
 
 function getStoredLeads() {
   try {
-    if (fs.existsSync(LEADS_FILE)) {
-      return JSON.parse(fs.readFileSync(LEADS_FILE, 'utf8'));
+    const filePath = getLeadsFilePath();
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
     }
   } catch (e) {
-    console.error('Error reading leads:', e);
+    console.error('Error reading leads from disk:', e);
   }
-  return [];
+  return inMemoryLeads;
 }
 
 function saveStoredLeads(leads: any[]) {
+  inMemoryLeads = leads;
   try {
-    fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2), 'utf8');
+    const filePath = getLeadsFilePath();
+    fs.writeFileSync(filePath, JSON.stringify(leads, null, 2), 'utf8');
   } catch (e) {
-    console.error('Error saving leads:', e);
+    console.error('Error saving leads to disk (using memory buffer):', e);
   }
 }
 

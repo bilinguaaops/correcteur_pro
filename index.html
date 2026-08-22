@@ -506,22 +506,22 @@
     <form id="leadGateForm" onsubmit="event.preventDefault();submitLeadCapture();" style="display:flex;flex-direction:column;gap:12px;text-align:left">
       <div id="leadFieldNameWrap">
         <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Nom complet ou Titre</label>
-        <input type="text" id="leadInputName" placeholder="Ex: M. Dupont / Mme Traoré" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none" required>
+        <input type="text" id="leadInputName" class="lead-input" placeholder="Ex: M. Dupont / Mme Traoré" autocomplete="name" autocapitalize="words" required>
       </div>
 
       <div>
         <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Adresse Email <span style="color:var(--red)">*</span></label>
-        <input type="email" id="leadInputEmail" placeholder="votre.email@ecole.fr" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none" required>
+        <input type="email" id="leadInputEmail" class="lead-input" placeholder="votre.email@ecole.fr" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" required>
       </div>
 
       <div id="leadFieldWhatsapp">
         <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Numéro WhatsApp <span style="font-size:11px;font-weight:normal;color:var(--label3)">(optionnel 📱)</span></label>
-        <input type="tel" id="leadInputWhatsapp" placeholder="+33 6 12 34 56 78 ou +225 07..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none">
+        <input type="tel" id="leadInputWhatsapp" class="lead-input" placeholder="+33 6 12 34 56 78 ou +225 07..." autocomplete="tel" inputmode="tel">
       </div>
 
       <div id="leadFieldSchool">
         <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Établissement / Ville <span style="font-size:11px;font-weight:normal;color:var(--label3)">(optionnel)</span></label>
-        <input type="text" id="leadInputSchool" placeholder="Ex: Collège Jean Jaurès, Abidjan, Paris..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--separator);background:var(--bg-secondary);font-size:14px;outline:none">
+        <input type="text" id="leadInputSchool" class="lead-input" placeholder="Ex: Collège Jean Jaurès, Abidjan, Paris..." autocomplete="organization" autocapitalize="words">
       </div>
 
       <div id="leadGateErr" style="display:none;color:var(--red);font-size:12px;text-align:center;margin-top:2px"></div>

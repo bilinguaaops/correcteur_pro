@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -13,15 +14,46 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "bilingua2026";
-const ADMIN_EMAILS = ["bilingua.agency@gmail.com"];
+// ADMIN CREDENTIALS CONFIGURATION
+const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || "admin_pedago").trim().toLowerCase();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "bilingua.agency@gmail.com").trim().toLowerCase();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "PedagoAdmin#2026!";
+const AUTH_SECRET = process.env.AUTH_SECRET || ("pedago_sec_" + ADMIN_PASSWORD);
+
 let inMemoryLeads: any[] = [];
 
+function generateAdminToken(): string {
+  const timestamp = Date.now();
+  const signature = crypto.createHmac("sha256", AUTH_SECRET).update(`${timestamp}:${ADMIN_USERNAME}`).digest("hex");
+  return `adm_tok_${timestamp}_${signature}`;
+}
+
 function isValidAdminToken(token?: string): boolean {
-  if (!token) return false;
+  if (!token || typeof token !== "string") return false;
   if (token === ADMIN_PASSWORD) return true;
-  if (token.startsWith("adm_tok_") || token === "cpro_master_auth_ok") return true;
-  return false;
+  
+  if (!token.startsWith("adm_tok_")) return false;
+  
+  try {
+    const parts = token.split("_");
+    if (parts.length !== 4) return false;
+    const timestamp = parseInt(parts[2], 10);
+    const signature = parts[3];
+    
+    if (isNaN(timestamp)) return false;
+    
+    // Valid for 7 days
+    const MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+    if (Date.now() - timestamp > MAX_AGE || Date.now() < timestamp - 60000) {
+      return false;
+    }
+    
+    const expectedSig = crypto.createHmac("sha256", AUTH_SECRET).update(`${timestamp}:${ADMIN_USERNAME}`).digest("hex");
+    if (signature.length !== expectedSig.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig));
+  } catch (err) {
+    return false;
+  }
 }
 
 function adminAuthMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -29,34 +61,45 @@ function adminAuthMiddleware(req: express.Request, res: express.Response, next: 
   if (isValidAdminToken(token)) {
     return next();
   }
-  return res.status(401).json({ error: "Accès non autorisé : Mot de passe ou session administrateur requis." });
+  return res.status(401).json({ error: "Accès non autorisé : Identifiants ou session administrateur requis." });
 }
 
 // Admin login verification
 app.post("/api/admin/login", (req, res) => {
-  const { password, email } = req.body || {};
-  const cleanPass = (password || "").trim();
-  const cleanEmail = (email || "").trim().toLowerCase();
+  const { username, email, password } = req.body || {};
+  const inputUser = (username || email || "").trim().toLowerCase();
+  const inputPass = (password || "").trim();
 
-  const isPassMatch = cleanPass === ADMIN_PASSWORD || cleanPass === "admin123" || cleanPass === "bilingua2026";
-  const isEmailOwner = ADMIN_EMAILS.includes(cleanEmail);
+  const isUserValid = (
+    inputUser === ADMIN_USERNAME ||
+    inputUser === ADMIN_EMAIL ||
+    inputUser === "admin" ||
+    inputUser === "bilingua.agency@gmail.com" ||
+    inputUser === "admin@pedagoai.com"
+  );
 
-  if (isPassMatch || (isEmailOwner && cleanPass === ADMIN_PASSWORD)) {
-    const token = "adm_tok_" + Buffer.from(Date.now() + "_" + ADMIN_PASSWORD).toString("base64");
+  const isPassValid = inputPass === ADMIN_PASSWORD;
+
+  if (isUserValid && isPassValid) {
+    const token = generateAdminToken();
     return res.status(200).json({ 
       success: true, 
       token: token,
-      user: { name: "Administrateur Fondateur", email: cleanEmail || "bilingua.agency@gmail.com" } 
+      user: { 
+        username: ADMIN_USERNAME,
+        name: "Administrateur Fondateur", 
+        email: ADMIN_EMAIL 
+      } 
     });
   }
 
-  return res.status(401).json({ error: "Mot de passe administrateur incorrect." });
+  return res.status(401).json({ error: "Identifiant (nom d'utilisateur / email) ou mot de passe administrateur incorrect." });
 });
 
 app.get("/api/admin/verify", (req, res) => {
   const token = (req.headers["x-admin-token"] as string) || (req.query.token as string);
   if (isValidAdminToken(token)) {
-    return res.status(200).json({ authenticated: true });
+    return res.status(200).json({ authenticated: true, username: ADMIN_USERNAME });
   }
   return res.status(401).json({ authenticated: false });
 });

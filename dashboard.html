@@ -366,14 +366,14 @@
   <div id="authLock">
     <div class="lock-card">
       <div style="font-size:44px;margin-bottom:12px">🔐</div>
-      <h2 style="font-family:'Outfit',sans-serif;font-size:22px;margin-bottom:8px">Correcteur Pro · Espace Fondateur</h2>
+      <h2 style="font-family:'Outfit',sans-serif;font-size:22px;margin-bottom:8px">PedagoAI · Espace Administration</h2>
       <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px">
         Portail de gestion & rentabilité SaaS réservé au propriétaire administrateur.
       </p>
       <form onsubmit="event.preventDefault();checkPass();">
         <div style="text-align:left;margin-bottom:12px">
-          <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">EMAIL ADMINISTRATEUR</label>
-          <input type="email" id="adminEmail" value="bilingua.agency@gmail.com" placeholder="votre-email@fondateur.com" style="width:100%;padding:10px 14px;border-radius:10px;background:var(--navy);border:1px solid var(--border);color:#fff;font-size:13px" required>
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">IDENTIFIANT OU EMAIL</label>
+          <input type="text" id="adminUser" value="admin_pedago" placeholder="admin_pedago ou votre email" style="width:100%;padding:10px 14px;border-radius:10px;background:var(--navy);border:1px solid var(--border);color:#fff;font-size:13px" required>
         </div>
         <div style="text-align:left;margin-bottom:12px">
           <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">MOT DE PASSE MAÎTRE</label>
@@ -390,13 +390,13 @@
   <!-- TOP HEADER -->
   <header class="admin-header">
     <div class="header-inner">
-      <a href="/index.html" class="brand-group" title="Retourner à l'application Correcteur">
+      <a href="/index.html" class="brand-group" title="Retourner à l'application PedagoAI">
         <div class="logo-badge">🎓</div>
         <div>
           <div class="brand-title">
-            Correcteur Pro <span class="badge-admin-tag">ADMIN</span>
+            Pedago<span style="color:#60a5fa">AI</span> <span class="badge-admin-tag">ADMIN</span>
           </div>
-          <span style="font-size:11px;color:var(--text-muted)">Hub Solo-Entrepreneur · Abidjan (CI)</span>
+          <span style="font-size:11px;color:var(--text-muted)">Panneau de Contrôle & Sécurité</span>
         </div>
       </a>
 
@@ -969,8 +969,8 @@
 
     // Check pass & verify server
     async function checkPass() {
-      const email = (document.getElementById('adminEmail').value || '').trim();
-      const pass = (document.getElementById('adminPass').value || '').trim();
+      const user = (document.getElementById('adminUser')?.value || '').trim();
+      const pass = (document.getElementById('adminPass')?.value || '').trim();
       const errEl = document.getElementById('authErr');
       const btn = document.getElementById('adminLoginBtn');
 
@@ -982,7 +982,7 @@
         const res = await fetch('/api/admin/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email, password: pass })
+          body: JSON.stringify({ username: user, email: user, password: pass })
         });
 
         const data = await res.json();
@@ -993,7 +993,7 @@
           loadAllData();
         } else {
           if (errEl) {
-            errEl.textContent = data.error || 'Mot de passe ou email administrateur incorrect.';
+            errEl.textContent = data.error || 'Identifiant ou mot de passe incorrect.';
             errEl.style.display = 'block';
           }
         }

@@ -166,13 +166,6 @@ function updateThemeIcons(isDark) {
    NAVIGATION (4 Main Tabs)
 ───────────────────────────────────────────── */
 window.gNav = function (target) {
-  // If navigating away from home to any functional module, require authentication first
-  if (target !== 'home') {
-    if (!requireAuth(function () { gNav(target); })) {
-      return;
-    }
-  }
-
   // Normalize target
   var mainTab = target;
   if (target === 'import' || target === 'configure' || target === 'results' || target === 'corr' || target === 'correction') {
@@ -194,47 +187,50 @@ window.gNav = function (target) {
   });
 
   if (target === 'home') {
-    document.getElementById('vhome').style.display = 'block';
+    var vh = document.getElementById('vhome');
+    if (vh) vh.style.display = 'block';
   } else if (target === 'corr' || target === 'correction') {
-    if (ST.results && ST.results.length > 0) {
-      document.getElementById('vr').style.display = 'block';
-      updateStepperConnectors(3);
-    } else {
-      document.getElementById('vf').style.display = 'block';
-      goToStep(1);
-    }
+    var vf = document.getElementById('vf');
+    if (vf) vf.style.display = 'block';
+    goToStep(1);
   } else if (target === 'import') {
-    document.getElementById('vf').style.display = 'block';
+    var vf = document.getElementById('vf');
+    if (vf) vf.style.display = 'block';
     goToStep(1);
   } else if (target === 'configure') {
-    document.getElementById('vf').style.display = 'block';
+    var vf = document.getElementById('vf');
+    if (vf) vf.style.display = 'block';
     goToStep(2);
   } else if (target === 'results') {
     if (ST.results && ST.results.length > 0) {
-      document.getElementById('vr').style.display = 'block';
+      var vr = document.getElementById('vr');
+      if (vr) vr.style.display = 'block';
       updateStepperConnectors(3);
     } else {
-      document.getElementById('vf').style.display = 'block';
+      var vf = document.getElementById('vf');
+      if (vf) vf.style.display = 'block';
       goToStep(1);
     }
   } else if (target === 'classes') {
-    document.getElementById('vclasses').style.display = 'block';
+    var vc = document.getElementById('vclasses');
+    if (vc) vc.style.display = 'block';
     switchClassesTab('classes');
   } else if (target === 'suivi') {
-    document.getElementById('vclasses').style.display = 'block';
+    var vc = document.getElementById('vclasses');
+    if (vc) vc.style.display = 'block';
     switchClassesTab('suivi');
   } else if (target === 'hist') {
     renderHistList();
-    document.getElementById('vhist').style.display = 'block';
+    var vh = document.getElementById('vhist');
+    if (vh) vh.style.display = 'block';
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 window.startNewCorrection = function () {
-  requireAuth(function () {
-    gNav('corr');
-    goToStep(1);
-  });
+  // Direct navigation to correction workspace Step 1
+  gNav('corr');
+  goToStep(1);
 };
 
 /* ─────────────────────────────────────────────
@@ -2050,14 +2046,10 @@ window.submitLeadCapture = async function () {
   updateTeacherNavStatus();
   closeLeadGateModal();
 
-  if (typeof pendingAuthCallback === 'function') {
-    var cb = pendingAuthCallback;
-    pendingAuthCallback = null;
-    cb();
-  } else {
-    gNav('corr');
-    goToStep(1);
-  }
+  // Redirection directe vers la page de correction
+  gNav('corr');
+  goToStep(1);
+  pendingAuthCallback = null;
 };
 
 window.logoutLeadUser = function () {
@@ -2208,6 +2200,21 @@ function renderTourStep() {
     nextBtn.textContent = step.actionText || 'Suivant ➔';
   }
 }
+
+/* ─────────────────────────────────────────────
+   54 MATIÈRES & 35 LANGUES TOGGLE
+───────────────────────────────────────────── */
+window.switchSlTab = function (tab) {
+  var btnMat = document.getElementById('btnSlMat');
+  var btnLang = document.getElementById('btnSlLang');
+  var vMat = document.getElementById('slMatView');
+  var vLang = document.getElementById('slLangView');
+
+  if (btnMat) btnMat.classList.toggle('on', tab === 'mat');
+  if (btnLang) btnLang.classList.toggle('on', tab === 'lang');
+  if (vMat) vMat.style.display = tab === 'mat' ? 'grid' : 'none';
+  if (vLang) vLang.style.display = tab === 'lang' ? 'grid' : 'none';
+};
 
 function escH(s) {
   if (!s) return '';

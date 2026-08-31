@@ -27,29 +27,25 @@
       <span class="logo-text">Pedago<span class="logo-ai">AI</span></span>
     </a>
 
-    <!-- Center Navigation Links (4 Onglets + Admin) -->
+    <!-- Center Navigation Links -->
     <div class="pedago-navlinks">
       <button type="button" class="pnav-link on" id="pnav-home" onclick="gNav('home')">
         <span class="nav-tab-icon">🏠</span>
         <span>Accueil</span>
       </button>
       <button type="button" class="pnav-link" id="pnav-corr" onclick="gNav('corr')">
-        <span class="nav-tab-icon">📄</span>
-        <span>Correction</span>
+        <span class="nav-tab-icon">📝</span>
+        <span>Corriger</span>
       </button>
       <button type="button" class="pnav-link" id="pnav-classes" onclick="gNav('classes')">
         <span class="nav-tab-icon">👥</span>
-        <span>Classes</span>
+        <span>Mes classes</span>
       </button>
       <button type="button" class="pnav-link" id="pnav-hist" onclick="gNav('hist')">
         <span class="nav-tab-icon">🗂</span>
-        <span>Historique des résultats</span>
+        <span>Mes évaluations</span>
         <span class="nav-badge-count" id="hbadge" style="display:none">0</span>
       </button>
-      <a href="/dashboard.html" class="pnav-link pnav-admin-link" style="color:var(--text-muted);border:1px dashed var(--border);padding:6px 12px;border-radius:20px;text-decoration:none" title="Tableau de bord fondateur & administration">
-        <span class="nav-tab-icon">🔐</span>
-        <span>Admin</span>
-      </a>
     </div>
 
     <!-- Right Controls -->
@@ -107,21 +103,21 @@
     <!-- 1. HERO SECTION -->
     <section class="pedago-hero-section">
       <div class="hero-tag-pill">
-        <span class="hero-sparkle">✨</span> IA Pédagogique Spécialisée Enseignants
+        <span class="hero-sparkle">✨</span> IA Correction Professeurs
       </div>
       <h1 class="hero-headline">
-        IA Correction Professeurs : Photographiez, <span class="text-gradient">l'IA Corrige Automatiquement</span>
+        Photographiez, <span class="text-gradient">l’IA Corrige Automatiquement</span>
       </h1>
       <p class="hero-subheadline">
-        Photographiez vos copies manuscrites avec votre smartphone ou importez vos scans PDF. Notre IA spécialisée évalue chaque devoir avec barème officiel, fiches de correction individuelles détaillées et analyse pas à pas en 30 secondes. Libérez 6+ heures par semaine pour vous concentrer sur l'essentiel : <strong>enseigner</strong>.
+        Photographiez vos copies manuscrites avec votre smartphone et laissez notre IA spécialisée les évaluer automatiquement. Corrections expertes et détaillées en 30 secondes. Libérez 6+ heures par semaine pour vous concentrer sur l’essentiel : enseigner.
       </p>
       
       <div class="hero-actions">
         <button type="button" class="btn-pedago-primary hero-cta-btn" onclick="startNewCorrection()">
-          <span>🚀 Débuter la Correction (Essai 7j)</span>
+          <span>🚀 Débuter l’Essai Gratuit</span>
         </button>
         <button type="button" class="btn-pedago-outline hero-demo-btn" onclick="openInteractiveTour()">
-          <span>🎯 Démarrer le Tour Guidé Interactif</span>
+          <span>🎯 Découvrir la Démo</span>
         </button>
       </div>
 
@@ -136,7 +132,7 @@
           </div>
           <h3 class="hh-title">Prenez une Photo de la Copie</h3>
           <p class="hh-desc">
-            Sortez votre smartphone ou scannez le paquet de devoirs. Écriture cursive, feutre, ratures : notre OCR multimodal déchiffre automatiquement tout type d'écriture manuscrite.
+            Sortez votre téléphone, photographiez la copie manuscrite de l’élève. Peu importe si l’écriture est illisible ou si la page est froissée – notre système déchiffre automatiquement tout type d’écriture manuscrite.
           </p>
         </div>
 
@@ -148,9 +144,9 @@
               <polyline points="9 15 11 17 15 12"/>
             </svg>
           </div>
-          <h3 class="hh-title">L'IA Lit et Corrige Automatiquement</h3>
+          <h3 class="hh-title">L’IA Lit et Corrige Automatiquement</h3>
           <p class="hh-desc">
-            En 30 secondes, l'IA analyse chaque exercice, applique votre barème officiel, détaille le statut [ACQUIS] / [À REVOIR] et rédige des appréciations pédagogiques bienveillantes.
+            En 30 secondes, l’intelligence artificielle lit le texte manuscrit, vérifie chaque réponse selon vos critères, attribue une note et rédige des commentaires personnalisés pour aider l’élève à progresser.
           </p>
         </div>
 
@@ -162,9 +158,9 @@
               <line x1="6" y1="20" x2="6" y2="14"/>
             </svg>
           </div>
-          <h3 class="hh-title">Suivez les Progrès & Fiches Élèves</h3>
+          <h3 class="hh-title">Suivez les Progrès et Repérez les Difficultés</h3>
           <p class="hh-desc">
-            Consultez les résultats de chaque élève, exportez les notes en 1 clic vers Pronote / ÉcoleDirecte et téléchargez les fiches PDF individuelles prêtes à imprimer.
+            Consultez les résultats de chaque élève dans un tableau de bord clair. Voyez immédiatement qui rencontre des difficultés, qui progresse bien. Identifiez les points faibles de la classe pour adapter vos cours.
           </p>
         </div>
       </div>
@@ -174,7 +170,7 @@
     <section class="home-section-block">
       <div class="home-section-header">
         <h2 class="home-section-title">Reconnaissez-vous ces Défis Quotidiens ?</h2>
-        <p class="home-section-subtitle">Chaque enseignant rencontre les mêmes obstacles. PedagoAI les transforme en opportunités.</p>
+        <p class="home-section-subtitle">Chaque enseignant rencontre les mêmes obstacles. Notre IA les transforme en opportunités.</p>
       </div>
 
       <div class="pain-cards-grid">
@@ -187,7 +183,7 @@
           </div>
           <h3 class="pain-card-title">Investir 4h+ pour Corriger 30 Devoirs ?</h3>
           <p class="pain-card-desc">
-            Terminez les nuits blanches et les week-ends passés à corriger. L'IA évalue automatiquement les travaux de vos élèves en 30 secondes, vous rendant vos soirées précieuses.
+            Terminées les nuits blanches à corriger ! Notre IA évalue automatiquement les travaux de vos élèves en 30 secondes, vous rendant vos soirées précieuses.
           </p>
         </div>
 
@@ -197,9 +193,9 @@
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
           </div>
-          <h3 class="pain-card-title">Difficile d'Exceller dans Chaque Matière ?</h3>
+          <h3 class="pain-card-title">Difficile d’Exceller dans Chaque Matière ?</h3>
           <p class="pain-card-desc">
-            Chaque correction s'adapte à votre discipline avec une expertise académique avancée : Mathématiques, Français, SVT, Physique-Chimie, Histoire-Géo, Philosophie et Langues.
+            Chaque IA est ultra-spécialisée dans sa discipline avec une expertise académique avancée. Bénéficiez d’évaluations professionnelles en mathématiques, littérature, sciences, et 54 matières au total.
           </p>
         </div>
 
@@ -210,9 +206,9 @@
               <circle cx="12" cy="12" r="9"/>
             </svg>
           </div>
-          <h3 class="pain-card-title">Notation Inégale Entre Début & Fin de Paquet ?</h3>
+          <h3 class="pain-card-title">Notation Inégale Entre Collègues ?</h3>
           <p class="pain-card-desc">
-            Notre IA applique des critères d'évaluation rigoureusement standardisés et constants de la première à la 35ème copie, pour une équité et une bienveillance parfaites.
+            Notre IA applique des critères d’évaluation standardisés, calibrés sur les systèmes français (0-20), anglo-saxons (A-F), et hispaniques (0-10) pour une équité parfaite.
           </p>
         </div>
       </div>
@@ -222,7 +218,7 @@
     <section class="home-section-block">
       <div class="home-section-header">
         <h2 class="home-section-title">Écosystème Éducatif Complet et Intégré</h2>
-        <p class="home-section-subtitle">De l'évaluation instantanée au suivi personnalisé — la technologie au service de votre pédagogie.</p>
+        <p class="home-section-subtitle">De l’évaluation instantanée au suivi personnalisé – tout est coordonné intelligemment.</p>
       </div>
 
       <div class="split-ecosystem-box">
@@ -234,43 +230,43 @@
             <li class="eco-check-item">
               <span class="eco-check-icon">✓</span>
               <div>
-                <strong>Choix de la matière et du barème</strong>
-                <p>Mathématiques, Français, Sciences, Histoire-Géo, Philosophie, Langues vivantes...</p>
+                <strong>Choisissez matière et niveau</strong>
+                <p>Mathématiques, Français, Sciences, Histoire-Géo, etc.</p>
               </div>
             </li>
             <li class="eco-check-item">
               <span class="eco-check-icon">✓</span>
               <div>
-                <strong>Photographiez ou importez les copies</strong>
-                <p>Depuis votre smartphone ou fichier PDF de classe numérisé en un seul bloc.</p>
+                <strong>Photographiez les travaux manuscrits</strong>
+                <p>Directement depuis votre téléphone, traitement instantané.</p>
               </div>
             </li>
             <li class="eco-check-item">
               <span class="eco-check-icon">✓</span>
               <div>
-                <strong>OCR de pointe pour écriture manuscrite</strong>
-                <p>Déchiffre les rédactions, formules d'équations, calculs et schémas complexes.</p>
+                <strong>L’IA décode et analyse immédiatement</strong>
+                <p>OCR avancé pour écriture manuscrite.</p>
               </div>
             </li>
             <li class="eco-check-item">
               <span class="eco-check-icon">✓</span>
               <div>
-                <strong>Évaluation pas à pas en 30 secondes</strong>
-                <p>Notes, décomposition [ACQUIS]/[À REVOIR], corrigé attendu et conseils d'amélioration.</p>
+                <strong>Évaluation complète en 30 secondes</strong>
+                <p>Notes, commentaires détaillés, conseils d’amélioration.</p>
               </div>
             </li>
             <li class="eco-check-item">
               <span class="eco-check-icon">✓</span>
               <div>
-                <strong>Génération de fiches PDF & export Pronote</strong>
-                <p>Fiches individuelles prêtes à imprimer et export CSV officiel pour votre logiciel scolaire.</p>
+                <strong>Génération de rapports PDF</strong>
+                <p>Documents annotés prêts à imprimer ou partager.</p>
               </div>
             </li>
           </ul>
 
           <div style="margin-top:24px">
             <button type="button" class="btn-pedago-primary" onclick="startNewCorrection()">
-              Tester sur mes copies
+              Débuter l’Essai Gratuit
             </button>
           </div>
         </div>
@@ -325,7 +321,7 @@
     <!-- 4. SECTION SUIVI ÉTUDIANT & TABLEAU DE BORD -->
     <section class="home-section-block">
       <div class="home-section-header">
-        <h2 class="home-section-title">Suivi Étudiant Personnalisé & Tableau de Bord</h2>
+        <h2 class="home-section-title">Suivi Étudiant Personnalisé</h2>
         <p class="home-section-subtitle">Visualisez en temps réel l'évolution de chaque élève et la progression de vos classes.</p>
       </div>
 
@@ -349,7 +345,7 @@
               </div>
               <div class="smc-stat-box">
                 <div class="smc-stat-val" style="color:#10b981">17.0<span style="font-size:13px;color:var(--text-muted)">/20</span></div>
-                <div class="smc-stat-lbl">Meilleure note</div>
+                <div class="smc-stat-lbl">Meilleur score</div>
               </div>
             </div>
 
@@ -376,64 +372,78 @@
 
         <!-- Right Student Features -->
         <div class="eco-right-col">
-          <h3 class="eco-title">Suivi Individuel & Détection des Lacunes</h3>
+          <h3 class="eco-title">Profils & Suivi des Performances</h3>
           
           <ul class="eco-check-list">
             <li class="eco-check-item">
               <span class="eco-check-icon">✓</span>
               <div>
-                <strong>Profil étudiant détaillé</strong>
-                <p>Identité, classe, historique complet des devoirs et notes coefficientées.</p>
+                <strong>Profils étudiants détaillés</strong>
+                <p>Identité, classe, parcours scolaire.</p>
               </div>
             </li>
             <li class="eco-check-item">
               <span class="eco-check-icon">✓</span>
               <div>
-                <strong>Suivi des compétences académiques</strong>
-                <p>Matrice des notions acquises, en cours d'acquisition ou à revoir.</p>
+                <strong>Suivi des performances</strong>
+                <p>Moyenne évolutive, meilleur score, historique complet.</p>
               </div>
             </li>
             <li class="eco-check-item">
               <span class="eco-check-icon">✓</span>
               <div>
-                <strong>Détection automatique des difficultés</strong>
-                <p>Alertes intelligentes pour cibler immédiatement la remédiation pédagogique.</p>
+                <strong>Visualisation des progrès</strong>
+                <p>Graphiques montrant l’évolution dans le temps.</p>
               </div>
             </li>
             <li class="eco-check-item">
               <span class="eco-check-icon">✓</span>
               <div>
-                <strong>Export des données en 1 clic</strong>
-                <p>Téléchargez les synthèses pour les conseils de classe et livrets scolaires (LSU).</p>
+                <strong>Détection des difficultés</strong>
+                <p>Alertes automatiques pour un accompagnement ciblé.</p>
+              </div>
+            </li>
+            <li class="eco-check-item">
+              <span class="eco-check-icon">✓</span>
+              <div>
+                <strong>Export des données</strong>
+                <p>Téléchargez les informations pour vos dossiers.</p>
               </div>
             </li>
           </ul>
 
           <div style="margin-top:24px">
             <button type="button" class="btn-pedago-outline" onclick="gNav('classes')">
-              Accéder au module Classes & Suivi
+              Accéder au logiciel gestion des élèves
             </button>
           </div>
         </div>
       </div>
 
-      <!-- KPI Metrics Strip -->
+      <!-- KPI Metrics Strip (Votre Tableau de Bord Enseignant) -->
+      <div style="margin-top:40px;text-align:center;">
+        <h3 style="font-family:var(--font-heading);font-size:22px;font-weight:800;margin-bottom:16px;">Votre Tableau de Bord Enseignant</h3>
+      </div>
       <div class="kpi-metrics-strip">
         <div class="kpi-metric-item">
           <div class="kpi-val">142+</div>
-          <div class="kpi-lbl">Évaluations ce mois</div>
+          <div class="kpi-lbl">Évaluations ce Mois</div>
+          <div style="font-size:12px;color:#10b981;font-weight:700;margin-top:4px;">+15% vs mois précédent</div>
         </div>
         <div class="kpi-metric-item">
-          <div class="kpi-val">15,2 / 20</div>
-          <div class="kpi-lbl">Note moyenne globale</div>
+          <div class="kpi-val">15,2/20</div>
+          <div class="kpi-lbl">Note Moyenne</div>
+          <div style="font-size:12px;color:#10b981;font-weight:700;margin-top:4px;">+1,1 points d’amélioration</div>
         </div>
         <div class="kpi-metric-item">
           <div class="kpi-val">58h</div>
-          <div class="kpi-lbl">Temps moyen économisé</div>
+          <div class="kpi-lbl">Temps Économisé</div>
+          <div style="font-size:12px;color:var(--blue-primary);font-weight:700;margin-top:4px;">Concentrez-vous sur l’enseignement !</div>
         </div>
         <div class="kpi-metric-item">
           <div class="kpi-val">54</div>
-          <div class="kpi-lbl">Matières prises en charge</div>
+          <div class="kpi-lbl">Matières Couvertes</div>
+          <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-top:4px;">Tous niveaux scolaires</div>
         </div>
       </div>
     </section>
@@ -441,8 +451,8 @@
     <!-- 5. SECTION SUITE COMPLÈTE D'OUTILS IA POUR ENSEIGNANTS -->
     <section class="home-section-block">
       <div class="home-section-header">
-        <h2 class="home-section-title">Suite Complète d'Outils IA pour Enseignants</h2>
-        <p class="home-section-subtitle">De la correction automatique à l'impression des fiches — tous vos outils réunis dans une interface unifiée.</p>
+        <h2 class="home-section-title">Suite Complète d’Outils IA pour Enseignants</h2>
+        <p class="home-section-subtitle">De la correction automatique à la création de contenus pédagogiques — tous vos outils dans une seule plateforme.</p>
       </div>
 
       <div class="tools-grid-6">
@@ -450,168 +460,409 @@
           <div class="tgc-icon" style="background:rgba(16, 185, 129, 0.15);color:#10b981;">📦</div>
           <h3 class="tgc-title">Correction par Lot</h3>
           <p class="tgc-desc">
-            Corrigez toute votre classe en une seule fois. Importez jusqu'à 35 copies simultanément et obtenez l'intégralité des notes et fiches en 5 minutes.
+            Corrigez toute votre classe en une seule fois. Téléchargez jusqu’à 30 copies simultanément et obtenez toutes les notes en 5 minutes.
           </p>
-          <button type="button" class="tgc-link-btn" onclick="startNewCorrection()">Lancer un lot ➔</button>
+          <button type="button" class="tgc-link-btn" onclick="startNewCorrection()">En savoir plus ➔</button>
         </div>
 
         <div class="tool-grid-card">
-          <div class="tgc-icon" style="background:rgba(59, 130, 246, 0.15);color:#3b82f6;">📝</div>
-          <h3 class="tgc-title">Fiches de Correction A4</h3>
+          <div class="tgc-icon" style="background:rgba(59, 130, 246, 0.15);color:#3b82f6;">📖</div>
+          <h3 class="tgc-title">Générateur de Devoirs IA</h3>
           <p class="tgc-desc">
-            Fiches individuelles ultra-détaillées avec détail par question, mention [ACQUIS] / [À REVOIR], corrigé attendu et appréciation globale prêtes à imprimer.
+            Créez des devoirs personnalisés adaptés au niveau de vos élèves en 1 clic. 54 matières, tous niveaux scolaires couverts.
           </p>
-          <button type="button" class="tgc-link-btn" onclick="startNewCorrection()">Corriger mes copies ➔</button>
+          <button type="button" class="tgc-link-btn" onclick="startNewCorrection()">En savoir plus ➔</button>
         </div>
 
         <div class="tool-grid-card">
-          <div class="tgc-icon" style="background:rgba(139, 92, 246, 0.15);color:#8b5cf6;">📊</div>
-          <h3 class="tgc-title">Diagnostic & Histogramme</h3>
+          <div class="tgc-icon" style="background:rgba(139, 92, 246, 0.15);color:#8b5cf6;">⚡</div>
+          <h3 class="tgc-title">Générateur de Quiz IA</h3>
           <p class="tgc-desc">
-            Visualisez la moyenne de classe, la répartition des notes et identifiez immédiatement les questions ayant posé problème à l'ensemble du groupe.
+            Générez des quiz interactifs sur n’importe quel sujet en quelques secondes. QCM, vrai/faux, questions ouvertes — format adapté à votre pédagogie.
           </p>
-          <button type="button" class="tgc-link-btn" onclick="startNewCorrection()">Évaluer une classe ➔</button>
+          <button type="button" class="tgc-link-btn" onclick="startNewCorrection()">En savoir plus ➔</button>
         </div>
 
         <div class="tool-grid-card">
-          <div class="tgc-icon" style="background:rgba(245, 158, 11, 0.15);color:#f59e0b;">✏️</div>
-          <h3 class="tgc-title">Ajustement & Validation des Notes</h3>
+          <div class="tgc-icon" style="background:rgba(245, 158, 11, 0.15);color:#f59e0b;">📋</div>
+          <h3 class="tgc-title">Générateur de Plans de Cours IA</h3>
           <p class="tgc-desc">
-            Conservez le contrôle pédagogique total : visualisez la Note IA suggérée et ajustez librement la Note Finale décidée par le professeur avant validation.
+            Obtenez un plan de cours complet avec objectifs, déroulement pédagogique et ressources en 5 minutes. Aligné sur les programmes officiels.
           </p>
-          <button type="button" class="tgc-link-btn" onclick="startNewCorrection()">Tester l'ajustement ➔</button>
+          <button type="button" class="tgc-link-btn" onclick="startNewCorrection()">En savoir plus ➔</button>
         </div>
 
         <div class="tool-grid-card">
-          <div class="tgc-icon" style="background:rgba(236, 72, 153, 0.15);color:#ec4899;">📑</div>
-          <h3 class="tgc-title">Export Pronote & ÉcoleDirecte</h3>
+          <div class="tgc-icon" style="background:rgba(236, 72, 153, 0.15);color:#ec4899;">📐</div>
+          <h3 class="tgc-title">Générateur de Grille d’Évaluation</h3>
           <p class="tgc-desc">
-            Générez en un clic le fichier CSV officiel pré-formaté avec les identifiants élèves pour importer toutes vos notes sans aucune saisie manuelle.
+            Créez des grilles d’évaluation professionnelles avec critères pondérés et descripteurs de performance, adaptées à chaque type de devoir.
           </p>
-          <button type="button" class="tgc-link-btn" onclick="startNewCorrection()">Tester l'export ➔</button>
+          <button type="button" class="tgc-link-btn" onclick="startNewCorrection()">En savoir plus ➔</button>
         </div>
 
         <div class="tool-grid-card">
           <div class="tgc-icon" style="background:rgba(6, 182, 212, 0.15);color:#06b6d4;">👥</div>
-          <h3 class="tgc-title">Gestion des Classes & Élèves</h3>
+          <h3 class="tgc-title">Logiciel Gestion des Élèves</h3>
           <p class="tgc-desc">
-            Enregistrez vos listes de classes, organisez vos devoirs par date et conservez l'historique complet pour préparer les bulletins trimestriels.
+            Centralisez les profils élèves, suivez les performances individuelles, détectez les difficultés et gérez toute votre classe depuis un tableau de bord unique.
           </p>
-          <button type="button" class="tgc-link-btn" onclick="gNav('classes')">Gérer mes classes ➔</button>
+          <button type="button" class="tgc-link-btn" onclick="gNav('classes')">En savoir plus ➔</button>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:32px">
+        <button type="button" class="btn-pedago-primary" onclick="startNewCorrection()">
+          Voir Tous les Outils IA
+        </button>
+      </div>
+    </section>
+
+    <!-- 6. SECTION FONCTIONNALITÉS AVANCÉES -->
+    <section class="home-section-block">
+      <div class="home-section-header">
+        <h2 class="home-section-title">Fonctionnalités Avancées</h2>
+        <p class="home-section-subtitle">Des outils puissants pour optimiser votre expérience pédagogique.</p>
+      </div>
+
+      <div class="adv-features-grid">
+        <div class="adv-feature-card">
+          <div class="adv-icon-box" style="background:rgba(59, 130, 246, 0.12);color:#3b82f6;">🗂️</div>
+          <h3 class="adv-card-title">Archivage Intelligent</h3>
+          <p class="adv-card-desc">
+            Chaque évaluation est sauvegardée avec un système d’indexation avancé. Retrouvez instantanément le travail de n’importe quel étudiant par nom, matière, ou date. Accès permanent à tout l’historique.
+          </p>
+        </div>
+
+        <div class="adv-feature-card">
+          <div class="adv-icon-box" style="background:rgba(16, 185, 129, 0.12);color:#10b981;">📈</div>
+          <h3 class="adv-card-title">Analyses Prédictives</h3>
+          <p class="adv-card-desc">
+            Visualisations graphiques révélant l’évolution de chaque élève. Identifiez les schémas d’apprentissage, anticipez les besoins d’accompagnement, et optimisez vos méthodes pédagogiques.
+          </p>
+        </div>
+
+        <div class="adv-feature-card">
+          <div class="adv-icon-box" style="background:rgba(139, 92, 246, 0.12);color:#8b5cf6;">🌐</div>
+          <h3 class="adv-card-title">Support Multi-Langues et Multi-Matières</h3>
+          <p class="adv-card-desc">
+            Correction disponible en 35 langues, dans 54 matières. L’IA s’adapte aux différents systèmes éducatifs (français 0-20, américain A-F, espagnol 0-10) pour une évaluation cohérente à l’échelle mondiale.
+          </p>
         </div>
       </div>
     </section>
 
-    <!-- 6. SECTION SÉCURITÉ & CONFIDENTIALITÉ -->
+    <!-- 7. SECTION 54 MATIÈRES ET 35 LANGUES -->
     <section class="home-section-block">
       <div class="home-section-header">
-        <h2 class="home-section-title">🔒 Sécurité & Confidentialité de Vos Données</h2>
-        <p class="home-section-subtitle">Engagements stricts pour protéger les travaux et informations des enseignants et des élèves.</p>
+        <h2 class="home-section-title">54 Matières et 35 Langues Prises en Charge</h2>
+        <p class="home-section-subtitle">Notre IA couvre l’intégralité des disciplines académiques dans toutes les grandes langues d’enseignement du monde.</p>
+      </div>
+
+      <div class="subjects-languages-container">
+        <!-- Switch Tabs (Disciplines vs Langues) -->
+        <div class="sl-tabs-switch">
+          <button type="button" class="sl-tab-btn on" id="btnSlMat" onclick="switchSlTab('mat')">
+            📚 54 Matières Couvertes
+          </button>
+          <button type="button" class="sl-tab-btn" id="btnSlLang" onclick="switchSlTab('lang')">
+            🌍 35 Langues & Systèmes
+          </button>
+        </div>
+
+        <!-- 54 Matières Categories Grid -->
+        <div id="slMatView" class="disciplines-category-grid">
+          <div class="discipline-cat-card">
+            <h4 class="discipline-cat-title">📐 Sciences Exactes</h4>
+            <div class="discipline-tags-list">
+              <span class="discipline-tag">Mathématiques</span>
+              <span class="discipline-tag">Physique</span>
+              <span class="discipline-tag">Chimie</span>
+              <span class="discipline-tag">Ingénierie</span>
+              <span class="discipline-tag">Informatique</span>
+              <span class="discipline-tag">Statistiques</span>
+            </div>
+          </div>
+
+          <div class="discipline-cat-card">
+            <h4 class="discipline-cat-title">🌿 Sciences Naturelles</h4>
+            <div class="discipline-tags-list">
+              <span class="discipline-tag">Biologie</span>
+              <span class="discipline-tag">SVT</span>
+              <span class="discipline-tag">Géologie</span>
+              <span class="discipline-tag">Écologie</span>
+              <span class="discipline-tag">Botanique</span>
+              <span class="discipline-tag">Zoologie</span>
+            </div>
+          </div>
+
+          <div class="discipline-cat-card">
+            <h4 class="discipline-cat-title">📚 Langues & Littérature</h4>
+            <div class="discipline-tags-list">
+              <span class="discipline-tag">Français</span>
+              <span class="discipline-tag">Anglais</span>
+              <span class="discipline-tag">Espagnol</span>
+              <span class="discipline-tag">Allemand</span>
+              <span class="discipline-tag">Italien</span>
+              <span class="discipline-tag">Chinois</span>
+              <span class="discipline-tag">Arabe</span>
+              <span class="discipline-tag">Latin</span>
+              <span class="discipline-tag">Grec Ancien</span>
+            </div>
+          </div>
+
+          <div class="discipline-cat-card">
+            <h4 class="discipline-cat-title">🏛️ Sciences Humaines & Sociales</h4>
+            <div class="discipline-tags-list">
+              <span class="discipline-tag">Histoire</span>
+              <span class="discipline-tag">Géographie</span>
+              <span class="discipline-tag">Philosophie</span>
+              <span class="discipline-tag">Sociologie</span>
+              <span class="discipline-tag">Psychologie</span>
+              <span class="discipline-tag">Anthropologie</span>
+            </div>
+          </div>
+
+          <div class="discipline-cat-card">
+            <h4 class="discipline-cat-title">💼 Économie & Gestion</h4>
+            <div class="discipline-tags-list">
+              <span class="discipline-tag">Économie</span>
+              <span class="discipline-tag">Management</span>
+              <span class="discipline-tag">Comptabilité</span>
+              <span class="discipline-tag">Marketing</span>
+              <span class="discipline-tag">Droit</span>
+              <span class="discipline-tag">Sciences Politiques</span>
+            </div>
+          </div>
+
+          <div class="discipline-cat-card">
+            <h4 class="discipline-cat-title">🎨 Arts & Disciplines Créatives</h4>
+            <div class="discipline-tags-list">
+              <span class="discipline-tag">Arts Plastiques</span>
+              <span class="discipline-tag">Musique</span>
+              <span class="discipline-tag">Théâtre</span>
+              <span class="discipline-tag">Cinéma</span>
+              <span class="discipline-tag">Histoire de l’Art</span>
+              <span class="discipline-tag">Danse</span>
+            </div>
+          </div>
+
+          <div class="discipline-cat-card">
+            <h4 class="discipline-cat-title">⚙️ Technologie & Ingénierie</h4>
+            <div class="discipline-tags-list">
+              <span class="discipline-tag">Technologie</span>
+              <span class="discipline-tag">Électronique</span>
+              <span class="discipline-tag">Mécanique</span>
+              <span class="discipline-tag">Architecture</span>
+              <span class="discipline-tag">Design</span>
+            </div>
+          </div>
+
+          <div class="discipline-cat-card">
+            <h4 class="discipline-cat-title">🩺 Sciences de la Santé</h4>
+            <div class="discipline-tags-list">
+              <span class="discipline-tag">Médecine</span>
+              <span class="discipline-tag">Pharmacie</span>
+              <span class="discipline-tag">Soins Infirmiers</span>
+              <span class="discipline-tag">Nutrition</span>
+            </div>
+          </div>
+
+          <div class="discipline-cat-card">
+            <h4 class="discipline-cat-title">🏃 EPS & Autres Disciplines</h4>
+            <div class="discipline-tags-list">
+              <span class="discipline-tag">EPS</span>
+              <span class="discipline-tag">Sports</span>
+              <span class="discipline-tag">Religion</span>
+              <span class="discipline-tag">Éthique</span>
+              <span class="discipline-tag">Communication</span>
+              <span class="discipline-tag">Journalisme</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 35 Langues View -->
+        <div id="slLangView" class="languages-category-grid" style="display:none">
+          <div class="lang-cat-card">
+            <h4 class="lang-cat-title">🇪🇺 Langues Européennes (14)</h4>
+            <div class="lang-tags-list">
+              <span class="lang-tag">Français</span>
+              <span class="lang-tag">Anglais</span>
+              <span class="lang-tag">Espagnol</span>
+              <span class="lang-tag">Allemand</span>
+              <span class="lang-tag">Italien</span>
+              <span class="lang-tag">Portugais</span>
+              <span class="lang-tag">Russe</span>
+              <span class="lang-tag">Néerlandais</span>
+              <span class="lang-tag">Polonais</span>
+              <span class="lang-tag">Ukrainien</span>
+              <span class="lang-tag">Roumain</span>
+              <span class="lang-tag">Hongrois</span>
+              <span class="lang-tag">Grec</span>
+              <span class="lang-tag">Tchèque</span>
+            </div>
+          </div>
+
+          <div class="lang-cat-card">
+            <h4 class="lang-cat-title">🌏 Langues Asiatiques (19)</h4>
+            <div class="lang-tags-list">
+              <span class="lang-tag">Chinois (Mandarin)</span>
+              <span class="lang-tag">Hindi</span>
+              <span class="lang-tag">Japonais</span>
+              <span class="lang-tag">Coréen</span>
+              <span class="lang-tag">Bengali</span>
+              <span class="lang-tag">Indonésien</span>
+              <span class="lang-tag">Turc</span>
+              <span class="lang-tag">Vietnamien</span>
+              <span class="lang-tag">Thaï</span>
+              <span class="lang-tag">Ourdou</span>
+              <span class="lang-tag">Persan (Farsi)</span>
+              <span class="lang-tag">Marathi</span>
+              <span class="lang-tag">Télougou</span>
+              <span class="lang-tag">Tamoul</span>
+              <span class="lang-tag">Gujarati</span>
+              <span class="lang-tag">Malayalam</span>
+              <span class="lang-tag">Kannada</span>
+              <span class="lang-tag">Odia</span>
+              <span class="lang-tag">Pendjabi</span>
+            </div>
+          </div>
+
+          <div class="lang-cat-card">
+            <h4 class="lang-cat-title">🌍 Moyen-Orient & Afrique (2)</h4>
+            <div class="lang-tags-list">
+              <span class="lang-tag">Arabe</span>
+              <span class="lang-tag">Swahili</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multilingual Banner Note -->
+        <div class="multilang-notice-box">
+          <div class="multilang-notice-text">
+            💡 <strong>Adaptation globale des barèmes :</strong> La correction multilingue s’adapte automatiquement au système de notation du pays : barème 0-20 en France, A-F aux États-Unis, 1-6 en Allemagne, et bien d’autres encore.
+          </div>
+          <button type="button" class="btn-pedago-primary" onclick="startNewCorrection()" style="white-space:nowrap;">
+            Voir la Correction Multilingue ➔
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. SECTION SÉCURITÉ & CONFIDENTIALITÉ -->
+    <section class="home-section-block">
+      <div class="home-section-header">
+        <h2 class="home-section-title">🔒 Sécurité Maximale : Protection de Vos Données</h2>
+        <p class="home-section-subtitle">Mesures de sécurité avancées pour protéger les informations des enseignants et étudiants.</p>
       </div>
 
       <div class="security-cards-grid">
         <div class="sec-card">
           <div class="sec-icon-box">🛡️</div>
-          <h3 class="sec-title">Chiffrement des Données</h3>
+          <h3 class="sec-title">Chiffrement Intégral</h3>
           <p class="sec-desc">
-            Les images de devoirs et informations saisies sont transmises via des connexions sécurisées et chiffrées de bout en bout.
+            Toutes les copies et données personnelles sont chiffrées avec le standard AES-256. Protection complète à chaque étape, du téléchargement au stockage sécurisé.
           </p>
         </div>
 
         <div class="sec-card">
           <div class="sec-icon-box">🔒</div>
-          <h3 class="sec-title">Confidentialité Totale</h3>
+          <h3 class="sec-title">Conformité RGPD</h3>
           <p class="sec-desc">
-            Vos copies et notes restent votre propriété exclusive. Elles ne sont <strong>jamais</strong> partagées ni utilisées pour entraîner des modèles publics d'IA.
+            Respect total de la réglementation européenne sur la protection des données. Contrôle complet de vos informations avec droit à l’effacement garanti.
           </p>
         </div>
 
         <div class="sec-card">
           <div class="sec-icon-box">🏢</div>
-          <h3 class="sec-title">Contrôle & Suppression</h3>
+          <h3 class="sec-title">Serveurs Européens</h3>
           <p class="sec-desc">
-            Vous gardez la maîtrise intégrale de vos données avec possibilité d'effacer vos devoirs, historiques et classes à tout moment en un clic.
+            Données hébergées exclusivement sur serveurs européens sécurisés avec surveillance 24/7. Aucun partage avec des tiers, engagement absolu.
           </p>
         </div>
       </div>
     </section>
 
-    <!-- 7. SECTION TÉMOIGNAGES ENSEIGNANTS -->
+    <!-- 9. SECTION TÉMOIGNAGES ENSEIGNANTS -->
     <section class="home-section-block">
       <div class="home-section-header">
-        <h2 class="home-section-title">Approuvé par 3 200+ Enseignants</h2>
-        <p class="home-section-subtitle">Découvrez comment PedagoAI transforme le quotidien des enseignants en Côte d'Ivoire et dans toute l'Afrique.</p>
+        <h2 class="home-section-title">Approuvé par 3 200+ Enseignants dans le Monde</h2>
+        <p class="home-section-subtitle">Découvrez comment notre IA transforme l’expérience pédagogique.</p>
       </div>
 
       <div class="testimonials-grid">
         <div class="testi-card">
           <p class="testi-quote">
-            « PedagoAI a complètement transformé ma façon de travailler. J'économise maintenant 7 heures par semaine sur mes paquets de 4ème et 3ème. L'analyse des étapes de calcul en mathématiques est d'une précision bluffante ! »
+            « L’IA a complètement transformé ma façon de travailler. J’économise maintenant 7 heures par semaine, ce qui me permet de me concentrer sur l’innovation pédagogique plutôt que sur les corrections répétitives. L’IA comprend parfaitement les mathématiques ! »
           </p>
           <div class="testi-author">
-            <div class="testi-avatar" style="background:#3b82f6">KN</div>
+            <div class="testi-avatar" style="background:#3b82f6">CB</div>
             <div class="testi-info">
-              <div class="testi-name">Kouamé N'Guessan</div>
-              <div class="testi-role">Professeur de Mathématiques · Lycée International Blaise Pascal</div>
+              <div class="testi-name">Catherine Bertrand</div>
+              <div class="testi-role">Professeure de Mathématiques, Lycée Pasteur</div>
             </div>
           </div>
         </div>
 
         <div class="testi-card">
           <p class="testi-quote">
-            « La décomposition par compétence et les fiches individuelles à coller dans les cahiers ont conquis mes élèves et leurs parents. Les appréciations sont bienveillantes, justes et me font gagner un temps fou. »
+            « Le support multi-langues est remarquable. J’enseigne la littérature française à des étudiants internationaux, et l’IA s’ajuste parfaitement aux différents systèmes d’évaluation. Une révolution pédagogique ! »
           </p>
           <div class="testi-author">
-            <div class="testi-avatar" style="background:#10b981">AB</div>
+            <div class="testi-avatar" style="background:#10b981">AM</div>
             <div class="testi-info">
-              <div class="testi-name">Aïssata Bakayoko</div>
-              <div class="testi-role">Professeure de Français · Collège Notre Dame d'Afrique</div>
+              <div class="testi-name">Antoine Martin</div>
+              <div class="testi-role">Professeur de Littérature, École Européenne</div>
             </div>
           </div>
         </div>
 
         <div class="testi-card">
           <p class="testi-quote">
-            « Initialement sceptique sur l'IA pour corriger des copies manuscrites, j'ai été impressionné par la qualité de l'OCR. L'export des notes m'évite la corvée de saisie note par note le dimanche soir. »
+            « Initialement sceptique sur l’IA en sciences, j’ai été impressionnée par la précision de l'IA en chimie et physique. L’outil détecte des erreurs subtiles que je pourrais parfois manquer ! »
           </p>
           <div class="testi-author">
-            <div class="testi-avatar" style="background:#8b5cf6">YK</div>
+            <div class="testi-avatar" style="background:#8b5cf6">SF</div>
             <div class="testi-info">
-              <div class="testi-name">Dr. Yao Koffi</div>
-              <div class="testi-role">Professeur de Physique-Chimie · Collège Adventiste d'Abidjan</div>
+              <div class="testi-name">Dr. Sophie Forestier</div>
+              <div class="testi-role">Professeure de Chimie, Lycée Technique</div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 8. FINAL BOTTOM CALL TO ACTION -->
+    <!-- 10. FINAL BOTTOM CALL TO ACTION -->
     <section class="cta-banner-section">
       <div class="cta-banner-card">
-        <h2 class="cta-banner-title">Révolutionnez Votre Enseignement Dès Aujourd'hui</h2>
+        <h2 class="cta-banner-title">Révolutionnez Votre Enseignement Dès Aujourd’hui</h2>
         <p class="cta-banner-desc">
-          Rejoignez plus de 3 200 enseignants qui économisent déjà 6+ heures chaque semaine et redécouvrent le plaisir d'enseigner grâce à PedagoAI.
+          Rejoignez plus de 3 200 enseignants qui économisent déjà 6+ heures par semaine et redécouvrent le plaisir d’enseigner grâce à notre IA.
         </p>
 
         <div class="hero-actions" style="margin-bottom:24px">
           <button type="button" class="btn-pedago-primary hero-cta-btn" onclick="startNewCorrection()">
-            🚀 Commencer Mon Essai Gratuit (7 jours)
+            🚀 Commencer Maintenant – GRATUIT
           </button>
-          <button type="button" class="btn-pedago-outline hero-demo-btn" onclick="gNav('classes')">
-            👥 Gérer mes Classes & Suivi
+          <button type="button" class="btn-pedago-outline hero-demo-btn" onclick="openInteractiveTour()">
+            🎯 Voir la Démo
           </button>
         </div>
 
-        <div class="cta-guarantees-row">
+        <div class="cta-guarantees-row" style="margin-bottom:20px;">
           <div class="cta-guarantee-pill">
-            <span>✓</span> Essai 100% gratuit 7 jours
+            <span>✓</span> Essai 7 jours 100% gratuit
           </div>
           <div class="cta-guarantee-pill">
             <span>✓</span> Toutes fonctionnalités débloquées
           </div>
           <div class="cta-guarantee-pill">
-            <span>✓</span> Sans aucun engagement
+            <span>✓</span> Sans engagement annulation libre
           </div>
+        </div>
+
+        <div style="font-size:13.5px;color:var(--text-muted);font-weight:600;">
+          ⚡ Installation immédiate • 🔒 Données sécurisées RGPD • 🎯 Support personnalisé
         </div>
       </div>
     </section>
@@ -648,7 +899,7 @@
       <div class="guide-express-header" onclick="toggleGuideExpress()">
         <div class="guide-header-left">
           <span class="guide-spark-badge">⚡ Guide express</span>
-          <h3 class="guide-title">Correction pédagogique en 3 étapes simples</h3>
+          <h3 class="guide-title">5 min pour 30 corrections — et tu contrôles tout</h3>
         </div>
         <div class="guide-header-right">
           <button type="button" class="guide-toggle-btn" id="guideToggleBtn" aria-label="Afficher ou masquer le guide">
@@ -665,28 +916,35 @@
           <div class="guide-step-card">
             <div class="guide-step-header">
               <span class="guide-step-num">1</span>
-              <h4>Importez les copies</h4>
+              <h4>📱 Scan une fois, corrige mille fois</h4>
             </div>
-            <p>Glissez vos fichiers (PDF, photos JPG/PNG) ou importez directement le PDF scanné de toute la classe. L'IA sépare chaque élève automatiquement.</p>
+            <p>Utilisez votre téléphone ou un scanner. CamScanner, Adobe Scan, Microsoft Lens — peu importe, l'IA lit tout. Nommez vos fichiers ou chargez-les en un bloc.</p>
           </div>
           <div class="guide-step-card">
             <div class="guide-step-header">
               <span class="guide-step-num">2</span>
-              <h4>Barème & Corrigé</h4>
+              <h4>📄 Un PDF, toute la classe</h4>
             </div>
-            <p>Tapez vos réponses ou importez la photo du corrigé officiel. Activez l'<strong>IA Autonome</strong> si vous n'avez pas de corrigé rédigé.</p>
+            <p>Vous avez 30 copies papier ? Scannez-les ensemble en un PDF. L'IA détecte chaque élève automatiquement. Vous divisez par 30, l'IA gère le reste.</p>
           </div>
           <div class="guide-step-card">
             <div class="guide-step-header">
               <span class="guide-step-num">3</span>
-              <h4>Fiches & Export</h4>
+              <h4>⚙️ Posez VOS règles de correction</h4>
             </div>
-            <p>Obtenez les notes, points forts, faiblesses et conseils personnalisés. Exportez en 1 clic en PDF individuel, tableau Excel ou ZIP complet.</p>
+            <p>Le barème : c'est vous. La rigueur : c'est vous. L'IA applique ce que VOUS demandez : tolérance orthographe, demi-points, valorisation de la démarche.</p>
+          </div>
+          <div class="guide-step-card">
+            <div class="guide-step-header">
+              <span class="guide-step-num">4</span>
+              <h4>✅ Lancez. Vérifiez. Validez. Exportez.</h4>
+            </div>
+            <p>3 copies corrigées en parallèle (~20 sec par copie). 30 élèves = ~5 minutes. Puis : stats de classe, détails par élève, export CSV Pronote, fiches à imprimer.</p>
           </div>
         </div>
         <div class="guide-footer-actions">
           <div class="guide-tip-pill">
-            <span>💡 <strong>Astuce :</strong> Pour les photos avec smartphone, prenez la copie bien à plat avec un bon éclairage.</span>
+            <span>⚡ <strong>Temps réel :</strong> ~5–6 min par classe. Pendant ce temps, vous ? Préparez vos cours. Consultez un élève. Prenez un café. L'IA, elle, bosse.</span>
           </div>
         </div>
       </div>
@@ -695,8 +953,8 @@
     <!-- ── ÉTAPE 1 : IMPORTATION DES COPIES ── -->
     <div id="wizStep1View">
       <div class="step-heading-area">
-        <h1 class="step-main-title">Importer les Copies d'Élèves</h1>
-        <p class="step-sub-title">Déposez vos fichiers PDF, photos JPG ou PNG pour démarrer la correction automatique.</p>
+        <h1 class="step-main-title">📂 Vos copies — reconnaissez chaque élève</h1>
+        <p class="step-sub-title">Une copie par élève, ou tout dans un PDF. L'IA lit l'écriture manuscrite, détecte les noms et prépare la correction.</p>
       </div>
 
       <div class="import-container-card">
@@ -794,8 +1052,8 @@
 
       <!-- Action Step 1 -->
       <div class="step-actions-footer">
-        <button type="button" class="btn-pedago-primary btn-next-step" id="btnGoStep2" onclick="goToStep(2)" disabled>
-          <span>Continuer</span>
+        <button type="button" class="btn-pedago-primary btn-next-step" id="btnGoStep2" onclick="goToStep(2)" disabled title="Chargez les copies pour démarrer">
+          <span>Continuer vers le barème</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-svg">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
@@ -806,8 +1064,8 @@
     <!-- ── ÉTAPE 2 : CONFIGURATION DE L'ANALYSE (2 Colonnes) ── -->
     <div id="wizStep2View" style="display:none">
       <div class="step-heading-area">
-        <h1 class="step-main-title">Configuration de l'analyse</h1>
-        <p class="step-sub-title">Définissez les paramètres de correction et le niveau d'exigence de l'IA pour ce lot de copies.</p>
+        <h1 class="step-main-title">📋 Évaluation — matière, niveau, barème</h1>
+        <p class="step-sub-title">Posez VOS règles de correction : le barème c'est vous, la rigueur c'est vous, l'IA applique ce que vous demandez.</p>
       </div>
 
       <div class="configure-grid-layout">
@@ -816,7 +1074,7 @@
           
           <!-- Section 1 : Matière -->
           <div class="config-section-card">
-            <h2 class="config-section-title">Matière</h2>
+            <h2 class="config-section-title">Matière & Thème</h2>
             <div class="subjects-tiles-grid" id="subjectsTilesGrid">
               <button type="button" class="subject-tile" data-id="fr" onclick="selectSubject('fr')">
                 <div class="subj-icon">
@@ -894,14 +1152,14 @@
             </div>
 
             <div id="customSubjectInputWrap" style="display:none;margin-top:12px">
-              <input type="text" id="customSubjectName" placeholder="Entrez le nom de la matière (ex: Philosophie, Musique, NSI...)" class="pedago-input" oninput="onCustomSubjectInput(this.value)">
+              <input type="text" id="customSubjectName" placeholder="Ex : Contrôle Maths — Chapitre 3 | Interro Histoire-Géo — L'esclavage | Dissertation Français" class="pedago-input" oninput="onCustomSubjectInput(this.value)">
             </div>
           </div>
 
           <!-- Section 2 : Corrigé Officiel du Professeur & Barème -->
           <div class="config-section-card" id="cardCorrigeType">
             <div class="section-title-with-badge">
-              <h2 class="config-section-title" style="margin-bottom:0">Corrigé & Barème</h2>
+              <h2 class="config-section-title" style="margin-bottom:0">✏️ Votre barème — L'IA ne devinera pas ce que vous attendez</h2>
               <div class="mode-pills-selector">
                 <button type="button" class="mode-pill on" id="mb" onclick="setM('B')">🎯 Avec corrigé</button>
                 <button type="button" class="mode-pill" id="ma" onclick="setM('A')">⚡ IA Autonome</button>
@@ -911,7 +1169,7 @@
             <!-- Saisie corrigé (Mode B) -->
             <div id="refInputContainer" style="margin-top:14px">
               <label for="ct2" class="field-label-sm">Réponses attendues / Corrigé officiel</label>
-              <textarea id="ct2" placeholder="Écrivez ou collez ici vos réponses attendues (ex: Q1: Abidjan (2 pts) — Q2: Schéma légendé (3 pts) — Q3: Démonstration complète...)" rows="3" class="pedago-textarea"></textarea>
+              <textarea id="ct2" placeholder="Vous avez les réponses ? Uploadez ou écrivez ici. L'IA corrige point par point. Pas de réponses ? Activez IA Autonome ci-dessus." rows="3" class="pedago-textarea"></textarea>
               
               <div class="mini-upload-row" style="margin-top:10px">
                 <div class="dz-mini" id="rdzB" ondragover="dg(event,true,'rdzB')" ondragleave="dg(event,false,'rdzB')" ondrop="dpRefB(event)">
@@ -927,7 +1185,7 @@
 
             <!-- Mode IA autonome info -->
             <div id="modeAutoNotice" style="display:none;margin-top:14px;" class="info-alert-box">
-              ✨ <strong>Mode IA Autonome activé :</strong> L'IA analysera le devoir et appliquera les critères pédagogiques académiques officiels.
+              ✨ <strong>Mode IA Autonome activé :</strong> Pas de corrigé sous la main ? L'IA génère les critères selon le niveau. Mais honnêtement ? Un petit barème ou corrigé, c'est encore plus précis.
             </div>
 
             <!-- Notation sur 20 / 10 / 50 / 100 -->
@@ -947,52 +1205,53 @@
         <!-- COLONNE DROITE : CONSIGNES PÉDAGOGIQUES POUR L'IA & INSTRUCTIONS LIBRES -->
         <div class="config-right-col">
           <div class="evaluation-criteria-card">
-            <h3 class="consignes-section-title">CONSIGNES PÉDAGOGIQUES POUR L'IA</h3>
+            <h3 class="consignes-section-title">🎓 Vos règles du jeu — rendez l'IA aussi juste que vous</h3>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Plus vous expliquez vos consignes, plus l'IA comprend votre pédagogie.</p>
 
             <div class="consignes-list-box">
               <label class="consigne-item">
                 <input type="checkbox" id="c_no_ortho" class="custom-chk">
-                <span class="consigne-txt">Ne pas pénaliser les fautes d'orthographe</span>
+                <span class="consigne-txt">🤝 Orthographe forgettable — ce qu'ils savent compte</span>
               </label>
 
               <label class="consigne-item">
                 <input type="checkbox" id="c_half_pts" checked class="custom-chk">
-                <span class="consigne-txt">Accepter les réponses partielles (demi-points)</span>
+                <span class="consigne-txt">📊 Créditer la demi-réponse — la démarche a un prix</span>
               </label>
 
               <label class="consigne-item">
                 <input type="checkbox" id="c_strict" class="custom-chk">
-                <span class="consigne-txt">Barème strict et sans complaisance</span>
+                <span class="consigne-txt">📐 Barème strict, zéro flexibilité — par contre c'est juste</span>
               </label>
 
               <label class="consigne-item">
                 <input type="checkbox" id="c_encouraging" checked class="custom-chk">
-                <span class="consigne-txt">Appréciation bienveillante et encourageante</span>
+                <span class="consigne-txt">✨ Présentation + organisation = points — apprentissage valorisé</span>
               </label>
 
               <label class="consigne-item">
                 <input type="checkbox" id="c_synonyms" checked class="custom-chk">
-                <span class="consigne-txt">Accepter les synonymes et formulations équivalentes</span>
+                <span class="consigne-txt">💬 Accepter les synonymes et formulations équivalentes</span>
               </label>
 
               <label class="consigne-item">
                 <input type="checkbox" id="c_reasoning_first" class="custom-chk">
-                <span class="consigne-txt">La démarche compte même si le résultat final est faux</span>
+                <span class="consigne-txt">🛤 La démarche est la moitié du prix — même si la réponse est fausse</span>
               </label>
             </div>
 
             <!-- INSTRUCTIONS LIBRES SUPPLEMENTAIRES -->
             <div class="free-instructions-area">
               <label for="freeInstructions" class="consignes-section-title" style="display:block;margin-bottom:8px">
-                INSTRUCTIONS LIBRES SUPPLÉMENTAIRES <span class="opt-label">(optionnel)</span>
+                ✍️ Consignes personnalisées <span class="opt-label">(optionnel)</span>
               </label>
-              <textarea id="freeInstructions" placeholder="Précisez vos consignes particulières pour cette évaluation (ex : pénaliser les unités manquantes, valoriser les schémas...)" rows="3" class="pedago-textarea"></textarea>
+              <textarea id="freeInstructions" placeholder="Précisez vos consignes libres particulières (ex : pénaliser les unités manquantes de 0,5 max, valoriser les schémas légendés...)" rows="3" class="pedago-textarea"></textarea>
             </div>
 
             <div class="eb2" id="em" style="display:none"></div>
 
             <button type="button" class="btn-pedago-primary btn-launch-analysis" id="sb" onclick="sub()">
-              Lancer l'analyse
+              🚀 Corriger — que le travail commence
             </button>
             <p class="time-est-text" id="timeEst" style="display:none">
               ⏱ Durée estimée : <strong id="timeEstVal">—</strong>
@@ -1052,7 +1311,7 @@
         <span class="stepper-arrow-sep">➔</span>
         <button type="button" class="stepper-step-pill on" onclick="goToStep(3)">
           <span class="step-num-circle">3</span>
-          <span class="step-text">Résultats de l'analyse</span>
+          <span class="step-text">Résultats</span>
         </button>
       </div>
     </div>
@@ -1060,8 +1319,8 @@
     <!-- En-tête des résultats -->
     <div class="results-top-header">
       <div class="results-title-group">
-        <h1 class="results-main-title">Analysis Complete</h1>
-        <p class="results-sub-title">AI grading and feedback generation finished successfully. Review the personalized insights below before finalizing.</p>
+        <h1 class="results-main-title" id="resultsMainTitle">✅ Vos élèves, corrigés.</h1>
+        <p class="results-sub-title">👆 Tap sur un élève pour voir la copie annotée, le barème détaillé, et ajuster votre note finale.</p>
       </div>
       <div class="step-pill-complete">
         <span class="check-icon">✓</span> Étape 3 sur 3
@@ -1072,10 +1331,10 @@
     <div class="results-action-bar-strip">
       <div class="results-filter-tabs">
         <button type="button" class="filter-tab-pill on" id="tabAllStudents" onclick="setResultsFilter('all')">
-          All Students (<span id="countAllStudents">3</span>)
+          ✓ Corrigé (<span id="countAllStudents">3</span>)
         </button>
         <button type="button" class="filter-tab-pill" id="tabNeedsReview" onclick="setResultsFilter('review')">
-          Needs Review (<span id="countNeedsReview">0</span>)
+          📍 À suivre (<span id="countNeedsReview">0</span>)
         </button>
         <button type="button" class="filter-tab-pill" id="tabClassOverview" onclick="setResultsFilter('overview')">
           📊 Vue de classe
@@ -1083,22 +1342,22 @@
       </div>
 
       <div class="results-actions-right">
-        <button type="button" class="btn-pedago-outline" onclick="openPronoteExportModal()" title="Export adapté Pronote, ÉcoleDirecte, Onde ou Excel">
-          <span>📑 Export Pronote / Scolaire</span>
+        <button type="button" class="btn-pedago-outline" onclick="openPronoteExportModal()" title="Importer directement vos notes dans Pronote via fichier CSV">
+          <span>📊 Importer dans Pronote (CSV)</span>
         </button>
-        <button type="button" class="btn-pedago-outline btn-export-pdf" onclick="exportEvaluationPDF()" title="Télécharger le récapitulatif PDF">
+        <button type="button" class="btn-pedago-outline btn-export-pdf" onclick="exportEvaluationPDF()" title="Télécharger le récapitulatif classe en PDF">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="btn-svg">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <path d="M14 2v6h6"/>
             <path d="M12 18v-6M9 15l3 3 3-3"/>
           </svg>
-          <span>Rapport PDF</span>
+          <span>🖨 Récapitulatif classe (PDF)</span>
         </button>
-        <button type="button" class="btn-pedago-outline" onclick="printAllStudentBulletins()" title="Imprimer toutes les fiches élèves au format officiel">
-          <span>🖨️ Imprimer les fiches</span>
+        <button type="button" class="btn-pedago-outline" onclick="printAllStudentBulletins()" title="Imprimer toutes les fiches individuelles à distribuer aux élèves">
+          <span>📄 Fiches à distribuer</span>
         </button>
-        <button type="button" class="btn-pedago-primary btn-publish-grades" onclick="publishAndSaveAll()">
-          <span>Sauvegarder les notes</span>
+        <button type="button" class="btn-pedago-primary btn-publish-grades" onclick="publishAndSaveAll()" title="Pour retrouver votre historique et vos statistiques">
+          <span>💾 Archiver cette session</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg">
             <polygon points="5 3 19 12 5 21 5 3"/>
           </svg>
@@ -1116,7 +1375,7 @@
       <!-- Actions rapides bilan de classe -->
       <div class="class-overview-action-header">
         <div>
-          <h2 class="overview-section-title">📊 Bilan & Diagnostic collectif de la classe</h2>
+          <h2 class="overview-section-title">📊 Courbe de votre classe — qui réussit ? qui patine ?</h2>
           <p class="overview-section-sub">Synthèse globale des résultats, analyse des points de blocage et plan de remédiation.</p>
         </div>
         <div class="class-overview-btn-group">
@@ -1132,18 +1391,18 @@
       <div class="class-kpi-summary-grid" id="cs"></div>
       
       <div class="overview-section-card">
-        <h3 class="overview-card-heading">📊 Répartition des notes de la classe</h3>
+        <h3 class="overview-card-heading">📊 Courbe de distribution des notes</h3>
         <div class="histo-bars" id="histoBars"></div>
         <div class="histo-legend-row">
-          <span>0–5 (Non acquis)</span>
+          <span>0–5 (📍 À suivre)</span>
           <span>5–10 (Fragile)</span>
           <span>10–15 (Acquis)</span>
-          <span>15–20 (Excellence)</span>
+          <span>15–20 (🏆 Meilleur)</span>
         </div>
       </div>
 
       <div class="overview-section-card" id="analysisSec">
-        <h3 class="overview-card-heading">🔍 Diagnostic des Notions & Compétences</h3>
+        <h3 class="overview-card-heading">🚨 Les pièges les plus courants</h3>
         <div id="analysisContent"></div>
       </div>
 
@@ -1151,7 +1410,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
           <h3 class="overview-card-heading" style="margin:0">Liste récapitulative des copies</h3>
           <button type="button" class="btn-pedago-outline" onclick="openPronoteExportModal()">
-            📑 Télécharger format Pronote / CSV
+            📊 Importer dans Pronote (CSV)
           </button>
         </div>
         <div class="rt-list" id="rt"></div>
@@ -1212,8 +1471,8 @@
       <div id="classList"></div>
       <div id="classEmpty" class="empty-state-card" style="display:none">
         <div class="empty-icon">👥</div>
-        <h3>Aucune classe enregistrée</h3>
-        <p>Créez une liste d'élèves pour suivre automatiquement leurs moyennes et tableaux de bord.</p>
+        <h3>Vous n'avez pas de classe enregistrée</h3>
+        <p>Créez une liste d'élèves pour la réutiliser — gain de temps garanti à chaque correction.</p>
       </div>
     </div>
 
@@ -1248,7 +1507,7 @@
   <div id="vhist" class="view-panel" style="display:none">
     <div class="page-top-bar">
       <div>
-        <h1 class="page-title">🗂 Historique des évaluations</h1>
+        <h1 class="page-title">🗂 Mes évaluations</h1>
         <p class="page-subtitle">Retrouvez toutes vos corrections passées.</p>
       </div>
       <button type="button" class="btn-pedago-outline" id="cmpBtn" onclick="compareSelected()" style="display:none">
@@ -1259,8 +1518,8 @@
     <div id="histStats"></div>
     <div class="empty-state-card" id="histEmpty" style="display:none">
       <div class="empty-icon">🗂</div>
-      <h3>Aucune évaluation sauvegardée</h3>
-      <p>Corrigez des copies et cliquez sur « Sauvegarder » pour les archiver ici.</p>
+      <h3>Aucune correction encore</h3>
+      <p>Chargez vos copies — on se charge du reste.</p>
     </div>
     <div id="histList" class="hist-eval-list"></div>
     
@@ -1567,19 +1826,75 @@
 </div>
 
 <!-- ══════════════════════════════════════════════
-     FOOTER PedagoAI
+     FOOTER PedagoAI (Rich Multi-Column)
 ══════════════════════════════════════════════ -->
-<footer class="pedago-global-footer">
-  <div class="footer-container">
-    <div class="footer-brand">
-      <span class="footer-logo">Pedago<span class="logo-ai">AI</span></span>
+<footer class="pedago-rich-footer">
+  <div class="rich-footer-container">
+    <!-- Brand Column -->
+    <div class="rich-footer-col brand-col">
+      <div class="footer-logo-row">
+        <span class="footer-logo">Pedago<span class="logo-ai">AI</span></span>
+      </div>
+      <p class="rich-footer-desc">
+        L’IA spécialisée dans l’évaluation et la correction de copies manuscrites pour enseignants. Gagnez 6+ heures par semaine et concentrez-vous sur l’essentiel : enseigner.
+      </p>
+      <div class="rich-footer-badges">
+        <span class="rf-badge">🔒 Chiffrement AES-256</span>
+        <span class="rf-badge">🇪🇺 Conforme RGPD</span>
+      </div>
     </div>
-    <div class="footer-copyright">
-      © 2026 PedagoAI. Tous droits réservés.
+
+    <!-- Column 1: Outils IA -->
+    <div class="rich-footer-col">
+      <h4 class="rich-footer-heading">Outils IA Enseignants</h4>
+      <ul class="rich-footer-links">
+        <li><a href="#" onclick="startNewCorrection(); return false;">📦 Correction par Lot</a></li>
+        <li><a href="#" onclick="startNewCorrection(); return false;">📖 Générateur de Devoirs</a></li>
+        <li><a href="#" onclick="startNewCorrection(); return false;">⚡ Générateur de Quiz IA</a></li>
+        <li><a href="#" onclick="startNewCorrection(); return false;">📋 Plans de Cours IA</a></li>
+        <li><a href="#" onclick="startNewCorrection(); return false;">📐 Grilles d’Évaluation</a></li>
+        <li><a href="#" onclick="gNav('classes'); return false;">👥 Logiciel Gestion des Élèves</a></li>
+      </ul>
     </div>
-    <div class="footer-links">
-      <a href="#" onclick="openInteractiveTour(); return false;">🎯 Tour Guidé</a>
-      <a href="/dashboard.html" style="font-weight:700;color:var(--blue-primary)" title="Accès Panneau d'Administration Fondateur">🔐 Espace Administration</a>
+
+    <!-- Column 2: Matières & Niveaux -->
+    <div class="rich-footer-col">
+      <h4 class="rich-footer-heading">Matières & Niveaux</h4>
+      <ul class="rich-footer-links">
+        <li><a href="#" onclick="switchSlTab('mat'); return false;">📐 Sciences & Mathématiques</a></li>
+        <li><a href="#" onclick="switchSlTab('mat'); return false;">📚 Français & Langues</a></li>
+        <li><a href="#" onclick="switchSlTab('mat'); return false;">🏛️ Histoire-Géo & SHS</a></li>
+        <li><a href="#" onclick="switchSlTab('mat'); return false;">🎒 Primaire, Collège, Lycée</a></li>
+        <li><a href="#" onclick="switchSlTab('lang'); return false;">🌍 35 Langues & Systèmes</a></li>
+        <li><a href="#" onclick="openInteractiveTour(); return false;">🎯 Tour Guidé Démo</a></li>
+      </ul>
+    </div>
+
+    <!-- Column 3: Sécurité & Légal -->
+    <div class="rich-footer-col">
+      <h4 class="rich-footer-heading">Sécurité & Plateforme</h4>
+      <ul class="rich-footer-links">
+        <li><a href="#" onclick="return false;">🛡️ Chiffrement Intégral</a></li>
+        <li><a href="#" onclick="return false;">🔒 Conformité RGPD</a></li>
+        <li><a href="#" onclick="return false;">🏢 Serveurs Européens</a></li>
+        <li><a href="#" onclick="return false;">📄 Politique de Confidentialité</a></li>
+        <li><a href="#" onclick="return false;">⚖️ Conditions Générales</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rich-footer-bottom">
+    <div class="rich-footer-bottom-container">
+      <div class="rf-copy">
+        © 2026 PedagoAI. Conçu pour les enseignants. Tous droits réservés.
+      </div>
+      <div class="rf-bottom-links">
+        <a href="#" onclick="openInteractiveTour(); return false;">Tutoriel</a>
+        <span>•</span>
+        <a href="#" onclick="startNewCorrection(); return false;">Essai Gratuit</a>
+        <span>•</span>
+        <a href="#" onclick="return false;">Support Enseignant</a>
+      </div>
     </div>
   </div>
 </footer>

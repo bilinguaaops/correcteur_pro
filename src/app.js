@@ -2094,52 +2094,73 @@ function checkAndRestoreAutoSave() {
 var currentTourStep = 0;
 var tourSteps = [
   {
-    title: '1. Bienvenue sur PedagoAI',
-    badge: '🚀 Présentation Pédagogique',
-    desc: 'PedagoAI est l\'assistant de correction automatique créé pour faire gagner 6+ heures par semaine aux enseignants tout en offrant un suivi individualisé aux élèves.',
-    highlight: 'Découvrez en 4 étapes interactives comment numériser, corriger et exporter vos devoirs scolaires.',
-    actionText: 'Commencer le tour ➔'
+    stepNum: 1,
+    title: 'Bienvenue sur PedagoAI',
+    badge: '🚀 Guide & Prise en main',
+    desc: 'PedagoAI est l’assistant pédagogique intelligent qui évalue vos copies et devoirs manuscrits en quelques secondes tout en générant des analyses de classe complètes.',
+    highlight: 'Économisez 6+ heures par semaine tout en offrant des retours constructifs et personnalisés à chaque élève.',
+    visualIcon: '🎓',
+    tips: ['📸 Déchiffrage d’écritures manuscrites', '⚖️ Respect strict de vos barèmes', '📊 Export direct Pronote & Excel'],
+    actionText: 'Découvrir les étapes ➔'
   },
   {
-    title: '2. Importation des Copies',
-    badge: '📸 OCR & Reconnaissance Manuscrite',
-    desc: 'À l\'Étape 1, déposez vos photos prises au smartphone ou vos fichiers PDF (copies individuelles ou PDF de classe groupé).',
-    highlight: 'L\'intelligence artificielle déchiffre automatiquement l\'écriture manuscrite, les équations, fractions, schémas et dissertations rédigées.',
-    actionText: 'Voir l\'étape suivante ➔'
+    stepNum: 2,
+    title: '1. Importer les Copies d’Élèves',
+    badge: '📸 Étape 1 : Numérisation',
+    desc: 'Photographiez les copies avec votre smartphone ou chargez un fichier PDF scanné. Vous pouvez importer des photos séparées ou un seul PDF regroupant toute la classe.',
+    highlight: 'Notre modèle OCR avancé lit les écritures cursives, équations mathématiques, fractions, schémas et rédactions littéraires.',
+    visualIcon: '📱',
+    tips: ['Compatible photos smartphone (JPEG, PNG)', 'Support des PDF multi-pages de classe', 'Détection automatique du nom de l’élève'],
+    actionText: 'Voir le paramétrage du barème ➔'
   },
   {
-    title: '3. Barème & Corrigé Officiel',
-    badge: '⚖️ Notation & Référentiels',
-    desc: 'À l\'Étape 2, sélectionnez la matière et fixez la note maximale (sur 20). Vous pouvez coller votre corrigé officiel ou utiliser le <strong>Mode IA autonome</strong> sans corrigé rédigé.',
-    highlight: 'Personnalisez les critères pédagogiques (bienveillance, rigueur, valorisation de la démarche).',
-    actionText: 'Voir les résultats ➔'
+    stepNum: 3,
+    title: '2. Configurer le Corrigé & le Barème',
+    badge: '⚖️ Étape 2 : Critères & Barème',
+    desc: 'Sélectionnez la matière parmi plus de 54 disciplines et définissez la note maximale (sur 20, 10 ou 100). Vous pouvez coller votre propre corrigé ou activer le mode IA autonome.',
+    highlight: 'Vous gardez le contrôle total : réglez le niveau d’exigence, la tolérance orthographique et la valorisation du raisonnement.',
+    visualIcon: '⚙️',
+    tips: ['54 matières et 35 langues prises en charge', 'Mode avec ou sans corrigé type rédigé', 'Pondération personnalisée par question'],
+    actionText: 'Voir la restitution des résultats ➔'
   },
   {
-    title: '4. Fiches de Correction par Question',
-    badge: '📋 Fiches [ACQUIS] & [À REVOIR]',
-    desc: 'Chaque élève reçoit une fiche individuelle prête à imprimer avec le détail de chaque exercice : note, mention <strong>[ACQUIS]</strong> ou <strong>[À REVOIR]</strong>, réponse élève, réponse attendue et appréciations bienveillantes.',
-    highlight: 'Modifiez la note manuellement en un clic ou exportez directement vers vos logiciels scolaires.',
-    actionText: 'Accès Administration ➔'
+    stepNum: 4,
+    title: '3. Fiches de Correction par Question',
+    badge: '📋 Étape 3 : Restitution & Notes',
+    desc: 'Chaque copie bénéficie d’une fiche claire découpée par question : réponse de l’élève, corrigé attendu, points obtenus et notions <strong>[ACQUIS]</strong> ou <strong>[À REVOIR]</strong>.',
+    highlight: 'Modifiez instantanément une note ou un commentaire en un clic. Vous pouvez imprimer les fiches individuelles pour vos élèves.',
+    visualIcon: '📝',
+    tips: ['Fiches élèves prêtes à être imprimées', 'Ajustement de note rapide par question', 'Commentaires bienveillants et individualisés'],
+    actionText: 'Voir le suivi des classes ➔'
   },
   {
-    title: '5. Accès au Panneau d\'Administration',
-    badge: '🔐 Administration & Alertes Telegram',
-    desc: 'Pour suivre les nouveaux enseignants inscrits, recevoir des notifications Telegram/Webhook en temps réel ou gérer les réglages avancés, accédez à l\'administration à tout moment.',
-    highlight: 'Cliquez sur <strong>🔐 Admin</strong> dans la barre supérieure ou rendez-vous sur <code style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px">/dashboard.html</code> (Identifiants : admin@pedagoai.com / pedago2026).',
-    actionText: 'Terminer et Essayer !'
+    stepNum: 5,
+    title: '4. Suivi des Classes & Export Pronote',
+    badge: '📊 Étape 4 : Gestion & Exports',
+    desc: 'Consultez la moyenne générale, la distribution des notes et les points faibles récurrents de la classe pour adapter vos prochains cours.',
+    highlight: 'Exportez l’ensemble du carnet de notes en un clic au format CSV compatible avec Pronote, EcoleDirecte et Microsoft Excel.',
+    visualIcon: '📈',
+    tips: ['Moyennes et statistiques automatiques', 'Repérage des élèves en difficulté', 'Export CSV en 1 clic pour Pronote'],
+    actionText: '🚀 Commencer ma première correction !'
   }
 ];
 
-window.openInteractiveTour = function () {
-  currentTourStep = 0;
+window.openInteractiveTour = function (initialStep) {
+  currentTourStep = typeof initialStep === 'number' ? initialStep : 0;
   renderTourStep();
   var modal = document.getElementById('tourModal');
-  if (modal) modal.style.display = 'flex';
+  if (modal) {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
 };
 
 window.closeInteractiveTour = function () {
   var modal = document.getElementById('tourModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
 };
 
 window.nextTourStep = function () {
@@ -2159,6 +2180,13 @@ window.prevTourStep = function () {
   }
 };
 
+window.goToTourStepDirect = function (idx) {
+  if (idx >= 0 && idx < tourSteps.length) {
+    currentTourStep = idx;
+    renderTourStep();
+  }
+};
+
 function renderTourStep() {
   var step = tourSteps[currentTourStep];
   var content = document.getElementById('tourStepContent');
@@ -2171,24 +2199,47 @@ function renderTourStep() {
   if (dotsContainer) {
     dotsContainer.innerHTML = tourSteps.map(function (_, idx) {
       var isCurrent = idx === currentTourStep;
-      return '<div class="tour-dot' + (isCurrent ? ' on' : '') + '" style="flex:1;height:4px;border-radius:2px;background:' + (isCurrent ? 'var(--blue-primary)' : (idx < currentTourStep ? '#93c5fd' : '#e2e8f0')) + '"></div>';
+      var isDone = idx < currentTourStep;
+      return '<button type="button" onclick="goToTourStepDirect(' + idx + ')" class="tour-dot' + (isCurrent ? ' on' : '') + '" style="flex:1;height:6px;border-radius:3px;border:none;cursor:pointer;padding:0;transition:all 0.2s ease;background:' + (isCurrent ? 'var(--blue-primary)' : (isDone ? '#93c5fd' : '#e2e8f0')) + '" title="Étape ' + (idx + 1) + '"></button>';
     }).join('');
+  }
+
+  var tipsHtml = '';
+  if (step.tips && step.tips.length) {
+    tipsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:14px;">' +
+      step.tips.map(function (tip) {
+        return '<div style="background:var(--bg-subtle,#f8fafc);border:1px solid var(--border-subtle,#e2e8f0);padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--text-main,#1e293b);">' +
+          escH(tip) +
+        '</div>';
+      }).join('') +
+    '</div>';
   }
 
   content.innerHTML = (
     '<div style="text-align:left">' +
-      '<span style="display:inline-block;padding:3px 10px;background:#eff6ff;color:var(--blue-primary);border-radius:12px;font-size:12px;font-weight:700;margin-bottom:10px">' +
-        escH(step.badge) +
-      '</span>' +
-      '<h2 style="font-size:20px;font-weight:800;color:var(--text-main);margin:0 0 10px 0;letter-spacing:-0.01em">' +
-        escH(step.title) +
-      '</h2>' +
-      '<p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin-bottom:14px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;">' +
+        '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(59,130,246,0.12);color:var(--blue-primary,#2563eb);border-radius:12px;font-size:12px;font-weight:700;">' +
+          escH(step.badge) +
+        '</span>' +
+        '<span style="font-size:12px;font-weight:700;color:var(--text-muted,#64748b);">' +
+          'Étape ' + (currentTourStep + 1) + ' sur ' + tourSteps.length +
+        '</span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+        '<div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(147,197,253,0.25));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">' +
+          (step.visualIcon || '🎯') +
+        '</div>' +
+        '<h2 style="font-size:20px;font-weight:800;color:var(--text-main,#0f172a);margin:0;letter-spacing:-0.01em;line-height:1.25;">' +
+          escH(step.title) +
+        '</h2>' +
+      '</div>' +
+      '<p style="font-size:14px;color:var(--text-muted,#475569);line-height:1.6;margin-bottom:14px;">' +
         step.desc +
       '</p>' +
-      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid var(--blue-primary);border-radius:8px;padding:12px 14px;font-size:13px;color:#1e293b;line-height:1.5">' +
+      '<div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.25);border-left:4px solid var(--blue-primary,#2563eb);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--text-main,#1e293b);line-height:1.5;">' +
         '💡 ' + step.highlight +
       '</div>' +
+      tipsHtml +
     '</div>'
   );
 

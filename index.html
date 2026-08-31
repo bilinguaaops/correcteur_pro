@@ -46,10 +46,18 @@
         <span>Mes évaluations</span>
         <span class="nav-badge-count" id="hbadge" style="display:none">0</span>
       </button>
+      <button type="button" class="pnav-link pnav-guide-link" id="pnav-guide" onclick="openInteractiveTour()" title="Guide d'utilisation interactif pas à pas">
+        <span class="nav-tab-icon">🎯</span>
+        <span>Guide interactif</span>
+      </button>
     </div>
 
     <!-- Right Controls -->
     <div class="nav-actions">
+      <button type="button" class="nav-tour-badge-btn" onclick="openInteractiveTour()" title="Comment utiliser PedagoAI">
+        <span>🎯 Guide</span>
+      </button>
+
       <button type="button" class="nav-teacher-status-btn" id="userAccountBtn" onclick="openLeadGateModal(true)" title="Mon Compte Enseignant">
         <span class="teacher-dot" id="navTeacherDot"></span>
         <span id="navTeacherLabel">Connexion / Inscription</span>
@@ -894,15 +902,18 @@
       </div>
     </div>
 
-    <!-- ── GUIDE EXPRESS PÉDAGOGIQUE (Ingénieux & Dépliable) ── -->
+    <!-- ── GUIDE RAPIDE & TUTORIEL INTERACTIF ── -->
     <div class="guide-express-container" id="guideExpressBox">
-      <div class="guide-express-header" onclick="toggleGuideExpress()">
-        <div class="guide-header-left">
-          <span class="guide-spark-badge">⚡ Guide express</span>
-          <h3 class="guide-title">5 min pour 30 corrections — et tu contrôles tout</h3>
+      <div class="guide-express-header">
+        <div class="guide-header-left" onclick="toggleGuideExpress()" style="cursor:pointer;">
+          <span class="guide-spark-badge">⚡ Guide rapide</span>
+          <span style="font-size:13.5px;font-weight:600;color:var(--text-muted);">Comment corriger vos copies en quelques clics</span>
         </div>
         <div class="guide-header-right">
-          <button type="button" class="guide-toggle-btn" id="guideToggleBtn" aria-label="Afficher ou masquer le guide">
+          <button type="button" class="btn-pedago-primary" onclick="openInteractiveTour()" style="padding:6px 14px;font-size:12.5px;display:inline-flex;align-items:center;gap:6px;">
+            <span>🎯 Lancer le Guide Interactif</span>
+          </button>
+          <button type="button" class="guide-toggle-btn" id="guideToggleBtn" onclick="toggleGuideExpress()" aria-label="Afficher ou masquer le guide">
             <span id="guideToggleTxt">Masquer</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="guide-toggle-icon" id="guideToggleIcon">
               <polyline points="18 15 12 9 6 15"></polyline>

@@ -182,24 +182,24 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Helper with exponential backoff and model fallback for high-demand / 503 / 429 / timeout quota errors
+// Helper with exponential backoff and fast model execution for high-speed grading
 async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
-  // Use available current generation models with automatic fallbacks
-  const models = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
+  // Use ultra-fast flash models with thinking budget 0 to minimize latency
+  const models = ["gemini-3.7-flash", "gemini-flash-latest", "gemini-3.5-flash-lite"];
   let lastError: any = null;
 
   for (const modelName of models) {
     const maxAttempts = 2;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        console.log(`[Gemini API] Début de l'analyse avec le modèle ${modelName} (tentative ${attempt}/${maxAttempts})...`);
+        console.log(`[Gemini API] Correction ultra-rapide avec ${modelName} (tentative ${attempt}/${maxAttempts})...`);
         const startTime = Date.now();
         
-        // Prepare config based on model capabilities
+        // Prepare optimized configuration for lowest latency
         const config: any = {
-          systemInstruction: "Tu es un correcteur pédagogique expert, bienveillant, rigoureux et précis. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises de code Markdown ni texte autour.",
+          systemInstruction: "Tu es un correcteur pédagogique expert, précis, rapide et bienveillant. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises Markdown ni texte superflu.",
           responseMimeType: "application/json",
-          temperature: 0.2,
+          temperature: 0.1,
         };
 
         if (modelName.includes("3.7")) {
@@ -267,34 +267,85 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
 // AI Correction Endpoint
 app.post("/api/correct", async (req, res) => {
   try {
-    const { messages } = req.body;
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: "Missing messages array in body" });
-    }
-
+    const { messages, image, mimeType, studentName, subject, mode, refText, refImage, noteMax, guidelines, freeInstructions } = req.body;
+    
     const ai = getGenAI();
     const parts: any[] = [];
 
-    for (const msg of messages) {
-      if (typeof msg.content === "string") {
-        parts.push({ text: msg.content });
-      } else if (Array.isArray(msg.content)) {
-        for (const block of msg.content) {
-          if (block.type === "text") {
-            parts.push({ text: block.text });
-          } else if (block.type === "image" || block.type === "document") {
-            const mediaType = block.source?.media_type || block.media_type || (block.type === "document" ? "application/pdf" : "image/jpeg");
-            const data = block.source?.data || block.data;
-            if (data) {
-              parts.push({
-                inlineData: {
-                  data: data,
-                  mimeType: mediaType,
-                },
-              });
+    if (messages && Array.isArray(messages)) {
+      for (const msg of messages) {
+        if (typeof msg.content === "string") {
+          parts.push({ text: msg.content });
+        } else if (Array.isArray(msg.content)) {
+          for (const block of msg.content) {
+            if (block.type === "text") {
+              parts.push({ text: block.text });
+            } else if (block.type === "image" || block.type === "document") {
+              const mediaType = block.source?.media_type || block.media_type || (block.type === "document" ? "application/pdf" : "image/jpeg");
+              const data = block.source?.data || block.data;
+              if (data) {
+                parts.push({
+                  inlineData: {
+                    data: data,
+                    mimeType: mediaType,
+                  },
+                });
+              }
             }
           }
         }
+      }
+    } else {
+      // Structured request payload
+      const scaleStr = noteMax === "auto" ? "sur 20 (ou échelle adaptée selon le barème)" : `sur ${noteMax || 20}`;
+      const guidelinesList = Array.isArray(guidelines) ? guidelines : [];
+
+      let promptText = `Tu es un enseignant et correcteur académique expert dans la matière : ${subject || "Général"}.
+Tu dois corriger la copie de l'élève "${studentName || "Élève"}".
+
+CONSIGNES PÉDAGOGIQUES À APPLIQUER STRICTEMENT :
+${guidelinesList.length > 0 ? guidelinesList.map((g: string) => `- ${g}`).join("\n") : "- Évaluation équitable, constructive et bienveillante."}
+${freeInstructions ? `\nCONSIGNES PARTICULIÈRES DU PROFESSEUR :\n${freeInstructions}` : ""}
+
+RÉFÉRENCE & CORRIGÉ OFFICIEL :
+${mode === "B" && refText ? `Corrigé / Réponses attendues :\n${refText}` : "Mode sans corrigé rédigé : Applique les critères académiques officiels pour cette discipline."}
+
+Format de notation attendu : Note maximale ${scaleStr}.
+
+Tu dois répondre UNIQUEMENT par un objet JSON valide avec cette structure exacte :
+{
+  "eleve": "${studentName || "Élève"}",
+  "note": 15.5,
+  "note_sur": ${parseInt(noteMax, 10) || 20},
+  "appreciation": "Synthèse globale de la copie, claire, constructive et bienveillante.",
+  "tags": ["Compréhension", "Raisonnement", "Syntaxe"],
+  "points_forts": "Les forces majeures constatées dans le devoir.",
+  "points_ameliorer": "Les axes de progrès prioritaires.",
+  "questions": [
+    { "q": "Question 1 / Exercice 1", "note": "4/5", "comm": "Explication claire..." }
+  ]
+}`;
+
+      parts.push({ text: promptText });
+
+      if (image) {
+        const cleanBase64 = image.replace(/^data:[^;]+;base64,/, "");
+        parts.push({
+          inlineData: {
+            data: cleanBase64,
+            mimeType: mimeType || "image/jpeg",
+          },
+        });
+      }
+
+      if (refImage) {
+        const cleanRef = refImage.replace(/^data:[^;]+;base64,/, "");
+        parts.push({
+          inlineData: {
+            data: cleanRef,
+            mimeType: "image/jpeg",
+          },
+        });
       }
     }
 

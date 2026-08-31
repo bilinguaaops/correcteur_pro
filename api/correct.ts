@@ -31,21 +31,21 @@ function getGenAI() {
 }
 
 async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
-  const models = ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+  const models = ['gemini-3.7-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
   let lastError: any = null;
 
   for (const modelName of models) {
     const maxAttempts = 2;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        console.log(`[Gemini API] Début analyse avec ${modelName} (tentative ${attempt}/${maxAttempts})...`);
+        console.log(`[Gemini API] Début analyse rapide avec ${modelName} (tentative ${attempt}/${maxAttempts})...`);
         const startTime = Date.now();
 
         const config: any = {
           systemInstruction:
-            'Tu es un correcteur pédagogique expert, bienveillant, rigoureux et précis. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises de code Markdown ni texte autour.',
+            'Tu es un correcteur pédagogique expert, précis, concis et rapide. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises Markdown ni texte superflu.',
           responseMimeType: 'application/json',
-          temperature: 0.2,
+          temperature: 0.1,
         };
 
         if (modelName.includes('3.7')) {

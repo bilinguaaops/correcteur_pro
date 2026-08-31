@@ -3,614 +3,900 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Correcteur Pédagogique Pro</title>
+  <title>PedagoAI · Correction Pédagogique Intelligente</title>
+  <meta name="description" content="Correction pédagogique intelligente par IA, analyse de copies et suivi académique des élèves.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/style.css">
 </head>
-<body>
-<div class="top-bar-controls">
-  <button class="btn-tour-trigger" id="btnTourTrigger" onclick="startInteractiveTour()" title="Visite guidée interactive">🎯 Visite guidée</button>
-  <button class="btn-tour-trigger" id="userAccountBtn" onclick="openLeadGateModal(true)" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;background:rgba(0,122,255,0.08);color:var(--blue);border-color:rgba(0,122,255,0.25)" title="Mon Compte / Inscription">
-    <span id="userAccountIcon">👤</span> <span id="userAccountLabel">S'inscrire / Connexion</span>
-  </button>
-  <div class="autosave-status-bar" id="autoSaveIndicator">
-    <span class="as-dot"></span>
-    <span id="autoSaveText">Sauvegarde auto active</span>
-  </div>
-  <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Thème sombre/clair">🌙</button>
-</div>
-<div class="wrap">
-<header>
-  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#faf8f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="21" height="21"><path d="M12 2L2 7l10 5 10-5-10-5M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-  <div class="badge">Pour enseignants</div>
-  <h1>Correcteur Pédagogique Pro</h1>
-  <p>Correction IA · Analyse de classe · Suivi élèves</p>
-</header>
-<div class="nav">
-  <button class="navbtn on" id="n-corr" onclick="gNav('corr')">📝 Correction</button>
-  <button class="navbtn" id="n-classes" onclick="gNav('classes')">👥 Classes</button>
-  <button class="navbtn" id="n-suivi" onclick="gNav('suivi')">📈 Suivi</button>
-  <button class="navbtn" id="n-hist" onclick="gNav('hist')">🗂 Historique <span class="nbadge" id="hbadge" style="display:none">0</span></button>
-</div>
+<body class="dark">
 
-<!-- ══ CORRECTION VIEW (WIZARD) ══ -->
-<div id="vf">
-
-  <!-- Wizard Step Indicator -->
-  <div class="wiz-nav">
-    <div class="wiz-step-pill on" id="wsp1" onclick="goToStep(1)">
-      <span class="wsp-num">1</span>
-      <span class="wsp-txt">Importer les copies</span>
-    </div>
-    <div class="wiz-step-arrow">→</div>
-    <div class="wiz-step-pill" id="wsp2" onclick="goToStep(2)">
-      <span class="wsp-num">2</span>
-      <span class="wsp-txt">Corrigé type & Barème</span>
-    </div>
-  </div>
-
-  <!-- ── TUTORIEL GUIDE PROFESSEUR (REPLIABLE) ── -->
-  <div class="tuto-banner" id="tutoBanner">
-    <div class="tuto-header" onclick="toggleTuto()">
-      <div class="tuto-header-left">
-        <span class="tuto-tag">Guide express</span>
-        <span class="tuto-htitle">Comment préparer et corriger vos copies en 2 étapes ?</span>
+<!-- ══════════════════════════════════════════════
+     TOP NAVBAR (PedagoAI)
+══════════════════════════════════════════════ -->
+<nav class="pedago-navbar" aria-label="Navigation principale">
+  <div class="nav-container">
+    <!-- Logo -->
+    <a href="#" class="pedago-logo" onclick="gNav('home'); return false;">
+      <div class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
       </div>
-      <span class="tuto-toggle">Guide <span class="tuto-arrow" id="tutoArrow">▼</span></span>
+      <span class="logo-text">Pedago<span class="logo-ai">AI</span></span>
+    </a>
+
+    <!-- Center Navigation Links (4 Onglets) -->
+    <div class="pedago-navlinks">
+      <button type="button" class="pnav-link on" id="pnav-home" onclick="gNav('home')">
+        <span class="nav-tab-icon">🏠</span>
+        <span>Accueil</span>
+      </button>
+      <button type="button" class="pnav-link" id="pnav-corr" onclick="gNav('corr')">
+        <span class="nav-tab-icon">📄</span>
+        <span>Correction</span>
+      </button>
+      <button type="button" class="pnav-link" id="pnav-classes" onclick="gNav('classes')">
+        <span class="nav-tab-icon">👥</span>
+        <span>Classes</span>
+      </button>
+      <button type="button" class="pnav-link" id="pnav-hist" onclick="gNav('hist')">
+        <span class="nav-tab-icon">🗂</span>
+        <span>Historique des résultats</span>
+        <span class="nav-badge-count" id="hbadge" style="display:none">0</span>
+      </button>
     </div>
-    <div class="tuto-body" id="tutoBody">
-      <div class="tuto-steps">
-        <div class="tuto-step">
-          <div class="tuto-step-num">1</div>
-          <div class="tuto-step-content">
-            <div class="tuto-step-title">📱 Photographiez ou scannez les copies</div>
-            <div class="tuto-step-desc">Utilisez votre smartphone ou le scanner de l'établissement. Prenez des photos bien éclairées et à plat.</div>
-            <div class="tuto-apps">
-              <span class="tuto-app">📱 Application Scan</span>
-              <span class="tuto-app">📷 Photos smartphone</span>
-              <span class="tuto-app">📄 Document PDF</span>
-            </div>
+
+    <!-- Right Controls -->
+    <div class="nav-actions">
+      <button type="button" class="nav-btn-icon" id="darkToggle" onclick="toggleDark()" title="Changer le thème (Sombre / Clair)" aria-label="Changer le thème">
+        <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="theme-svg">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="theme-svg" style="display:none">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+
+      <button type="button" class="nav-btn-icon" id="userAccountBtn" onclick="openLeadGateModal(true)" title="Mon Compte Enseignant" aria-label="Mon compte">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="pedago-app-body">
+
+  <!-- ══════════════════════════════════════════════
+       VUE 0 : ACCUEIL / LANDING PAGE (Hero & Features)
+  ══════════════════════════════════════════════ -->
+  <div id="vhome" class="view-panel">
+    <!-- Hero Section -->
+    <section class="pedago-hero-section">
+      <div class="hero-tag-pill">
+        <span class="hero-sparkle">✨</span> Révolutionnez votre correction
+      </div>
+      <h1 class="hero-headline">
+        Notez les copies <span class="text-gradient">3 fois plus vite.</span>
+      </h1>
+      <p class="hero-subheadline">
+        L'intelligence artificielle au service de l'excellence académique. Gagnez un temps précieux tout en garantissant une évaluation juste, précise et détaillée pour chaque étudiant.
+      </p>
+      <div class="hero-actions">
+        <button type="button" class="btn-pedago-primary hero-cta-btn" onclick="startNewCorrection()">
+          Commencer gratuitement
+        </button>
+        <button type="button" class="btn-pedago-outline hero-demo-btn" onclick="loadDemoCorrection()">
+          Voir la démo
+        </button>
+      </div>
+    </section>
+
+    <!-- "Comment ça marche" Section -->
+    <section class="how-it-works-section">
+      <h2 class="section-title-center">Comment ça marche</h2>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 2v6h6"/>
+              <path d="M12 18v-6"/>
+              <path d="m9 15 3-3 3 3"/>
+            </svg>
           </div>
+          <h3 class="how-card-title">1. Importez</h3>
+          <p class="how-card-desc">
+            Scannez ou téléchargez les copies de vos étudiants. Notre système OCR ultra-précis déchiffre même les écritures complexes.
+          </p>
         </div>
-        <div class="tuto-step">
-          <div class="tuto-step-num">2</div>
-          <div class="tuto-step-content">
-            <div class="tuto-step-title">⚙️ Choisissez la matière et le barème</div>
-            <div class="tuto-step-desc">L'IA adapte automatiquement ses critères (orthographe, démarche de calcul, niveau de classe de primaire, collège ou lycée).</div>
+
+        <div class="how-card">
+          <div class="how-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
           </div>
+          <h3 class="how-card-title">2. Configurez</h3>
+          <p class="how-card-desc">
+            Définissez votre barème, les critères de notation et vos exigences spécifiques. L'IA s'adapte à votre pédagogie.
+          </p>
         </div>
-        <div class="tuto-step">
-          <div class="tuto-step-num">3</div>
-          <div class="tuto-step-content">
-            <div class="tuto-step-title">✨ Récupérez les copies annotées</div>
-            <div class="tuto-step-desc">Obtenez les notes, appréciations bienveillantes, détection des fautes et l'export direct vers vos tableaux Excel / Pronote.</div>
+
+        <div class="how-card">
+          <div class="how-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M3 3v18h18"/>
+              <path d="m19 9-5 5-4-4-3 3"/>
+            </svg>
           </div>
+          <h3 class="how-card-title">3. Validez</h3>
+          <p class="how-card-desc">
+            Examinez les suggestions de notes et commentaires. Ajustez si nécessaire, puis exportez les résultats instantanément.
+          </p>
         </div>
       </div>
-      <div style="margin-top: 14px; text-align: center; border-top: 1px dashed var(--separator); padding-top: 12px;">
-        <button type="button" onclick="startInteractiveTour()" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:8px 20px;border-radius:20px;background:var(--blue);color:white;border:none;box-shadow:0 3px 10px rgba(0,122,255,0.25);cursor:pointer">
-          🎯 Lancer la visite interactive pas-à-pas (1 min)
+    </section>
+
+    <!-- Bottom CTA Banner -->
+    <section class="cta-banner-section">
+      <div class="cta-banner-card">
+        <h2 class="cta-banner-title">Prêt à retrouver vos soirées ?</h2>
+        <p class="cta-banner-desc">
+          Rejoignez des milliers d'enseignants qui utilisent PedagoAI pour se concentrer sur ce qui compte vraiment : l'accompagnement de leurs élèves.
+        </p>
+        <button type="button" class="btn-pedago-primary cta-banner-btn" onclick="startNewCorrection()">
+          Créer mon compte enseignant
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       WIZARD DE CORRECTION (Step 1 -> Step 2)
+  ══════════════════════════════════════════════ -->
+  <div id="vf" class="view-panel" style="display:none">
+
+    <!-- Stepper Navigation (Image 2 style) -->
+    <div class="pedago-stepper-wrap">
+      <div class="stepper-track-pill">
+        <button type="button" class="stepper-step-pill on" id="wsp1" onclick="goToStep(1)">
+          <span class="step-num-circle">1</span>
+          <span class="step-text">Importer les copies</span>
+        </button>
+        <span class="stepper-arrow-sep">➔</span>
+        <button type="button" class="stepper-step-pill" id="wsp2" onclick="goToStep(2)">
+          <span class="step-num-circle">2</span>
+          <span class="step-text">Corrigé type & Barème</span>
+        </button>
+        <span class="stepper-arrow-sep">➔</span>
+        <button type="button" class="stepper-step-pill" id="wsp3" onclick="goToStep(3)">
+          <span class="step-num-circle">3</span>
+          <span class="step-text">Résultats</span>
         </button>
       </div>
     </div>
-  </div>
 
-  <!-- ── ÉTAPE 1 : IMPORTATION DES COPIES ── -->
-  <div id="wizStep1View">
-    <div class="card">
-      <div class="ct-flex">
-        <div class="ct"><span class="sn">1</span> Déposez les copies des élèves <span id="ccnt" class="cc" style="display:none">0</span></div>
-        <div class="mode-toggle">
-          <button class="mt-btn on" id="mt-sep" onclick="setUploadMode('sep')">📄 Une copie par élève</button>
-          <button class="mt-btn" id="mt-pdf" onclick="setUploadMode('pdf')">📚 Classe entière (1 seul fichier)</button>
+    <!-- ── GUIDE EXPRESS PÉDAGOGIQUE (Ingénieux & Dépliable) ── -->
+    <div class="guide-express-container" id="guideExpressBox">
+      <div class="guide-express-header" onclick="toggleGuideExpress()">
+        <div class="guide-header-left">
+          <span class="guide-spark-badge">⚡ Guide express</span>
+          <h3 class="guide-title">Correction pédagogique en 3 étapes simples</h3>
+        </div>
+        <div class="guide-header-right">
+          <button type="button" class="guide-toggle-btn" id="guideToggleBtn" aria-label="Afficher ou masquer le guide">
+            <span id="guideToggleTxt">Masquer</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="guide-toggle-icon" id="guideToggleIcon">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+          </button>
         </div>
       </div>
-      <p class="hint">Glissez vos fichiers ou cliquez pour sélectionner. Photos (JPG, PNG) ou documents PDF acceptés.</p>
+
+      <div class="guide-express-body" id="guideExpressBody">
+        <div class="guide-steps-grid">
+          <div class="guide-step-card">
+            <div class="guide-step-header">
+              <span class="guide-step-num">1</span>
+              <h4>Importez les copies</h4>
+            </div>
+            <p>Glissez vos fichiers (PDF, photos JPG/PNG) ou importez directement le PDF scanné de toute la classe. L'IA sépare chaque élève automatiquement.</p>
+          </div>
+          <div class="guide-step-card">
+            <div class="guide-step-header">
+              <span class="guide-step-num">2</span>
+              <h4>Barème & Corrigé</h4>
+            </div>
+            <p>Tapez vos réponses ou importez la photo du corrigé officiel. Activez l'<strong>IA Autonome</strong> si vous n'avez pas de corrigé rédigé.</p>
+          </div>
+          <div class="guide-step-card">
+            <div class="guide-step-header">
+              <span class="guide-step-num">3</span>
+              <h4>Fiches & Export</h4>
+            </div>
+            <p>Obtenez les notes, points forts, faiblesses et conseils personnalisés. Exportez en 1 clic en PDF individuel, tableau Excel ou ZIP complet.</p>
+          </div>
+        </div>
+        <div class="guide-footer-actions">
+          <div class="guide-tip-pill">
+            <span>💡 <strong>Astuce :</strong> Pour les photos avec smartphone, prenez la copie bien à plat avec un bon éclairage.</span>
+          </div>
+          <button type="button" class="btn-guide-demo" onclick="loadDemoCorrection()">
+            🚀 Charger la démo (3 copies modèles)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 1 : IMPORTATION DES COPIES ── -->
+    <div id="wizStep1View">
+      <div class="step-heading-area">
+        <h1 class="step-main-title">Upload Source Material</h1>
+        <p class="step-sub-title">Drop your PDF, JPG, or PNG files below to begin the analysis process.</p>
+      </div>
+
+      <div class="import-container-card">
+        <!-- Mode toggle (Individuel vs Classe entière) -->
+        <div class="import-mode-tabs">
+          <button type="button" class="import-mode-btn on" id="mt-sep" onclick="setUploadMode('sep')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="tab-svg">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 2v6h6"/>
+            </svg>
+            <span>Copies individuelles (1 par élève)</span>
+          </button>
+          <button type="button" class="import-mode-btn" id="mt-pdf" onclick="setUploadMode('pdf')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="tab-svg">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+              <path d="M6 6h10M6 10h10M6 14h6"/>
+            </svg>
+            <span>PDF de toute la classe (groupé)</span>
+          </button>
+        </div>
+
+        <!-- Zone Upload Séparé -->
+        <div id="upload-sep">
+          <div class="pedago-dropzone" id="dz0" ondragover="dg(event,true,'dz0')" ondragleave="dg(event,false,'dz0')" ondrop="dp0(event)">
+            <input type="file" accept="image/*,.pdf" multiple onchange="af(event)" class="dropzone-file-input">
+            <div class="dropzone-cloud-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                <path d="M12 13v6M9 16l3-3 3 3"/>
+              </svg>
+            </div>
+            <h3 class="dropzone-title">Drag & Drop files here</h3>
+            <p class="dropzone-subtitle">or click to browse from your computer</p>
+            <div class="format-badges-row">
+              <span class="fmt-pill">PDF</span>
+              <span class="fmt-pill">JPG</span>
+              <span class="fmt-pill">PNG</span>
+            </div>
+          </div>
+
+          <!-- Liste des élèves/copies chargées -->
+          <div class="uploaded-files-list" id="sl" style="display:none"></div>
+          <div class="add-more-row" id="addMoreWrap" style="display:none">
+            <label class="btn-pedago-ghost add-more-btn">
+              <input type="file" accept="image/*,.pdf" multiple onchange="af(event)" style="display:none">
+              <span>+ Ajouter d'autres copies</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Zone Upload PDF Unique Classe -->
+        <div id="upload-pdf" style="display:none">
+          <div class="pedago-dropzone" id="dzPDF" ondragover="dg(event,true,'dzPDF')" ondragleave="dg(event,false,'dzPDF')" ondrop="dpPDF(event)">
+            <input type="file" accept=".pdf" id="pdfClassInput" onchange="afPDF(event)" class="dropzone-file-input">
+            <div class="dropzone-cloud-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 2v6h6"/>
+                <path d="M16 13H8M16 17H8M10 9H8"/>
+              </svg>
+            </div>
+            <h3 class="dropzone-title">Sélectionnez le PDF de la classe</h3>
+            <p class="dropzone-subtitle">L'IA sépare automatiquement chaque copie d'élève.</p>
+            <div class="format-badges-row">
+              <span class="fmt-pill">PDF Classe</span>
+            </div>
+          </div>
+          <div id="pdfClassPreview" style="display:none;margin-top:12px">
+            <div class="selected-pdf-chip">
+              <span>📄</span>
+              <span id="pdfClassName" style="font-weight:600;flex:1"></span>
+              <button type="button" onclick="rmPDFClass()" class="btn-chip-del">✕</button>
+            </div>
+          </div>
+          <div class="pdf-class-options-row">
+            <div class="option-field">
+              <label for="pagesPerStudent" class="field-label-sm">Pages par copie</label>
+              <select id="pagesPerStudent" class="pedago-select">
+                <option value="auto">✨ Détection auto des noms & agrafes</option>
+                <option value="1">📄 1 page par élève</option>
+                <option value="2">📎 2 pages par élève (Feuille double)</option>
+                <option value="3">📎 3 pages par élève</option>
+                <option value="4">📎 4 pages par élève</option>
+              </select>
+            </div>
+            <div class="option-field">
+              <label for="classSelect" class="field-label-sm">Associer à une classe</label>
+              <select id="classSelect" onchange="loadClassStudents()" class="pedago-select">
+                <option value="">Aucune</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Step 1 -->
+      <div class="step-actions-footer">
+        <button type="button" class="btn-pedago-primary btn-next-step" id="btnGoStep2" onclick="goToStep(2)" disabled>
+          <span>Continuer</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-svg">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── ÉTAPE 2 : CONFIGURATION DE L'ANALYSE (2 Colonnes) ── -->
+    <div id="wizStep2View" style="display:none">
+      <div class="step-heading-area">
+        <h1 class="step-main-title">Configuration de l'analyse</h1>
+        <p class="step-sub-title">Définissez les paramètres de correction et le niveau d'exigence de l'IA pour ce lot de copies.</p>
+      </div>
+
+      <div class="configure-grid-layout">
+        <!-- COLONNE GAUCHE (Matière, Niveau d'analyse, Corrigé) -->
+        <div class="config-left-col">
+          
+          <!-- Section 1 : Matière -->
+          <div class="config-section-card">
+            <h2 class="config-section-title">Matière</h2>
+            <div class="subjects-tiles-grid" id="subjectsTilesGrid">
+              <button type="button" class="subject-tile" data-id="fr" onclick="selectSubject('fr')">
+                <div class="subj-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                    <path d="M6 6h10M6 10h10"/>
+                  </svg>
+                </div>
+                <span class="subj-name">Français</span>
+                <span class="subj-dot" aria-hidden="true"></span>
+              </button>
+
+              <button type="button" class="subject-tile on" data-id="math" onclick="selectSubject('math')">
+                <div class="subj-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <rect x="4" y="2" width="16" height="20" rx="2"/>
+                    <line x1="8" y1="6" x2="16" y2="6"/>
+                    <line x1="16" y1="14" x2="16" y2="18"/>
+                    <line x1="16" y1="10" x2="16" y2="10"/>
+                    <line x1="12" y1="10" x2="12" y2="10"/>
+                    <line x1="8" y1="10" x2="8" y2="10"/>
+                    <line x1="12" y1="14" x2="12" y2="14"/>
+                    <line x1="8" y1="14" x2="8" y2="14"/>
+                    <line x1="12" y1="18" x2="12" y2="18"/>
+                    <line x1="8" y1="18" x2="8" y2="18"/>
+                  </svg>
+                </div>
+                <span class="subj-name">Mathématiques</span>
+                <span class="subj-dot" aria-hidden="true"></span>
+              </button>
+
+              <button type="button" class="subject-tile" data-id="sciences" onclick="selectSubject('sciences')">
+                <div class="subj-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M10 2v7.31L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.31V2"/>
+                    <line x1="8" y1="2" x2="16" y2="2"/>
+                  </svg>
+                </div>
+                <span class="subj-name">Sciences</span>
+                <span class="subj-dot" aria-hidden="true"></span>
+              </button>
+
+              <button type="button" class="subject-tile" data-id="hist" onclick="selectSubject('hist')">
+                <div class="subj-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
+                </div>
+                <span class="subj-name">Histoire-Géo</span>
+                <span class="subj-dot" aria-hidden="true"></span>
+              </button>
+
+              <button type="button" class="subject-tile" data-id="langues" onclick="selectSubject('langues')">
+                <div class="subj-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>
+                  </svg>
+                </div>
+                <span class="subj-name">Langues</span>
+                <span class="subj-dot" aria-hidden="true"></span>
+              </button>
+
+              <button type="button" class="subject-tile" data-id="other" onclick="selectSubject('other')">
+                <div class="subj-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                </div>
+                <span class="subj-name">Autre</span>
+                <span class="subj-dot" aria-hidden="true"></span>
+              </button>
+            </div>
+
+            <div id="customSubjectInputWrap" style="display:none;margin-top:12px">
+              <input type="text" id="customSubjectName" placeholder="Entrez le nom de la matière (ex: Philosophie, Musique, NSI...)" class="pedago-input" oninput="onCustomSubjectInput(this.value)">
+            </div>
+          </div>
+
+          <!-- Section 2 : Corrigé Officiel du Professeur & Barème -->
+          <div class="config-section-card" id="cardCorrigeType">
+            <div class="section-title-with-badge">
+              <h2 class="config-section-title" style="margin-bottom:0">Corrigé & Barème</h2>
+              <div class="mode-pills-selector">
+                <button type="button" class="mode-pill on" id="mb" onclick="setM('B')">🎯 Avec corrigé</button>
+                <button type="button" class="mode-pill" id="ma" onclick="setM('A')">⚡ IA Autonome</button>
+              </div>
+            </div>
+
+            <!-- Saisie corrigé (Mode B) -->
+            <div id="refInputContainer" style="margin-top:14px">
+              <label for="ct2" class="field-label-sm">Réponses attendues / Corrigé officiel</label>
+              <textarea id="ct2" placeholder="Écrivez ou collez ici vos réponses attendues (ex: Q1: Paris (2 pts) — Q2: Schéma légendé (3 pts) — Q3: Démonstration complète...)" rows="3" class="pedago-textarea"></textarea>
+              
+              <div class="mini-upload-row" style="margin-top:10px">
+                <div class="dz-mini" id="rdzB" ondragover="dg(event,true,'rdzB')" ondragleave="dg(event,false,'rdzB')" ondrop="dpRefB(event)">
+                  <input type="file" accept="image/*,.pdf" id="rfiB" onchange="loadRefB(event.target.files[0])" class="dropzone-file-input">
+                  <span>📸 Ou importer la photo / PDF du corrigé</span>
+                </div>
+                <div id="rpB" style="display:none;" class="ref-badge-chip">
+                  <span>📄 <span id="rpBName"></span></span>
+                  <button type="button" onclick="rmRefB()" class="btn-chip-del">✕</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mode IA autonome info -->
+            <div id="modeAutoNotice" style="display:none;margin-top:14px;" class="info-alert-box">
+              ✨ <strong>Mode IA Autonome activé :</strong> L'IA analysera le devoir et appliquera les critères pédagogiques académiques officiels.
+            </div>
+
+            <!-- Notation sur 20 / 10 / 50 / 100 -->
+            <div class="grading-scale-area">
+              <label class="field-label-sm">Note maximale</label>
+              <div class="scale-chips-row" id="noteChips">
+                <button type="button" class="scale-chip on" data-val="20" onclick="setNote('20')">/ 20</button>
+                <button type="button" class="scale-chip" data-val="10" onclick="setNote('10')">/ 10</button>
+                <button type="button" class="scale-chip" data-val="50" onclick="setNote('50')">/ 50</button>
+                <button type="button" class="scale-chip" data-val="100" onclick="setNote('100')">/ 100</button>
+                <button type="button" class="scale-chip" data-val="auto" onclick="setNote('auto')">Auto</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLONNE DROITE : CONSIGNES PÉDAGOGIQUES POUR L'IA & INSTRUCTIONS LIBRES -->
+        <div class="config-right-col">
+          <div class="evaluation-criteria-card">
+            <h3 class="consignes-section-title">CONSIGNES PÉDAGOGIQUES POUR L'IA</h3>
+
+            <div class="consignes-list-box">
+              <label class="consigne-item">
+                <input type="checkbox" id="c_no_ortho" class="custom-chk">
+                <span class="consigne-txt">Ne pas pénaliser les fautes d'orthographe</span>
+              </label>
+
+              <label class="consigne-item">
+                <input type="checkbox" id="c_half_pts" checked class="custom-chk">
+                <span class="consigne-txt">Accepter les réponses partielles (demi-points)</span>
+              </label>
+
+              <label class="consigne-item">
+                <input type="checkbox" id="c_strict" class="custom-chk">
+                <span class="consigne-txt">Barème strict et sans complaisance</span>
+              </label>
+
+              <label class="consigne-item">
+                <input type="checkbox" id="c_encouraging" checked class="custom-chk">
+                <span class="consigne-txt">Appréciation bienveillante et encourageante</span>
+              </label>
+
+              <label class="consigne-item">
+                <input type="checkbox" id="c_synonyms" checked class="custom-chk">
+                <span class="consigne-txt">Accepter les synonymes et formulations équivalentes</span>
+              </label>
+
+              <label class="consigne-item">
+                <input type="checkbox" id="c_reasoning_first" class="custom-chk">
+                <span class="consigne-txt">La démarche compte même si le résultat final est faux</span>
+              </label>
+            </div>
+
+            <!-- INSTRUCTIONS LIBRES SUPPLEMENTAIRES -->
+            <div class="free-instructions-area">
+              <label for="freeInstructions" class="consignes-section-title" style="display:block;margin-bottom:8px">
+                INSTRUCTIONS LIBRES SUPPLÉMENTAIRES <span class="opt-label">(optionnel)</span>
+              </label>
+              <textarea id="freeInstructions" placeholder="Précisez vos consignes particulières pour cette évaluation (ex : pénaliser les unités manquantes, valoriser les schémas...)" rows="3" class="pedago-textarea"></textarea>
+            </div>
+
+            <div class="eb2" id="em" style="display:none"></div>
+
+            <button type="button" class="btn-pedago-primary btn-launch-analysis" id="sb" onclick="sub()">
+              Lancer l'analyse
+            </button>
+            <p class="time-est-text" id="timeEst" style="display:none">
+              ⏱ Durée estimée : <strong id="timeEstVal">—</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Retour Step 2 -->
+      <div class="step-bottom-nav">
+        <button type="button" class="btn-pedago-outline" onclick="goToStep(1)">
+          ← Retour aux copies
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       LOADING / ANALYSE EN COURS
+  ══════════════════════════════════════════════ -->
+  <div id="vl" class="view-panel" style="display:none">
+    <div class="loading-panel-card">
+      <div class="pedago-spinner-glow"></div>
+      <h2 class="loading-main-title">Correction intelligente en cours…</h2>
+      <p class="loading-sub-text" id="batchSub">Lecture et analyse des copies par l'IA…</p>
       
-      <!-- Upload fichiers séparés -->
-      <div id="upload-sep">
-        <div class="dz" id="dz0" ondragover="dg(event,true,'dz0')" ondragleave="dg(event,false,'dz0')" ondrop="dp0(event)">
-          <input type="file" accept="image/*,.pdf" multiple onchange="af(event)">
-          <div class="dz-icon">📂</div>
-          <p><strong>Glisser-déposer ou cliquer pour importer</strong><br>Photos ou PDF — un ou plusieurs élèves</p>
-          <span class="dz-subpill">JPG, PNG, PDF</span>
-        </div>
-        <div class="slist" id="sl" style="display:none"></div>
-        <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-          <label class="add-more" id="addMoreBtn" style="display:none">
-            <input type="file" accept="image/*,.pdf" multiple onchange="af(event)">
-            ➕ Ajouter d'autres copies
-          </label>
-        </div>
+      <div class="loading-progress-bar">
+        <div class="loading-progress-fill" id="pf" style="width:0%"></div>
+      </div>
+      <div class="loading-stats-row">
+        <span id="batchLabel">0 / 0</span>
+        <span id="batchPct">0%</span>
       </div>
 
-      <!-- Upload PDF Unique de classe -->
-      <div id="upload-pdf" style="display:none">
-        <div class="dz" id="dzPDF" ondragover="dg(event,true,'dzPDF')" ondragleave="dg(event,false,'dzPDF')" ondrop="dpPDF(event)">
-          <input type="file" accept=".pdf" id="pdfClassInput" onchange="afPDF(event)">
-          <div class="dz-icon">📋</div>
-          <p><strong>Fichier PDF groupé de toute la classe</strong><br>L'IA sépare et identifie automatiquement chaque copie</p>
-          <span class="pdf-rec">✨ Découpage automatique intelligent</span>
-        </div>
-        <div id="pdfClassPreview" style="display:none;margin-top:.65rem">
-          <div style="background:var(--pd);border-radius:var(--rad);padding:.6rem .9rem;font-size:.85rem;color:var(--inkm);display:flex;align-items:center;gap:8px">
-            <span>📄</span><span id="pdfClassName" style="flex:1;font-weight:600"></span>
-            <button onclick="rmPDFClass()" style="background:none;border:none;cursor:pointer;color:var(--inkl);font-size:14px">✕</button>
-          </div>
-        </div>
-        <div style="margin-top:.75rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div style="flex:1;min-width:220px">
-            <div class="fl" style="margin-bottom:4px">📄 Pages par copie & Agrafes</div>
-            <select id="pagesPerStudent">
-              <option value="auto">✨ Détection intelligente des agrafes & noms (Recommandé)</option>
-              <option value="2">📎 2 pages par élève (Feuille double / Agrafée / Recto-Verso)</option>
-              <option value="3">📎 3 pages par élève (Agrafées)</option>
-              <option value="1">📄 1 page par élève</option>
-              <option value="4">📎 4 pages par élève</option>
-            </select>
-          </div>
-          <div style="flex:1;min-width:180px">
-            <div class="fl" style="margin-bottom:4px">👥 Associer à une classe enregistrée</div>
-            <select id="classSelect" onchange="loadClassStudents()">
-              <option value="">Aucune</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Action Step 1 -->
-    <div class="wiz-action-bar">
-      <button class="bp wiz-btn-next" id="btnGoStep2" onclick="goToStep(2)" disabled>
-        <span>Continuer vers Corrigé & Barème</span>
-        <span style="font-size:1.1rem">→</span>
-      </button>
+      <div class="live-students-analysis-list" id="biList"></div>
     </div>
   </div>
 
-  <!-- ── ÉTAPE 2 : CORRIGÉ TYPE & PARAMÈTRES ── -->
-  <div id="wizStep2View" style="display:none">
+  <!-- ══════════════════════════════════════════════
+       VUE 3 : RÉSULTATS / ANALYSIS COMPLETE (PedagoAI Cards)
+  ══════════════════════════════════════════════ -->
+  <div id="vr" class="view-panel" style="display:none">
     
-    <!-- 1er BLOC : MODE DE CORRECTION & CORRIGÉ TYPE -->
-    <div class="card" id="cardCorrigeType" style="border-left:4px solid var(--blue);">
-      <div class="ct-flex" style="margin-bottom:10px">
-        <div class="ct" style="margin-bottom:0">
-          <span class="sn" style="background:var(--blue);color:white">1</span> 📋 Mode de correction & Corrigé
-        </div>
-        <span id="modeBadge" style="background:rgba(231,76,60,0.12);color:var(--red,#e74c3c);border:1px solid rgba(231,76,60,0.35);padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;letter-spacing:0.3px;display:flex;align-items:center;gap:4px">
-          <span>*</span> Obligatoire
-        </span>
+    <!-- Stepper Navigation (Step 3 active) -->
+    <div class="pedago-stepper-wrap">
+      <div class="stepper-track-pill">
+        <button type="button" class="stepper-step-pill" onclick="goToStep(1)">
+          <span class="step-num-circle">1</span>
+          <span class="step-text">Importer les copies</span>
+        </button>
+        <span class="stepper-arrow-sep">➔</span>
+        <button type="button" class="stepper-step-pill" onclick="goToStep(2)">
+          <span class="step-num-circle">2</span>
+          <span class="step-text">Corrigé type & Barème</span>
+        </button>
+        <span class="stepper-arrow-sep">➔</span>
+        <button type="button" class="stepper-step-pill on" onclick="goToStep(3)">
+          <span class="step-num-circle">3</span>
+          <span class="step-text">Résultats de l'analyse</span>
+        </button>
       </div>
-
-      <div class="fl" style="margin-bottom:6px">Choisissez votre méthode d'évaluation</div>
-      <div class="mg" style="margin-bottom:14px">
-        <div class="mmc on" id="mb" onclick="setM('B')">
-          <div class="mml">🎯 Personnalisé (Recommandé)</div>
-          <div class="mmt">Avec corrigé professeur</div>
-          <div class="mmd">L'IA applique fidèlement vos réponses attendues et votre barème officiel.</div>
-        </div>
-        <div class="mmc" id="ma" onclick="setM('A')">
-          <div class="mml">⚡ Mode Rapide</div>
-          <div class="mmt">Correction IA autonome</div>
-          <div class="mmd">Sans corrigé fourni. L'IA évalue les copies selon le programme scolaire officiel.</div>
-        </div>
-      </div>
-
-      <!-- Zone saisie corrigé (Mode B) -->
-      <div id="refInputContainer">
-        <div class="fl" style="margin-bottom:5px;font-weight:600">
-          Votre corrigé officiel / Réponses attendues <span style="color:var(--red,#e74c3c);font-weight:700">*</span>
-        </div>
-        <textarea id="ct2" placeholder="Écrivez ou collez ici vos réponses attendues et le barème par question (ex : Q1 : Paris (2 pts) — Q2 : Schéma légendé (3 pts) — Q3 : Démonstration mathématique complète...)" rows="4" style="margin-bottom:10px" oninput="if(this.value.trim()){document.getElementById('em').style.display='none';}"></textarea>
-        
-        <div class="fl" style="margin-bottom:4px;font-size:.78rem;color:var(--label2)">Ou déposez la photo ou le PDF de votre corrigé</div>
-        <div class="dz" id="rdzB" style="padding:.9rem" ondragover="dg(event,true,'rdzB')" ondragleave="dg(event,false,'rdzB')" ondrop="dpRefB(event)">
-          <input type="file" accept="image/*,.pdf" id="rfiB" onchange="loadRefB(event.target.files[0])">
-          <div style="font-size:1.25rem;color:var(--inkl);margin-bottom:.2rem">📸 / 📄</div>
-          <p style="font-size:.82rem;font-weight:600">Glisser ou cliquer pour importer le corrigé prof</p>
-          <span style="font-size:.72rem;color:var(--label3)">Photo de votre feuille manuscrite, document scanné ou PDF</span>
-        </div>
-        <div id="rpB" style="display:none;margin-top:8px">
-          <div style="background:var(--pd);border:1px solid var(--blue);border-radius:var(--rad);padding:.6rem .9rem;font-size:.82rem;color:var(--inkm);display:flex;align-items:center;gap:8px">
-            <span>📄</span><span id="rpBName" style="flex:1;font-weight:600"></span>
-            <button onclick="rmRefB()" style="background:none;border:none;cursor:pointer;color:var(--inkl);font-size:14px">✕</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Message informatif Mode Automatique -->
-      <div id="modeAutoNotice" style="display:none;background:var(--blue-light,#edf3fd);border:1px solid var(--blue);border-radius:var(--r,10px);padding:12px 14px;margin-bottom:12px;font-size:0.83rem;color:var(--blue);line-height:1.45">
-        ✨ <strong>Mode IA Autonome activé :</strong> L'IA analysera le sujet de la copie d'élève et appliquera une grille d'évaluation académique rigoureuse et bienveillante adaptée au niveau sélectionné.
-      </div>
-
-      <div class="fl" style="margin-top:16px">Consignes pédagogiques pour l'IA</div>
-      <div class="quick-rules">
-        <label class="qr-item"><input type="checkbox" id="qr1"> Ne pas pénaliser les fautes d'orthographe</label>
-        <label class="qr-item"><input type="checkbox" id="qr2" checked> Accepter les réponses partielles (demi-points)</label>
-        <label class="qr-item"><input type="checkbox" id="qr3"> Barème strict et sans complaisance</label>
-        <label class="qr-item"><input type="checkbox" id="qr4" checked> Appréciation bienveillante et encourageante</label>
-        <label class="qr-item"><input type="checkbox" id="qr6" checked> Accepter les synonymes et formulations équivalentes</label>
-        <label class="qr-item"><input type="checkbox" id="qr7"> La démarche compte même si le résultat final est faux</label>
-      </div>
-
-      <div class="fl" style="margin-top:14px">Instructions libres supplémentaires <span style="font-weight:300;text-transform:none;color:var(--label3)">(optionnel)</span></div>
-      <textarea id="corrInstr" rows="2" placeholder="Ex : La question 3 est bonus, valoriser les arguments bien construits et la rigueur de rédaction..."></textarea>
     </div>
 
-    <!-- 2ème BLOC : MATIÈRE, NIVEAU & BARÈME -->
-    <div class="card">
-      <div class="ct"><span class="sn">2</span> Matière, Niveau & Barème</div>
+    <!-- En-tête des résultats -->
+    <div class="results-top-header">
+      <div class="results-title-group">
+        <h1 class="results-main-title">Analysis Complete</h1>
+        <p class="results-sub-title">AI grading and feedback generation finished successfully. Review the personalized insights below before finalizing.</p>
+      </div>
+      <div class="step-pill-complete">
+        <span class="check-icon">✓</span> Étape 3 sur 3
+      </div>
+    </div>
+
+    <!-- Barre d'onglets & Actions -->
+    <div class="results-action-bar-strip">
+      <div class="results-filter-tabs">
+        <button type="button" class="filter-tab-pill on" id="tabAllStudents" onclick="setResultsFilter('all')">
+          All Students (<span id="countAllStudents">3</span>)
+        </button>
+        <button type="button" class="filter-tab-pill" id="tabNeedsReview" onclick="setResultsFilter('review')">
+          Needs Review (<span id="countNeedsReview">0</span>)
+        </button>
+        <button type="button" class="filter-tab-pill" id="tabClassOverview" onclick="setResultsFilter('overview')">
+          📊 Vue de classe
+        </button>
+      </div>
+
+      <div class="results-actions-right">
+        <button type="button" class="btn-pedago-outline btn-export-pdf" onclick="exportEvaluationPDF()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="btn-svg">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6"/>
+            <path d="M12 18v-6M9 15l3 3 3-3"/>
+          </svg>
+          <span>Export PDF</span>
+        </button>
+        <button type="button" class="btn-pedago-outline btn-export-excel" onclick="exportCSV()">
+          <span>📊 Excel</span>
+        </button>
+        <button type="button" class="btn-pedago-primary btn-publish-grades" onclick="publishAndSaveAll()">
+          <span>Publish Grades</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-svg">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── GRILLE DE CARTES ÉLÈVES (3 Colonnes PedagoAI) ── -->
+    <div class="students-results-grid" id="studentsCardsGrid">
+      <!-- Rendu dynamique par renderResults() -->
+    </div>
+
+    <!-- ── VUE VUE DE CLASSE (Stats, Histogramme & Remédiation) ── -->
+    <div id="classOverviewContainer" style="display:none;margin-top:24px">
+      <div class="class-kpi-summary-grid" id="cs"></div>
       
-      <div class="fl">Nom de l'évaluation <span style="font-weight:300;text-transform:none;color:var(--label3)">(optionnel)</span></div>
-      <input type="text" id="evalName" placeholder="Ex : Devoir de Français — Poésie — 3ème A" style="margin-bottom:.85rem" oninput="updateTimeEst()">
-
-      <div class="fl">Matière(s) <span style="font-weight:300;text-transform:none;font-size:.75rem;color:var(--label2)">— cliquez pour sélectionner</span></div>
-      <div class="mat-grid" id="mg2"></div>
-      <div class="cadd">
-        <input type="text" id="cm" placeholder="Autre matière (Latin, NSI, Musique…)" onkeydown="if(event.key==='Enter')addCM()">
-        <button onclick="addCM()">+ Ajouter</button>
+      <div class="overview-section-card">
+        <h3 class="overview-card-heading">📊 Distribution des notes de la classe</h3>
+        <div class="histo-bars" id="histoBars"></div>
+        <div class="histo-legend-row">
+          <span>0–5</span>
+          <span>5–10</span>
+          <span>10–15</span>
+          <span>15–20</span>
+        </div>
       </div>
-      <div class="sum" id="sum"></div>
 
-      <div class="fl" style="margin-top:.75rem">Niveau de classe</div>
-      <div class="niv-row" id="nr"></div>
-
-      <div class="fl" style="margin-top:.85rem">Barème de notation</div>
-      <div class="note-chips" id="noteChips">
-        <div class="note-chip on" data-val="20" onclick="setNote('20')">Sur 20 (/20)</div>
-        <div class="note-chip" data-val="10" onclick="setNote('10')">Sur 10 (/10)</div>
-        <div class="note-chip" data-val="50" onclick="setNote('50')">Sur 50 (/50)</div>
-        <div class="note-chip" data-val="100" onclick="setNote('100')">Sur 100 (/100)</div>
-        <div class="note-chip" data-val="auto" onclick="setNote('auto')">🔍 Détection auto</div>
-        <div class="note-chip" data-val="custom" onclick="setNote('custom')">Autre total…</div>
+      <div class="overview-section-card" id="analysisSec">
+        <h3 class="overview-card-heading">🔍 Points à retravailler en classe</h3>
+        <div id="analysisContent"></div>
       </div>
-      <div id="noteCustomWrap" style="display:none;margin-top:6px;margin-bottom:.65rem">
-        <input type="number" id="noteCustomVal" placeholder="Ex : 15, 30, 40…" style="max-width:160px" min="1" max="1000">
+
+      <div class="overview-section-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <h3 class="overview-card-heading" style="margin:0">Liste des copies corrigées</h3>
+          <button type="button" class="btn-pedago-primary" onclick="exportCompleteClassZip()">
+            📦 Télécharger tout le paquet (ZIP)
+          </button>
+        </div>
+        <div class="rt-list" id="rt"></div>
       </div>
     </div>
 
-    <div class="eb2" id="em" style="display:none"></div>
-
-    <!-- Bottom Action Bar Step 2 -->
-    <div class="wiz-action-bar" style="display:flex;gap:10px;justify-content:space-between;align-items:center">
-      <button class="bs2" onclick="goToStep(1)">
-        <span>← Modifier les copies</span>
-      </button>
-      <button class="bp" id="sb" onclick="sub()">
-        <span>✨ Lancer la correction IA</span>
+    <!-- Bouton Nouvelle analyse en bas -->
+    <div class="new-analysis-footer">
+      <button type="button" class="btn-pedago-outline" onclick="back()">
+        🔄 Nouvelle analyse
       </button>
     </div>
-    <p id="timeEst" style="display:none;text-align:center;font-size:.78rem;color:var(--inkl);margin-top:.6rem">⏱ Durée estimée : <strong id="timeEstVal">—</strong></p>
+
   </div>
 
-</div>
-
-<!-- ══ LOADING ══ -->
-<div id="vl" style="display:none">
-  <div class="ldg">
-    <div class="spin-lg"></div>
-    <p style="font-family:var(--font-display);font-size:1.15rem;font-weight:700">Correction intelligente en cours…</p>
-    <p style="font-size:.85rem;color:var(--label2);margin-top:4px" id="batchSub">Lecture et analyse des copies…</p>
-    <div class="pb"><div class="pf" id="pf" style="width:0%"></div></div>
-    <div class="pb-label"><span id="batchLabel">0 / 0</span><span id="batchPct">0%</span></div>
-    <div class="bi-list" id="biList"></div>
-  </div>
-</div>
-
-<!-- ══ RESULTS (FICHE DE CORRECTION INDIVIDUELLE & VUE DE CLASSE) ══ -->
-<div id="vr" style="display:none" class="fa">
+  <!-- ══════════════════════════════════════════════
+       VUES SECONDAIRES (Classes, Suivi, Historique)
+  ══════════════════════════════════════════════ -->
   
-  <!-- Barre d'actions supérieure -->
-  <div class="res-top-header">
-    <div class="res-header-titles">
-      <div class="res-kicker">CORRECTION PÉDAGOGIQUE</div>
-      <h2 class="res-main-title" id="evalTitle">Fiche de correction prête</h2>
-      <p class="res-subtitle" id="evalSubtitle">Voici la fiche détaillée et le barème pédagogique de la copie.</p>
+  <!-- Mes Classes & Suivi -->
+  <div id="vclasses" class="view-panel" style="display:none">
+    <div class="page-top-bar">
+      <div>
+        <h1 class="page-title">👥 Classes & Suivi des élèves</h1>
+        <p class="page-subtitle">Gérez vos classes, leurs effectifs et analysez la progression de chaque étudiant.</p>
+      </div>
+      <button type="button" class="btn-pedago-primary" id="btnAddNewClass" onclick="showNewClass()">+ Nouvelle classe</button>
     </div>
-    <div class="res-header-actions">
-      <button class="btn-new-corr-cta" onclick="back()">
-        <span>+ Nouvelle correction</span>
+
+    <!-- Sub-tabs for Classes vs Suivi -->
+    <div class="classes-subnav-row">
+      <button type="button" class="subnav-pill on" id="subtab-classes" onclick="switchClassesTab('classes')">
+        👥 Mes classes
       </button>
-    </div>
-  </div>
-
-  <!-- Barre d'outils et sélecteur d'élèves (si classe) -->
-  <div class="res-toolbar-strip">
-    <div class="res-students-switcher" id="studentSwitcherWrap"></div>
-    <div class="res-export-buttons">
-      <button class="btn-tool-zip" id="btnZipExportTop" onclick="exportCompleteClassZip()">📦 Tout télécharger (ZIP)</button>
-      <button class="btn-tool-outline" onclick="exportCSV()">📊 Exporter Excel</button>
-      <button class="btn-tool-outline" onclick="exportStudentSheetPDF()">📥 Fiche PDF</button>
-      <button class="btn-tool-outline" onclick="openStudentEditMode()">✏️ Modifier note</button>
-      <button class="btn-tool-outline" onclick="printOne()">🖨 Imprimer</button>
-      <button class="btn-tool-save" id="svbtn" onclick="sav()">🔖 Sauvegarder</button>
-    </div>
-  </div>
-
-  <!-- CONTENEUR PRINCIPAL DE LA FICHE DE CORRECTION -->
-  <div id="splitViewContainer">
-
-    <!-- Onglets de vue (Fiche de correction vs Scan d'origine) -->
-    <div class="sheet-view-toggle-bar" id="paneViewToggleWrap" style="display:none">
-      <button class="sheet-toggle-btn on" id="vt-txt" onclick="setDocView('txt')">
-        📄 Fiche de correction individuelle
-      </button>
-      <button class="sheet-toggle-btn" id="vt-img" onclick="setDocView('img')">
-        📷 Scan / Photo d'origine annotée
+      <button type="button" class="subnav-pill" id="subtab-suivi" onclick="switchClassesTab('suivi')">
+        📈 Suivi individuel des élèves
       </button>
     </div>
 
-    <!-- ── VUE 1 : LA FICHE DE CORRECTION INDIVIDUELLE OFFICIELLE ── -->
-    <div id="docSheetContainer">
-      <div class="official-correction-sheet" id="individualCorrectionSheet">
+    <!-- Tab 1: Gestion des classes -->
+    <div id="classesTabContent">
+      <div id="classesGlobalStats"></div>
+
+      <div id="newClassForm" style="display:none" class="pedago-form-card">
+        <h3 class="form-card-title">Créer une classe</h3>
+        <label for="newClassName" class="field-label-sm">Nom de la classe</label>
+        <input type="text" id="newClassName" placeholder="Ex : 3ème A, Terminale B…" class="pedago-input" style="margin-bottom:12px">
         
-        <!-- En-tête bleu de la fiche -->
-        <div class="sheet-header-banner">
-          <div class="shb-title">FICHE DE CORRECTION INDIVIDUELLE</div>
-          <div class="shb-sub" id="sheetHeaderMeta">Mathématiques — Terminale • 20 août 2026</div>
+        <label for="newClassStudents" class="field-label-sm">Élèves (un par ligne ou séparés par des virgules)</label>
+        <textarea id="newClassStudents" placeholder="Alice Martin&#10;Bob Dupont&#10;Chloé Bernard…" rows="5" class="pedago-textarea"></textarea>
+        
+        <div class="form-actions-row">
+          <button type="button" class="btn-pedago-primary" onclick="saveNewClass()">✓ Enregistrer</button>
+          <button type="button" class="btn-pedago-outline" onclick="document.getElementById('newClassForm').style.display='none'">Annuler</button>
         </div>
-
-        <!-- Nom de l'élève et Note -->
-        <div class="sheet-student-score-row">
-          <div class="sheet-student-name" id="sheetStudentName">Sass</div>
-          <div class="sheet-score-badge" id="sheetScoreBadge">16 / 20 (16/20)</div>
-        </div>
-
-        <!-- Cadre d'appréciation générale -->
-        <div class="sheet-appreciation-box" id="sheetAppreciationBox">
-          <span class="sab-label">Appréciation :</span>
-          <span class="sab-text" id="sheetAppreciationText">Bon travail global, attention à bien vérifier les affirmations dans les exercices de logique.</span>
-        </div>
-
-        <!-- Titre section Détail des questions -->
-        <div class="sheet-questions-heading">
-          <span>Détail des questions</span>
-        </div>
-
-        <!-- Liste des exercices / questions -->
-        <div class="sheet-questions-list" id="sheetQuestionsList">
-          <!-- Injecté dynamiquement par renderActiveStudentPane() -->
-        </div>
-
-        <!-- Pied de page officiel de la fiche -->
-        <div class="sheet-footer-row">
-          <div class="sfr-left" id="sheetFooterDate">Généré par ProfCorrec' IA</div>
-          <div class="sfr-right">Page 1 / 1</div>
-        </div>
-
       </div>
 
-      <!-- Barre d'actions rapide en bas de fiche -->
-      <div class="sheet-bottom-actions">
-        <button class="btn-sheet-secondary" onclick="openStudentEditMode()">✏️ Modifier la note</button>
-        <button class="btn-sheet-zip" onclick="exportCompleteClassZip()">📦 Tout télécharger (ZIP)</button>
-        <button class="btn-sheet-secondary" onclick="exportStudentSheetPDF()">📥 Fiche PDF</button>
-        <button class="btn-sheet-secondary" onclick="printOne()">🖨 Imprimer</button>
-        <button class="btn-sheet-primary" onclick="confirmValidateStudent()">Valider la copie ✓</button>
+      <div id="classList"></div>
+      <div id="classEmpty" class="empty-state-card" style="display:none">
+        <div class="empty-icon">👥</div>
+        <h3>Aucune classe enregistrée</h3>
+        <p>Créez une liste d'élèves pour suivre automatiquement leurs moyennes et tableaux de bord.</p>
       </div>
     </div>
 
-    <!-- ── VUE 2 : SCAN D'ORIGINE AVEC ANNOTATIONS ── -->
-    <div id="docScanContainer" style="display:none">
-      <div class="scan-sheet-card">
-        <div class="annot-wrap" id="annotWrap">
-          <canvas id="annotCanvas"></canvas>
-        </div>
-        <div class="ann-legend" style="margin-top:14px">
-          <span class="al-item"><span class="al-dot" style="background:#2d6a4f"></span>Correct</span>
-          <span class="al-item"><span class="al-dot" style="background:#b5860d"></span>Partiel</span>
-          <span class="al-item"><span class="al-dot" style="background:#c0392b"></span>Incorrect</span>
-        </div>
+    <!-- Tab 2: Suivi des élèves -->
+    <div id="suiviTabContent" style="display:none">
+      <div class="pedago-search-card">
+        <label for="suiviSearch" class="field-label-sm">Rechercher un élève</label>
+        <input type="text" id="suiviSearch" placeholder="Tapez le nom d'un élève…" class="pedago-input" oninput="renderSuivi()">
       </div>
-    </div>
-
-  </div>
-
-  <!-- VUE RÉCAPITULATIVE DE CLASSE (Affichée quand on clique sur l'onglet Classe) -->
-  <div id="classOverviewContainer" style="display:none;margin-top:14px">
-    <div class="class-overview-header-actions" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:700">Vue d'ensemble de la classe</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-tool-zip" onclick="exportCompleteClassZip()">📦 Télécharger tout le paquet (ZIP)</button>
-        <button class="btn-tool-outline" onclick="exportCSV()">📊 Exporter tableau Excel</button>
-      </div>
-    </div>
-    <div class="class-stats" id="cs"></div>
-    <div class="histo-wrap">
-      <div class="histo-title">📊 Distribution des notes de la classe</div>
-      <div class="histo-bars" id="histoBars"></div>
-      <div style="display:flex;justify-content:space-around;margin-top:4px">
-        <span style="font-size:.72rem;color:var(--label3)">0–5</span>
-        <span style="font-size:.72rem;color:var(--label3)">5–10</span>
-        <span style="font-size:.72rem;color:var(--label3)">10–15</span>
-        <span style="font-size:.72rem;color:var(--label3)">15–20</span>
-      </div>
-    </div>
-    <div class="analysis-card" id="analysisSec">
-      <div class="analysis-title">🔍 Analyse des points à retravailler en classe</div>
-      <div id="analysisContent"></div>
-    </div>
-    <div class="card" style="margin-top:12px">
-      <div class="ct">Liste des copies corrigées</div>
-      <div class="rt-list" id="rt"></div>
+      <div id="suiviContent"></div>
     </div>
   </div>
 
+  <!-- Suivi des Élèves (Stand-alone fallback container) -->
+  <div id="vsuivi" class="view-panel" style="display:none">
+    <div class="page-top-bar">
+      <div>
+        <h1 class="page-title">📈 Suivi des élèves</h1>
+        <p class="page-subtitle">Suivi longitudinal des notes et progression individuelle.</p>
+      </div>
+    </div>
+
+    <div class="pedago-search-card">
+      <label for="suiviSearch2" class="field-label-sm">Rechercher un élève</label>
+      <input type="text" id="suiviSearch2" placeholder="Tapez le nom d'un élève…" class="pedago-input" oninput="renderSuivi(this.value)">
+    </div>
+
+    <div id="suiviContent2"></div>
+  </div>
+
+  <!-- Historique des Évaluations -->
+  <div id="vhist" class="view-panel" style="display:none">
+    <div class="page-top-bar">
+      <div>
+        <h1 class="page-title">🗂 Historique des évaluations</h1>
+        <p class="page-subtitle">Retrouvez toutes vos corrections passées.</p>
+      </div>
+      <button type="button" class="btn-pedago-outline" id="cmpBtn" onclick="compareSelected()" style="display:none">
+        ⚖️ Comparer la sélection
+      </button>
+    </div>
+
+    <div id="histStats"></div>
+    <div class="empty-state-card" id="histEmpty" style="display:none">
+      <div class="empty-icon">🗂</div>
+      <h3>Aucune évaluation sauvegardée</h3>
+      <p>Corrigez des copies et cliquez sur « Sauvegarder » pour les archiver ici.</p>
+    </div>
+    <div id="histList" class="hist-eval-list"></div>
+    
+    <div id="vcompare" style="display:none;margin-top:20px;">
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:12px">⚖️ Comparaison inter-évaluations</h3>
+      <div id="compareContent"></div>
+    </div>
+  </div>
+
+</div><!-- /.pedago-app-body -->
+
+<!-- ══════════════════════════════════════════════
+     MODALE DE DÉTAIL D'UNE COPIE (Fiche Complète)
+══════════════════════════════════════════════ -->
+<div class="mo" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-card-pedago">
+    <div id="modalContent"></div>
+  </div>
 </div>
 
-<!-- ══ CLASSES VIEW ══ -->
-<div id="vclasses" style="display:none" class="fa">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
-    <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600">👥 Mes classes</div>
-    <button class="ba" onclick="showNewClass()">+ Nouvelle classe</button>
-  </div>
-  <div id="classesGlobalStats"></div>
-  <div id="newClassForm" style="display:none" class="card">
-    <div class="ct">Nouvelle classe</div>
-    <div class="fl" style="margin-bottom:5px">Nom de la classe</div>
-    <input type="text" id="newClassName" placeholder="Ex : 3ème A, Terminale B…" style="margin-bottom:.7rem">
-    <div class="fl" style="margin-bottom:5px">Élèves <span style="font-weight:300;text-transform:none">(un par ligne ou séparés par virgule)</span></div>
-    <textarea id="newClassStudents" placeholder="Alice Martin&#10;Bob Dupont&#10;Chloé Bernard…" rows="5"></textarea>
-    <div style="display:flex;gap:.5rem;margin-top:.75rem">
-      <button class="ba" onclick="saveNewClass()">✓ Enregistrer</button>
-      <button class="bs2" onclick="document.getElementById('newClassForm').style.display='none'">Annuler</button>
-    </div>
-  </div>
-  <div id="classList"></div>
-  <div id="classEmpty" class="empty-state"><span class="ei">👥</span><p>Aucune classe enregistrée</p><small>Créez une liste d'élèves pour la réutiliser à chaque évaluation et suivre automatiquement leurs moyennes et tableaux de bord</small></div>
-</div>
-
-<!-- ══ SUIVI VIEW ══ -->
-<div id="vsuivi" style="display:none" class="fa">
-  <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;margin-bottom:1rem">📈 Suivi des élèves</div>
-  <div class="card">
-    <div class="fl" style="margin-bottom:5px">Rechercher un élève</div>
-    <input type="text" id="suiviSearch" placeholder="Nom de l'élève…" oninput="renderSuivi()">
-  </div>
-  <div id="suiviContent"></div>
-</div>
-
-<!-- ══ HISTORIQUE VIEW ══ -->
-<div id="vhist" style="display:none" class="fa">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
-    <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600">🗂 Historique des évaluations</div>
-    <button class="bs2" id="cmpBtn" onclick="compareSelected()" style="display:none">⚖️ Comparer la sélection</button>
-  </div>
-  <div id="histStats"></div>
-  <div class="empty-state" id="histEmpty"><span class="ei">🗂</span><p>Aucune évaluation sauvegardée</p><small>Corrigez et cliquez "Sauvegarder"</small></div>
-  <div style="display:flex;flex-direction:column;gap:6px" id="histList"></div>
-  <div id="vcompare" style="display:none;margin-top:1.25rem" class="fa">
-    <div style="font-family:'Playfair Display',serif;font-size:.95rem;font-weight:600;margin-bottom:.75rem">⚖️ Comparaison inter-évaluations</div>
-    <div id="compareContent"></div>
-  </div>
-</div>
-</div><!-- /wrap -->
-
-<!-- LEAD CAPTURE POPUP / MODAL -->
-<div class="mo" id="leadGateModal" style="display:none;z-index:99999;backdrop-filter:blur(8px);background:rgba(0,0,0,0.55)">
-  <div class="modal" style="max-width:460px;padding:24px;text-align:center;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.25);position:relative">
-    <button type="button" onclick="closeLeadGateModal()" id="leadGateCloseBtn" style="display:none;position:absolute;top:16px;right:16px;background:var(--fill3);border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;color:var(--label);font-size:14px;align-items:center;justify-content:center">✕</button>
-    <div style="font-size:36px;margin-bottom:8px">🎓</div>
-    <h3 id="leadModalHeading" style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;margin-bottom:6px;color:var(--label)">Bienvenue sur Correcteur Pro</h3>
+<!-- ══════════════════════════════════════════════
+     MODALE INSCRIPTION / COMPTE ENSEIGNANT
+══════════════════════════════════════════════ -->
+<div class="mo" id="leadGateModal" style="display:none;z-index:99999;">
+  <div class="modal-card-pedago lead-auth-card">
+    <button type="button" onclick="closeLeadGateModal()" id="leadGateCloseBtn" class="modal-close-btn" aria-label="Fermer">✕</button>
+    <div class="auth-icon-badge">🎓</div>
+    <h2 id="leadModalHeading" class="auth-modal-title">Bienvenue sur PedagoAI</h2>
     
     <!-- Mode Tabs: Inscription vs Connexion -->
-    <div style="display:flex;background:var(--fill3);padding:4px;border-radius:12px;margin-bottom:16px;gap:4px">
-      <button type="button" id="tabAuthSignup" onclick="setAuthTab('signup')" style="flex:1;padding:8px 12px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:var(--card);color:var(--label);box-shadow:0 2px 4px rgba(0,0,0,0.06);cursor:pointer">✨ Créer mon compte</button>
-      <button type="button" id="tabAuthLogin" onclick="setAuthTab('login')" style="flex:1;padding:8px 12px;border:none;border-radius:8px;font-size:13px;font-weight:500;background:transparent;color:var(--label2);cursor:pointer">🔑 Déjà inscrit(e)</button>
+    <div class="auth-tabs-row">
+      <button type="button" id="tabAuthSignup" onclick="setAuthTab('signup')" class="auth-tab-btn on">✨ Créer mon compte</button>
+      <button type="button" id="tabAuthLogin" onclick="setAuthTab('login')" class="auth-tab-btn">🔑 Déjà inscrit(e)</button>
     </div>
 
-    <p id="leadModalSubtext" style="font-size:13.5px;color:var(--label2);margin-bottom:18px;line-height:1.4">
+    <p id="leadModalSubtext" class="auth-modal-subtitle">
       Renseignez vos coordonnées pour activer la correction IA instantanée et sauvegarder les notes de votre classe.
     </p>
 
-    <!-- Form for Signup / Login -->
-    <form id="leadGateForm" onsubmit="event.preventDefault();submitLeadCapture();" style="display:flex;flex-direction:column;gap:12px;text-align:left">
+    <!-- Formulaire Inscription / Connexion -->
+    <form id="leadGateForm" onsubmit="event.preventDefault();submitLeadCapture();" class="auth-form-body">
       <div id="leadFieldNameWrap">
-        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Nom complet ou Titre</label>
-        <input type="text" id="leadInputName" class="lead-input" placeholder="Ex: M. Dupont / Mme Traoré" autocomplete="name" autocapitalize="words" required>
+        <label for="leadInputName" class="field-label-sm">Nom complet ou Titre</label>
+        <input type="text" id="leadInputName" class="pedago-input" placeholder="Ex: M. Dupont / Mme Traoré" autocomplete="name" required>
       </div>
 
       <div>
-        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Adresse Email <span style="color:var(--red)">*</span></label>
-        <input type="email" id="leadInputEmail" class="lead-input" placeholder="votre.email@ecole.fr" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" required>
+        <label for="leadInputEmail" class="field-label-sm">Adresse Email <span style="color:#ef4444">*</span></label>
+        <input type="email" id="leadInputEmail" class="pedago-input" placeholder="votre.email@ecole.fr" autocomplete="email" required>
       </div>
 
       <div id="leadFieldWhatsapp">
-        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Numéro WhatsApp <span style="font-size:11px;font-weight:normal;color:var(--label3)">(optionnel 📱)</span></label>
-        <input type="tel" id="leadInputWhatsapp" class="lead-input" placeholder="+33 6 12 34 56 78 ou +225 07..." autocomplete="tel" inputmode="tel">
+        <label for="leadInputWhatsapp" class="field-label-sm">Numéro WhatsApp <span style="color:var(--text-muted);font-weight:400">(optionnel 📱)</span></label>
+        <input type="tel" id="leadInputWhatsapp" class="pedago-input" placeholder="+33 6 12 34 56 78 ou +225 07..." autocomplete="tel">
       </div>
 
       <div id="leadFieldSchool">
-        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--label)">Établissement / Ville <span style="font-size:11px;font-weight:normal;color:var(--label3)">(optionnel)</span></label>
-        <input type="text" id="leadInputSchool" class="lead-input" placeholder="Ex: Collège Jean Jaurès, Abidjan, Paris..." autocomplete="organization" autocapitalize="words">
+        <label for="leadInputSchool" class="field-label-sm">Établissement / Ville <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
+        <input type="text" id="leadInputSchool" class="pedago-input" placeholder="Ex: Lycée Victor Hugo, Paris..." autocomplete="organization">
       </div>
 
-      <div id="leadGateErr" style="display:none;color:var(--red);font-size:12px;text-align:center;margin-top:2px"></div>
+      <div id="leadGateErr" class="auth-error-alert" style="display:none"></div>
 
-      <button type="submit" id="leadGateBtn" style="margin-top:8px;padding:12px;border-radius:12px;background:var(--blue);color:#fff;border:none;font-weight:600;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      <button type="submit" id="leadGateBtn" class="btn-pedago-primary" style="width:100%;margin-top:10px;padding:12px">
         <span id="leadBtnTxt">🚀 Activer et commencer la correction</span>
       </button>
       
-      <div style="font-size:11px;color:var(--label3);text-align:center;margin-top:4px">
+      <p class="auth-privacy-notice">
         🔒 Vos données restent confidentielles et ne sont jamais partagées.
-      </div>
+      </p>
     </form>
 
-    <!-- Connected User Profile Panel (if already logged in and opened manually) -->
-    <div id="leadUserProfilePanel" style="display:none;text-align:left;background:var(--bg-secondary);padding:14px;border-radius:12px;border:1px solid var(--separator);margin-top:10px">
-      <div style="font-weight:600;font-size:14px;color:var(--label);margin-bottom:4px" id="userProfileName">Enseignant connecté</div>
-      <div style="font-size:13px;color:var(--label2);margin-bottom:2px" id="userProfileEmail">email@ecole.fr</div>
-      <div style="font-size:12px;color:var(--label3);margin-bottom:12px" id="userProfileExtra">WhatsApp: - | Établissement: -</div>
-      <div style="display:flex;gap:8px">
-        <button type="button" onclick="closeLeadGateModal()" class="bs2" style="flex:1;padding:8px">Fermer</button>
-        <button type="button" onclick="logoutLeadUser()" style="flex:1;padding:8px;background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.25);border-radius:8px;font-weight:600;cursor:pointer">Se déconnecter</button>
+    <!-- Panneau Profil Connecté -->
+    <div id="leadUserProfilePanel" style="display:none;" class="connected-user-panel">
+      <div class="user-info-box">
+        <div class="user-p-name" id="userProfileName">Enseignant connecté</div>
+        <div class="user-p-email" id="userProfileEmail">email@ecole.fr</div>
+        <div class="user-p-extra" id="userProfileExtra">WhatsApp: - | Établissement: -</div>
+      </div>
+      <div class="user-panel-btns">
+        <button type="button" onclick="closeLeadGateModal()" class="btn-pedago-outline">Fermer</button>
+        <button type="button" onclick="logoutLeadUser()" class="btn-pedago-danger">Se déconnecter</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- MODAL -->
-<div class="mo" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal"><div id="modalContent"></div></div>
-</div>
-
-<!-- QUICK EDIT MODAL -->
-<div class="mo" id="quickEditModal" style="display:none" onclick="if(event.target===this)closeStudentQuickEditModal()">
-  <div class="modal" style="max-width:680px;width:95%">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--separator)">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:22px">✏️</span>
-        <div>
-          <h3 id="qeModalTitle" style="font-size:17px;font-weight:700;margin:0;color:var(--label)">Modifier la copie & l'évaluation</h3>
-          <div style="font-size:12px;color:var(--label3)">Ajustement en direct avec recalcul instantané de la moyenne</div>
-        </div>
-      </div>
-      <button class="m-bcl" onclick="closeStudentQuickEditModal()" style="font-size:16px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;background:var(--fill3);border:none;cursor:pointer">✕</button>
+<!-- ══════════════════════════════════════════════
+     FOOTER PedagoAI
+══════════════════════════════════════════════ -->
+<footer class="pedago-global-footer">
+  <div class="footer-container">
+    <div class="footer-brand">
+      <span class="footer-logo">Pedago<span class="logo-ai">AI</span></span>
     </div>
-    <div id="qeModalBody" class="qe-modal-body"></div>
-    <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid var(--separator);background:var(--fill3)">
-      <button class="bs2" onclick="closeStudentQuickEditModal()" style="padding:8px 16px;border-radius:8px">Annuler</button>
-      <button class="btn-tool-zip" onclick="saveStudentQuickEdit()" style="padding:9px 20px;border-radius:8px;font-size:14px">
-        ✓ Enregistrer et actualiser
-      </button>
+    <div class="footer-copyright">
+      © 2026 PedagoAI. All rights reserved.
+    </div>
+    <div class="footer-links">
+      <a href="#" onclick="return false;">Privacy Policy</a>
+      <a href="#" onclick="return false;">Terms of Service</a>
+      <a href="#" onclick="return false;">Legal</a>
     </div>
   </div>
-</div>
-<!-- ══ VISITE GUIDÉE INTERACTIVE (ONBOARDING) ══ -->
-<div id="tourBackdrop" class="tour-backdrop" style="display:none" onclick="exitInteractiveTour()"></div>
-<div id="tourSpotlight" class="tour-spotlight" style="display:none"></div>
-<div id="tourCard" class="tour-card" style="display:none">
-  <div class="tour-header">
-    <span class="tour-step-badge" id="tourStepBadge">Étape 1 / 5</span>
-    <button type="button" class="tour-close-btn" onclick="exitInteractiveTour()" title="Quitter la visite">✕</button>
-  </div>
-  <div class="tour-progress-bar">
-    <div class="tour-progress-fill" id="tourProgressFill" style="width: 20%"></div>
-  </div>
-  <div class="tour-title" id="tourTitle">Titre de l'étape</div>
-  <div class="tour-desc" id="tourDesc">Description détaillée...</div>
-  <div class="tour-actions">
-    <button type="button" class="tour-btn-skip" onclick="exitInteractiveTour()">Passer</button>
-    <div class="tour-btn-group">
-      <button type="button" class="tour-btn-prev" id="tourBtnPrev" onclick="prevTourStep()">← Précédent</button>
-      <button type="button" class="tour-btn-next" id="tourBtnNext" onclick="nextTourStep()">Suivant →</button>
-    </div>
-  </div>
-</div>
-
-<!-- Tour Welcome Toast (first visit) -->
-<div id="tourWelcomeToast" class="tour-welcome-toast" style="display:none">
-  <div class="tour-welcome-title">
-    <span>👋</span>
-    <span>Bienvenue sur ProfCorrec' IA</span>
-  </div>
-  <div class="tour-welcome-desc">
-    Découvrez en 1 minute comment importer vos copies et configurer le barème officiel.
-  </div>
-  <div class="tour-welcome-btns">
-    <button type="button" class="tour-welcome-btn-dismiss" onclick="dismissTourWelcome()">Plus tard</button>
-    <button type="button" class="tour-welcome-btn-start" onclick="startTourFromWelcome()">🎯 Démarrer la visite</button>
-  </div>
-</div>
+</footer>
 
 <div id="pz"></div>
 

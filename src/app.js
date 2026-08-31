@@ -2010,6 +2010,37 @@ window.setAuthTab = function (tab) {
   }
 };
 
+/**
+ * Envoie une alerte en temps réel à l'administrateur (via le Bot Telegram configuré)
+ * @param {Object} userData - Détails de l'utilisateur (nom, email, whatsapp, établissement, offre)
+ * @param {string} eventType - Type d'événement (ex: 'signup', 'login', 'upgrade_request')
+ * @param {string} details - Informations complémentaires optionnelles
+ * @returns {Promise<Object>}
+ */
+window.sendAdminNotification = async function (userData, eventType, details) {
+  try {
+    var payload = {
+      event: eventType || 'signup',
+      user: userData || DB.currentUser || {},
+      details: details || '',
+      timestamp: new Date().toISOString(),
+      source: window.location.hostname || 'PedagoAI Web'
+    };
+
+    var response = await fetch('/api/notify-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    var result = await response.json();
+    return result;
+  } catch (err) {
+    console.warn('[Admin Notification] Erreur lors de l’envoi de la notification Telegram:', err);
+    return { success: false, error: err.message };
+  }
+};
+
 window.submitLeadCapture = async function () {
   var name = (document.getElementById('leadInputName') || {}).value || 'Enseignant';
   var email = (document.getElementById('leadInputEmail') || {}).value || '';
@@ -2031,6 +2062,7 @@ window.submitLeadCapture = async function () {
     joined: new Date().toISOString()
   };
 
+  // 1. Enregistrement en base de données / leads
   try {
     await fetch('/api/leads', {
       method: 'POST',
@@ -2039,6 +2071,13 @@ window.submitLeadCapture = async function () {
     });
   } catch (e) {
     console.warn('Sync lead error:', e);
+  }
+
+  // 2. Alerte Telegram instantanée pour l'administrateur
+  try {
+    await window.sendAdminNotification(leadData, 'signup', 'Inscription Essai 7 jours depuis l’application');
+  } catch (ne) {
+    console.warn('Erreur envoi notification admin:', ne);
   }
 
   DB.currentUser = leadData;
@@ -2162,6 +2201,16 @@ window.closeInteractiveTour = function () {
     document.body.style.overflow = '';
   }
 };
+
+// Global escape key handler for accessible modals
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    var tourModal = document.getElementById('tourModal');
+    if (tourModal && tourModal.style.display === 'flex') {
+      window.closeInteractiveTour();
+    }
+  }
+});
 
 window.nextTourStep = function () {
   if (currentTourStep < tourSteps.length - 1) {

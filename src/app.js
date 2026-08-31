@@ -20,6 +20,7 @@ var ST = {
   mode: 'B', // 'B' = avec corrigé, 'A' = IA autonome
   selectedSubject: 'math',
   customSubject: '',
+  gradeLevel: 'college', // 'primaire', 'college', 'lycee', 'superieur'
   depthLevel: 'standard', // 'basic', 'standard', 'advanced'
   criteria: {
     tech: 40,
@@ -42,17 +43,44 @@ var DB = {
 };
 
 /* ─────────────────────────────────────────────
-   INIT
+   INIT & AUTH STATE
 ───────────────────────────────────────────── */
+var pendingAuthCallback = null;
+
 window.addEventListener('DOMContentLoaded', init);
 
 function init() {
   initTheme();
   initGuideExpress();
   loadDB();
+  updateTeacherNavStatus();
   populateClassSelect();
   checkAndRestoreAutoSave();
   setInterval(autoSaveCurrentSession, 30000);
+}
+
+window.requireAuth = function (callback) {
+  if (DB.currentUser && DB.currentUser.email) {
+    if (typeof callback === 'function') callback();
+    return true;
+  }
+  pendingAuthCallback = callback || null;
+  openLeadGateModal(false);
+  return false;
+};
+
+function updateTeacherNavStatus() {
+  var lbl = document.getElementById('navTeacherLabel');
+  var dot = document.getElementById('navTeacherDot');
+  if (!lbl) return;
+
+  if (DB.currentUser && DB.currentUser.email) {
+    lbl.textContent = '👤 ' + (DB.currentUser.name || 'Enseignant');
+    if (dot) dot.classList.add('online');
+  } else {
+    lbl.textContent = 'Connexion / Inscription';
+    if (dot) dot.classList.remove('online');
+  }
 }
 
 /* ─────────────────────────────────────────────
@@ -138,6 +166,13 @@ function updateThemeIcons(isDark) {
    NAVIGATION (4 Main Tabs)
 ───────────────────────────────────────────── */
 window.gNav = function (target) {
+  // If navigating away from home to any functional module, require authentication first
+  if (target !== 'home') {
+    if (!requireAuth(function () { gNav(target); })) {
+      return;
+    }
+  }
+
   // Normalize target
   var mainTab = target;
   if (target === 'import' || target === 'configure' || target === 'results' || target === 'corr' || target === 'correction') {
@@ -196,8 +231,10 @@ window.gNav = function (target) {
 };
 
 window.startNewCorrection = function () {
-  gNav('corr');
-  goToStep(1);
+  requireAuth(function () {
+    gNav('corr');
+    goToStep(1);
+  });
 };
 
 /* ─────────────────────────────────────────────
@@ -456,6 +493,17 @@ window.setDepthLevel = function (level) {
   });
 };
 
+window.selectGradeLevel = function (level) {
+  ST.gradeLevel = level;
+  document.querySelectorAll('.grade-level-tile').forEach(function (tile) {
+    tile.classList.toggle('on', tile.getAttribute('data-level') === level);
+  });
+};
+
+window.getGradeLevel = function () {
+  return ST.gradeLevel || 'college';
+};
+
 window.setM = function (mode) {
   ST.mode = mode;
   var mb = document.getElementById('mb');
@@ -527,62 +575,55 @@ window.getFreeInstructions = function () {
 };
 
 /* ─────────────────────────────────────────────
-   INTERACTIVE DEMO (Mockup Data Preview)
+   QUESTION NORMALIZATION HELPER
+───────────────────────────────────────────── */
+function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax) {
+  if (!rawQuestions || !rawQuestions.length) {
+    var isPassed = (studentScore / (studentScoreMax || 20)) >= 0.5;
+    return [
+      {
+        titre: 'Exercice 1',
+        note: isPassed ? '2 / 2 pt' : '0 / 2 pt',
+        statut: isPassed ? 'ACQUIS' : 'A REVOIR',
+        reponse_eleve: 'Réponse rédigée dans le devoir',
+        attendu: 'Application rigoureuse de la méthode académique',
+        commentaire: isPassed ? 'Démarche et calculs bien menés.' : 'Erreur méthodologique identifiée.'
+      }
+    ];
+  }
+
+  return rawQuestions.map(function (q, idx) {
+    var titre = q.titre || q.q || ('Exercice ' + (idx + 1));
+    var noteStr = q.note || (q.note_val !== undefined ? (q.note_val + ' / ' + (q.note_max || 2) + ' pt') : '2 / 2 pt');
+    
+    var statut = q.statut;
+    if (!statut) {
+      if (noteStr.startsWith('0') || noteStr.includes('0/')) {
+        statut = 'A REVOIR';
+      } else if (noteStr.includes('0.5') || noteStr.includes('1/') || noteStr.includes('1.5')) {
+        statut = 'EN COURS';
+      } else {
+        statut = 'ACQUIS';
+      }
+    }
+    statut = statut.toUpperCase();
+
+    return {
+      titre: titre,
+      note: noteStr,
+      statut: statut,
+      reponse_eleve: q.reponse_eleve || q.reponse || q.eleve || 'Réponse inscrite sur la copie',
+      attendu: q.attendu || q.solution || q.corrige || 'Réponse conforme au corrigé officiel',
+      commentaire: q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct.' : 'À revoir.')
+    };
+  });
+}
+
+/* ─────────────────────────────────────────────
+   START CORRECTION ACTION
 ───────────────────────────────────────────── */
 window.loadDemoCorrection = function () {
-  ST.results = [
-    {
-      id: '84920-FR',
-      name: 'Léa Dubois',
-      score: 18.5,
-      scoreMax: 20,
-      initials: 'LD',
-      insight: 'Excellent critical analysis. Léa demonstrated exceptional synthesis of the primary sources, specifically in evaluating the socio-economic impacts. Minor structural flow issues in the concluding paragraph, but overall a highly sophisticated argument.',
-      tags: ['Analytical Depth: +2', 'Source Integration', 'Raisonnement'],
-      details: [
-        { q: 'Question 1 (Compréhension)', note: '5/5', comm: 'Excellente maîtrise des concepts clés.' },
-        { q: 'Question 2 (Analyse critique)', note: '8.5/10', comm: 'Argumentation remarquable et bien appuyée.' },
-        { q: 'Question 3 (Synthèse)', note: '5/5', comm: 'Conclusion percutante et style très fluide.' }
-      ],
-      pointsForts: 'Grande finesse d\'analyse, rigueur dans l\'exploitation des documents.',
-      pointsAmeliorer: 'Soigner la transition finale dans la dernière partie.'
-    },
-    {
-      id: '84921-FR',
-      name: 'Thomas Martin',
-      score: 14.0,
-      scoreMax: 20,
-      initials: 'TM',
-      insight: 'Solid foundational understanding. Thomas adequately covers the required topics, however, the essay leans heavily on descriptive text rather than analytical evaluation. Encouraging more original critique of the source material is recommended for future assignments.',
-      tags: ['Descriptive', 'Needs Analysis', 'Vocabulaire'],
-      details: [
-        { q: 'Question 1 (Compréhension)', note: '4/5', comm: 'Bonne restitution des faits principaux.' },
-        { q: 'Question 2 (Analyse critique)', note: '6/10', comm: 'Trop de paraphrase, manque de recul critique.' },
-        { q: 'Question 3 (Synthèse)', note: '4/5', comm: 'Présentation claire et soignée.' }
-      ],
-      pointsForts: 'Travail appliqué, connaissances de base bien acquises.',
-      pointsAmeliorer: 'Dépasser la simple description pour approfondir le raisonnement.'
-    },
-    {
-      id: '84922-FR',
-      name: 'Emma Blanc',
-      score: 16.5,
-      scoreMax: 20,
-      initials: 'EB',
-      insight: 'Very strong and highly creative approach to the prompt. Emma integrates unique perspectives and connects them well to the core theory. Grammatical precision drops slightly in the latter half, suggesting rushed completion, but the intellectual merit remains high.',
-      tags: ['Creative Approach', 'Syntax Review', 'Originalité'],
-      details: [
-        { q: 'Question 1 (Compréhension)', note: '4.5/5', comm: 'Compréhension intuitive et subtile.' },
-        { q: 'Question 2 (Analyse critique)', note: '8/10', comm: 'Idées très originales et pertinentes.' },
-        { q: 'Question 3 (Synthèse)', note: '4/5', comm: 'Quelques fautes d\'inattention sur la fin.' }
-      ],
-      pointsForts: 'Créativité intellectuelle, liens interdisciplinaires.',
-      pointsAmeliorer: 'Relire attentivement pour corriger les fautes d\'orthographe.'
-    }
-  ];
-
-  renderResults();
-  gNav('results');
+  window.startNewCorrection();
 };
 
 /* ─────────────────────────────────────────────
@@ -592,6 +633,10 @@ window.sub = async function () {
   var count = ST.uploadMode === 'pdf' ? 1 : ST.students.length;
   if (count === 0 && !ST.pdfClass) {
     alert('Veuillez importer au moins une copie avant de lancer l\'analyse.');
+    return;
+  }
+
+  if (!requireAuth(function () { window.sub(); })) {
     return;
   }
 
@@ -689,18 +734,28 @@ async function correctSingleStudent(st, idx) {
 
   var data = await resp.json();
   var parsed = data.result || data;
+  var finalScore = typeof parsed.note === 'number' ? parsed.note : (parseFloat(parsed.note) || 15);
+  var finalScoreMax = parsed.note_sur || 20;
+
+  var normQuestions = normalizeStudentQuestions(parsed.questions, finalScore, finalScoreMax);
 
   return {
     id: 'STU-' + (84900 + idx),
     name: st.name || parsed.eleve || ('Élève ' + idx),
-    score: typeof parsed.note === 'number' ? parsed.note : (parseFloat(parsed.note) || 15),
-    scoreMax: parsed.note_sur || 20,
+    score: finalScore,
+    scoreMax: finalScoreMax,
     initials: getInitials(st.name || parsed.eleve || 'Élève'),
     insight: parsed.appreciation || parsed.commentaire || 'Travail soigné et bonne compréhension des consignes.',
     tags: parsed.tags || ['Synthèse', 'Raisonnement'],
-    details: parsed.questions || [
-      { q: 'Questions du devoir', note: (parsed.note || 15) + '/' + (parsed.note_sur || 20), comm: parsed.appreciation || '' }
+    rawImage: st.base64 || null,
+    rawType: st.type || 'image/jpeg',
+    annotatedImage: null,
+    competences: parsed.competences || [
+      { nom: 'Compréhension du sujet', statut: finalScore >= 14 ? 'Acquis' : (finalScore >= 9 ? 'En cours' : 'Non acquis') },
+      { nom: 'Méthode & Raisonnement', statut: finalScore >= 12 ? 'Acquis' : 'En cours' },
+      { nom: 'Expression & Rédaction', statut: 'Acquis' }
     ],
+    details: normQuestions,
     pointsForts: parsed.points_forts || 'Bonne rigueur dans le raisonnement.',
     pointsAmeliorer: parsed.points_ameliorer || 'Veiller à la précision des termes techniques.'
   };
@@ -753,9 +808,15 @@ function renderResults() {
 
   grid.innerHTML = displayList.map(function (s, idx) {
     var scoreFormatted = Number(s.score).toFixed(1).replace('.0', '');
+    var iaScore = s.score_ia !== undefined ? s.score_ia : s.score;
+    var iaScoreFormatted = Number(iaScore).toFixed(1).replace('.0', '');
     var tagsHtml = (s.tags || ['Analyse', 'Synthèse']).map(function (t) {
       return '<span class="insight-tag-pill">' + escH(t) + '</span>';
     }).join('');
+
+    var scoreStatusBadge = s.score_adjusted 
+      ? '<span class="score-adjusted-badge" style="display:inline-block;padding:2px 8px;border-radius:12px;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;border:1px solid #fde68a">✏️ Note prof : ' + scoreFormatted + '/' + (s.scoreMax || 20) + ' (IA: ' + iaScoreFormatted + ')</span>'
+      : '<span style="font-size:11px;color:var(--text-muted)">🤖 Note IA conforme</span>';
 
     return (
       '<div class="student-pedago-card">' +
@@ -774,17 +835,27 @@ function renderResults() {
           '<span class="score-number-big">' + scoreFormatted + '</span>' +
           '<span class="score-denom">/' + (s.scoreMax || 20) + '</span>' +
         '</div>' +
+        '<div style="text-align:center;margin-top:-6px;margin-bottom:10px">' + scoreStatusBadge + '</div>' +
 
         '<div class="card-ai-insight-block">' +
           '<div class="insight-header-tag">' +
-            '<span>💡</span> AI INSIGHT' +
+            '<span>💡</span> APPRÉCIATION' +
           '</div>' +
           '<p class="insight-feedback-text">' + escH(s.insight || 'Évaluation personnalisée générée par l\'IA.') + '</p>' +
           '<div class="card-tags-row">' + tagsHtml + '</div>' +
         '</div>' +
 
-        '<button type="button" class="card-view-detail-btn" onclick="openStudentModal(' + idx + ')">' +
-          '<span>Voir le détail</span>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px">' +
+          '<button type="button" class="btn-pedago-outline sm" onclick="openScoreEditModal(' + idx + ')" title="Modifier la note manuellement" style="border-color:var(--blue-primary);color:var(--blue-primary);font-weight:700">' +
+            '<span>✏️ Noter</span>' +
+          '</button>' +
+          '<button type="button" class="btn-pedago-outline sm" onclick="printStudentBulletin(' + idx + ')" title="Imprimer la fiche individuelle">' +
+            '<span>🖨️ Fiche</span>' +
+          '</button>' +
+        '</div>' +
+
+        '<button type="button" class="card-view-detail-btn" onclick="openStudentModal(' + idx + ')" style="margin-top:8px">' +
+          '<span>Voir le détail complet</span>' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M5 12h14M12 5l7 7-7 7"/></svg>' +
         '</button>' +
       '</div>'
@@ -816,22 +887,37 @@ window.setResultsFilter = function (filterType) {
   }
 };
 
+function calculateMedian(values) {
+  if (!values.length) return 0;
+  var sorted = values.slice().sort(function(a, b) { return a - b; });
+  var mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return ((sorted[mid - 1] + sorted[mid]) / 2).toFixed(1);
+  }
+  return sorted[mid].toFixed(1);
+}
+
 function renderClassKPIs() {
   var cs = document.getElementById('cs');
   var hb = document.getElementById('histoBars');
   var rt = document.getElementById('rt');
+  var analysisSec = document.getElementById('analysisContent');
   if (!cs || !ST.results || !ST.results.length) return;
 
-  var scores = ST.results.map(function (s) { return s.score; });
+  var scores = ST.results.map(function (s) { return Number(s.score); });
   var avg = (scores.reduce(function (a, b) { return a + b; }, 0) / scores.length).toFixed(1);
   var max = Math.max.apply(null, scores).toFixed(1);
   var min = Math.min.apply(null, scores).toFixed(1);
+  var median = calculateMedian(scores);
+  var successRate = Math.round((scores.filter(function (s) { return s >= 10; }).length / scores.length) * 100);
 
   cs.innerHTML = (
-    '<div class="cs-box"><div class="csv-val">' + avg + '</div><div class="csl">Moyenne de classe</div></div>' +
-    '<div class="cs-box"><div class="csv-val" style="color:var(--green)">' + max + '</div><div class="csl">Note max</div></div>' +
-    '<div class="cs-box"><div class="csv-val" style="color:var(--orange)">' + min + '</div><div class="csl">Note min</div></div>' +
-    '<div class="cs-box"><div class="csv-val">' + scores.length + '</div><div class="csl">Copies notées</div></div>'
+    '<div class="cs-box"><div class="csv-val">' + avg + '</div><div class="csl">Moyenne générale</div></div>' +
+    '<div class="cs-box"><div class="csv-val">' + median + '</div><div class="csl">Médiane de classe</div></div>' +
+    '<div class="cs-box"><div class="csv-val" style="color:var(--green)">' + max + '</div><div class="csl">Note maximale</div></div>' +
+    '<div class="cs-box"><div class="csv-val" style="color:var(--orange)">' + min + '</div><div class="csl">Note minimale</div></div>' +
+    '<div class="cs-box"><div class="csv-val" style="color:var(--blue-primary)">' + successRate + '%</div><div class="csl">Taux de réussite (≥10)</div></div>' +
+    '<div class="cs-box"><div class="csv-val">' + scores.length + '</div><div class="csl">Copies corrigées</div></div>'
   );
 
   // Histogram
@@ -854,11 +940,38 @@ function renderClassKPIs() {
     }).join('');
   }
 
+  // Diagnostic & Remediation Content
+  if (analysisSec) {
+    var weakStudents = ST.results.filter(function(s) { return s.score < 10; });
+    var strongStudents = ST.results.filter(function(s) { return s.score >= 14; });
+
+    analysisSec.innerHTML = (
+      '<div class="remed-grid">' +
+        '<div class="remed-card">' +
+          '<div class="remed-card-title" style="color:var(--blue-primary)">✅ Notions & Points forts acquis</div>' +
+          '<ul class="remed-list">' +
+            '<li>Compréhension globale des consignes respectée par ' + Math.round((strongStudents.length / scores.length) * 100) + '% de la classe.</li>' +
+            '<li>Application correcte des règles méthodologiques fondamentales.</li>' +
+            '<li>Bonne clarté de présentation générale observée dans les copies.</li>' +
+          '</ul>' +
+        '</div>' +
+        '<div class="remed-card">' +
+          '<div class="remed-card-title" style="color:#ef4444">⚠️ Points de blocage & Remédiation ciblée</div>' +
+          '<ul class="remed-list">' +
+            '<li>Justification et rigueur des arguments à consolider pour ' + weakStudents.length + ' élève(s).</li>' +
+            '<li>Précision du vocabulaire technique et méthodologique en cours d\'assimilation.</li>' +
+            '<li>Recommandation : Proposer une séance courte de remédiation en groupe guidé.</li>' +
+          '</ul>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
   // Summary list
   if (rt) {
     rt.innerHTML = ST.results.map(function (s, i) {
       return (
-        '<div class="rt-row" onclick="openStudentModal(' + i + ')">' +
+        '<div class="rt-row" style="cursor:pointer" onclick="openStudentModal(' + i + ')">' +
           '<span class="rt-num">#' + (i + 1) + '</span>' +
           '<span class="rt-name">' + escH(s.name) + '</span>' +
           '<span class="rt-score">' + Number(s.score).toFixed(1) + '/' + (s.scoreMax || 20) + '</span>' +
@@ -866,6 +979,75 @@ function renderClassKPIs() {
       );
     }).join('');
   }
+}
+
+/* ─────────────────────────────────────────────
+   AUTHENTIC FICHE DE CORRECTION HTML RENDERER
+───────────────────────────────────────────── */
+function renderFicheCorrectionHTML(student) {
+  var subjectName = (ST.selectedSubject === 'other' ? ST.customSubject : (MATS.find(function(m){ return m.id === ST.selectedSubject; }) || {}).l) || 'Mathématiques';
+  var dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  var scoreVal = Number(student.score).toFixed(1).replace('.0', '');
+  var scoreMax = student.scoreMax || 20;
+
+  var questions = student.details || [];
+  var questionsHtml = questions.map(function(q, idx) {
+    var title = q.titre || q.q || ('Exercice ' + (idx + 1));
+    var note = q.note || '2 / 2 pt';
+    var statut = (q.statut || (note.startsWith('0') ? 'A REVOIR' : (note.includes('0.5') || note.includes('1/') ? 'EN COURS' : 'ACQUIS'))).toUpperCase();
+    var statutCls = statut.indexOf('REVOIR') !== -1 ? 'a-revoir' : (statut.indexOf('COURS') !== -1 ? 'en-cours' : 'acquis');
+    
+    var repEleve = q.reponse_eleve || q.reponse || 'Réponse inscrite dans la copie';
+    var attendu = q.attendu || 'Conforme au corrigé officiel';
+    var comm = q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct.' : 'Erreur identifiée.');
+
+    return (
+      '<div class="fc-question-card">' +
+        '<div class="fc-q-header">' +
+          '<span class="fc-q-title">' + escH(title) + '</span>' +
+          '<span class="fc-q-status ' + statutCls + '">' + escH(note) + ' [' + escH(statut) + ']</span>' +
+        '</div>' +
+        '<div class="fc-q-body">' +
+          '<div class="fc-q-row"><span class="fc-q-lbl">Réponse élève :</span> <span class="fc-q-txt">' + escH(repEleve) + '</span></div>' +
+          '<div class="fc-q-row"><span class="fc-q-lbl">Attendu :</span> <span class="fc-q-txt">' + escH(attendu) + '</span></div>' +
+          '<div class="fc-q-row"><span class="fc-q-lbl">Commentaire :</span> <span class="fc-q-txt">' + escH(comm) + '</span></div>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  return (
+    '<div class="fiche-correction-wrapper">' +
+      '<div class="fiche-correction-banner">' +
+        '<div class="fcb-title">FICHE DE CORRECTION INDIVIDUELLE</div>' +
+        '<div class="fcb-sub">' + escH(subjectName) + ' • ' + escH(dateStr) + '</div>' +
+      '</div>' +
+
+      '<div class="fc-student-header">' +
+        '<div class="fc-student-name">' + escH(student.name) + '</div>' +
+        '<div class="fc-student-score">' + scoreVal + ' / ' + scoreMax + ' <span class="fc-score-paren">(' + scoreVal + '/' + scoreMax + ')</span>' +
+          (student.score_adjusted ? '<div style="font-size:12px;font-weight:600;color:#92400e;margin-top:3px">Note IA d\'origine : ' + (student.score_ia !== undefined ? Number(student.score_ia).toFixed(1) : scoreVal) + '/' + scoreMax + ' • Ajustée par le professeur</div>' : '') +
+        '</div>' +
+      '</div>' +
+
+      '<div class="fc-appreciation-box">' +
+        '<span class="fc-appr-label">Appréciation :</span> ' + escH(student.insight || 'Bon travail global.') +
+      '</div>' +
+
+      (student.teacher_comment ? '<div style="margin-top:10px;padding:10px 14px;background:#fef9c3;border:1px solid #fde047;border-radius:8px;font-size:13px;color:#713f12;line-height:1.5"><strong>📝 Remarque de l\'enseignant :</strong> ' + escH(student.teacher_comment) + '</div>' : '') +
+
+      '<h3 class="fc-section-title">Détail des questions</h3>' +
+
+      '<div class="fc-questions-list">' +
+        questionsHtml +
+      '</div>' +
+
+      '<div class="fc-footer">' +
+        '<span>Généré par ProfCorrec\' IA — ' + escH(dateStr) + '</span>' +
+        '<span>Page 1 / 1</span>' +
+      '</div>' +
+    '</div>'
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -879,44 +1061,20 @@ window.openStudentModal = function (idx) {
   var content = document.getElementById('modalContent');
   if (!modal || !content) return;
 
-  var detailsHtml = (s.details || []).map(function (d, qIdx) {
-    return (
-      '<div style="background:var(--bg-subtle);padding:12px;border-radius:10px;margin-bottom:8px;border:1px solid var(--border-subtle)">' +
-        '<div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-bottom:4px">' +
-          '<span>' + escH(d.q) + '</span>' +
-          '<span style="color:var(--blue-primary);font-family:var(--font-mono)">' + escH(d.note) + '</span>' +
-        '</div>' +
-        '<p style="font-size:13px;color:var(--text-muted);margin:0">' + escH(d.comm) + '</p>' +
-      '</div>'
-    );
-  }).join('');
+  var ficheHtml = renderFicheCorrectionHTML(s);
 
   content.innerHTML = (
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">' +
-      '<div>' +
-        '<h2 style="font-family:var(--font-heading);font-size:24px;font-weight:800">' + escH(s.name) + '</h2>' +
-        '<span style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono)">ID: ' + escH(s.id) + '</span>' +
-      '</div>' +
-      '<button type="button" onclick="closeModal()" class="modal-close-btn">✕</button>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+      '<span style="font-weight:700;font-size:14px;color:var(--text-muted)">Aperçu de la copie corrigée</span>' +
+      '<button type="button" onclick="closeModal()" class="modal-close-btn" style="position:static">✕</button>' +
     '</div>' +
 
-    '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:20px;padding:16px;background:var(--blue-subtle);border-radius:12px;border:1px solid var(--blue-border)">' +
-      '<span style="font-size:36px;font-weight:800;font-family:var(--font-heading);color:var(--blue-primary)">' + Number(s.score).toFixed(1) + '</span>' +
-      '<span style="font-size:18px;font-weight:600;color:var(--text-dim)">/' + (s.scoreMax || 20) + '</span>' +
-    '</div>' +
+    ficheHtml +
 
-    '<div style="margin-bottom:20px">' +
-      '<h4 style="font-size:14px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">💡 Synthèse pédagogique</h4>' +
-      '<p style="font-size:14px;line-height:1.6;color:var(--text-main);background:var(--bg-subtle);padding:14px;border-radius:10px;border:1px solid var(--border-subtle)">' + escH(s.insight) + '</p>' +
-    '</div>' +
-
-    '<div style="margin-bottom:20px">' +
-      '<h4 style="font-size:14px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Détail par question</h4>' +
-      detailsHtml +
-    '</div>' +
-
-    '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px">' +
-      '<button type="button" class="btn-pedago-outline" onclick="exportStudentBulletinPDF(' + idx + ')">📄 Télécharger la fiche PDF</button>' +
+    '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap">' +
+      '<button type="button" class="btn-pedago-outline" onclick="openScoreEditModal(' + idx + ');closeModal();">✏️ Modifier la note finale</button>' +
+      '<button type="button" class="btn-pedago-outline" onclick="exportSingleStudentPDFDownload(' + idx + ')">📄 Télécharger PDF</button>' +
+      '<button type="button" class="btn-pedago-outline" onclick="printStudentBulletin(' + idx + ')">🖨️ Imprimer</button>' +
       '<button type="button" class="btn-pedago-primary" onclick="closeModal()">Fermer</button>' +
     '</div>'
   );
@@ -934,23 +1092,474 @@ window.openStudentQuickMenu = function (idx) {
 };
 
 /* ─────────────────────────────────────────────
-   EXPORTS (PDF, Excel, ZIP)
+   SCORE ADJUSTMENT & VALIDATION MODAL (Note IA vs Note Finale)
 ───────────────────────────────────────────── */
-window.exportCSV = function () {
-  if (!ST.results || !ST.results.length) return;
-  var rows = [['Nom de l\'élève', 'Identifiant', 'Note', 'Note Max', 'Appréciation']];
-  ST.results.forEach(function (s) {
-    rows.push([s.name, s.id, s.score, s.scoreMax || 20, '"' + (s.insight || '').replace(/"/g, '""') + '"']);
+ST.editingScoreIdx = null;
+
+window.openScoreEditModal = function (idx) {
+  var s = ST.results[idx];
+  if (!s) return;
+
+  ST.editingScoreIdx = idx;
+  var modal = document.getElementById('scoreEditModal');
+  var nameEl = document.getElementById('scoreModalStudentName');
+  var iaEl = document.getElementById('scoreModalIaScore');
+  var inputEl = document.getElementById('scoreModalInputVal');
+  var denomEl = document.getElementById('scoreModalDenom');
+  var commEl = document.getElementById('scoreModalTeacherComment');
+
+  var maxScore = s.scoreMax || 20;
+  var iaScore = s.score_ia !== undefined ? s.score_ia : s.score;
+
+  if (nameEl) nameEl.textContent = '✏️ Ajuster la note : ' + s.name;
+  if (iaEl) iaEl.textContent = Number(iaScore).toFixed(1) + ' / ' + maxScore;
+  if (inputEl) {
+    inputEl.max = maxScore;
+    inputEl.value = Number(s.score).toFixed(1);
+  }
+  if (denomEl) denomEl.textContent = '/ ' + maxScore;
+  if (commEl) commEl.value = s.teacher_comment || '';
+
+  if (modal) modal.style.display = 'flex';
+};
+
+window.closeScoreEditModal = function () {
+  var modal = document.getElementById('scoreEditModal');
+  if (modal) modal.style.display = 'none';
+  ST.editingScoreIdx = null;
+};
+
+window.onScoreModalInputChange = function () {
+  var inputEl = document.getElementById('scoreModalInputVal');
+  if (!inputEl) return;
+  var val = parseFloat(inputEl.value);
+  var max = (ST.results[ST.editingScoreIdx] && ST.results[ST.editingScoreIdx].scoreMax) || 20;
+  if (val < 0) inputEl.value = 0;
+  if (val > max) inputEl.value = max;
+};
+
+window.adjustModalScore = function (delta) {
+  var inputEl = document.getElementById('scoreModalInputVal');
+  if (!inputEl) return;
+  var current = parseFloat(inputEl.value) || 0;
+  var max = (ST.results[ST.editingScoreIdx] && ST.results[ST.editingScoreIdx].scoreMax) || 20;
+  var next = Math.max(0, Math.min(max, Math.round((current + delta) * 10) / 10));
+  inputEl.value = next;
+};
+
+window.resetModalScoreToIA = function () {
+  if (ST.editingScoreIdx === null) return;
+  var s = ST.results[ST.editingScoreIdx];
+  if (!s) return;
+  var inputEl = document.getElementById('scoreModalInputVal');
+  var iaScore = s.score_ia !== undefined ? s.score_ia : s.score;
+  if (inputEl) inputEl.value = Number(iaScore).toFixed(1);
+};
+
+window.saveModalScore = function () {
+  if (ST.editingScoreIdx === null) return;
+  var s = ST.results[ST.editingScoreIdx];
+  if (!s) return;
+
+  var inputEl = document.getElementById('scoreModalInputVal');
+  var commEl = document.getElementById('scoreModalTeacherComment');
+
+  var newScore = parseFloat((inputEl && inputEl.value) || s.score);
+  if (isNaN(newScore)) newScore = s.score;
+
+  var maxScore = s.scoreMax || 20;
+  newScore = Math.max(0, Math.min(maxScore, Math.round(newScore * 100) / 100));
+
+  var iaScore = s.score_ia !== undefined ? s.score_ia : s.score;
+  s.score = newScore;
+  s.score_adjusted = (s.score !== iaScore);
+  s.teacher_comment = (commEl && commEl.value) ? commEl.value.trim() : '';
+
+  renderResults();
+  autoSaveCurrentSession();
+  closeScoreEditModal();
+};
+
+/* ─────────────────────────────────────────────
+   EXPORT PRONOTE / ÉCOLE DIRECTE / ONDE / EXCEL
+───────────────────────────────────────────── */
+var currentExportFormat = 'pronote';
+
+window.openPronoteExportModal = function () {
+  var modal = document.getElementById('pronoteExportModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    updateExportPreview();
+  }
+};
+
+window.closePronoteExportModal = function () {
+  var modal = document.getElementById('pronoteExportModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.selectExportFormat = function (fmt) {
+  currentExportFormat = fmt;
+  ['fmtPronote', 'fmtEcoleDirecte', 'fmtOnde', 'fmtExcel'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('on');
   });
 
-  var csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + rows.map(function (e) { return e.join(';'); }).join('\n');
-  var encodedUri = encodeURI(csvContent);
-  var link = document.createElement('a');
-  link.setAttribute('href', encodedUri);
-  link.setAttribute('download', 'PedagoAI_Notes_Classe.csv');
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  if (fmt === 'pronote' && document.getElementById('fmtPronote')) document.getElementById('fmtPronote').classList.add('on');
+  if (fmt === 'ecoledirecte' && document.getElementById('fmtEcoleDirecte')) document.getElementById('fmtEcoleDirecte').classList.add('on');
+  if (fmt === 'onde' && document.getElementById('fmtOnde')) document.getElementById('fmtOnde').classList.add('on');
+  if (fmt === 'excel' && document.getElementById('fmtExcel')) document.getElementById('fmtExcel').classList.add('on');
+
+  updateExportPreview();
+};
+
+window.updateExportPreview = function () {
+  var previewEl = document.getElementById('exportRawPreview');
+  if (!previewEl || !ST.results) return;
+
+  var sep = (document.getElementById('expSepSelect') || {}).value || ';';
+  if (sep === '\\t') sep = '\t';
+  var dec = (document.getElementById('expDecSelect') || {}).value || ',';
+
+  var content = generateExportContent(currentExportFormat, sep, dec);
+  previewEl.textContent = content;
+};
+
+function generateExportContent(format, sep, dec) {
+  if (!ST.results || !ST.results.length) return 'Aucune note disponible.';
+
+  var rows = [];
+
+  if (format === 'pronote') {
+    rows.push(['Nom', 'Prénom', 'Note', 'Barème', 'Appréciation'].join(sep));
+    ST.results.forEach(function (s) {
+      var parts = (s.name || '').trim().split(/\s+/);
+      var nom = parts[0] || 'Élève';
+      var prenom = parts.slice(1).join(' ') || '-';
+      var noteStr = String(s.score).replace('.', dec);
+      var appr = '"' + (s.insight || '').replace(/"/g, '""') + '"';
+      rows.push([nom, prenom, noteStr, s.scoreMax || 20, appr].join(sep));
+    });
+  } else if (format === 'ecoledirecte') {
+    rows.push(['Identifiant', 'Nom & Prénom', 'Note/20', 'Commentaire'].join(sep));
+    ST.results.forEach(function (s, idx) {
+      var idStr = s.id || ('ED-' + (1000 + idx));
+      var noteStr = String(s.score).replace('.', dec);
+      var appr = '"' + (s.insight || '').replace(/"/g, '""') + '"';
+      rows.push([idStr, s.name, noteStr, appr].join(sep));
+    });
+  } else if (format === 'onde') {
+    rows.push(['Élève', 'Matière', 'Niveau de maîtrise', 'Commentaire'].join(sep));
+    ST.results.forEach(function (s) {
+      var niveau = s.score >= 15 ? 'Très bonne maîtrise' : (s.score >= 10 ? 'Maîtrise satisfaisante' : 'Maîtrise fragile');
+      var appr = '"' + (s.insight || '').replace(/"/g, '""') + '"';
+      rows.push([s.name, ST.selectedSubject || 'Général', niveau, appr].join(sep));
+    });
+  } else {
+    // Excel universel
+    rows.push(['Nom', 'ID', 'Note', 'Note_Max', 'Appreciation', 'Points_Forts', 'Points_Ameliorer'].join(sep));
+    ST.results.forEach(function (s) {
+      var noteStr = String(s.score).replace('.', dec);
+      rows.push([
+        s.name,
+        s.id,
+        noteStr,
+        s.scoreMax || 20,
+        '"' + (s.insight || '').replace(/"/g, '""') + '"',
+        '"' + (s.pointsForts || '').replace(/"/g, '""') + '"',
+        '"' + (s.pointsAmeliorer || '').replace(/"/g, '""') + '"'
+      ].join(sep));
+    });
+  }
+
+  return rows.join('\n');
+}
+
+window.downloadSelectedExport = function () {
+  var sep = (document.getElementById('expSepSelect') || {}).value || ';';
+  if (sep === '\\t') sep = '\t';
+  var dec = (document.getElementById('expDecSelect') || {}).value || ',';
+
+  var text = generateExportContent(currentExportFormat, sep, dec);
+  var blob = new Blob(['\uFEFF' + text], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'Export_' + currentExportFormat.toUpperCase() + '_' + (ST.selectedSubject || 'Notes') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  closePronoteExportModal();
+};
+
+/* ─────────────────────────────────────────────
+   BILAN & REMÉDIATION COLLECTIVE (PROJECTION)
+───────────────────────────────────────────── */
+window.openClassRemediationModal = function () {
+  var modal = document.getElementById('classRemediationModal');
+  var content = document.getElementById('remediationBodyContent');
+  var titleEl = document.getElementById('remedClassTitle');
+  if (!modal || !content || !ST.results) return;
+
+  if (titleEl) {
+    titleEl.textContent = 'Bilan & Remédiation · ' + (ST.selectedSubject === 'other' ? ST.customSubject : (ST.selectedSubject || 'Classe'));
+  }
+
+  var scores = ST.results.map(function (s) { return Number(s.score); });
+  var avg = (scores.reduce(function (a, b) { return a + b; }, 0) / scores.length).toFixed(1);
+  var median = calculateMedian(scores);
+  var weakStudents = ST.results.filter(function (s) { return s.score < 10; });
+
+  content.innerHTML = (
+    '<div class="class-kpi-summary-grid" style="margin-bottom:20px">' +
+      '<div class="cs-box"><div class="csv-val">' + avg + '/20</div><div class="csl">Moyenne de classe</div></div>' +
+      '<div class="cs-box"><div class="csv-val">' + median + '/20</div><div class="csl">Médiane</div></div>' +
+      '<div class="cs-box"><div class="csv-val" style="color:var(--blue-primary)">' + ST.results.length + '</div><div class="csl">Effectif total</div></div>' +
+      '<div class="cs-box"><div class="csv-val" style="color:' + (weakStudents.length > 0 ? '#ef4444' : '#10b981') + '">' + weakStudents.length + '</div><div class="csl">Élèves en difficulté</div></div>' +
+    '</div>' +
+
+    '<div class="remed-grid" style="margin-bottom:20px">' +
+      '<div class="remed-card">' +
+        '<div class="remed-card-title" style="color:#10b981">🎯 Réussites majeures constatées</div>' +
+        '<ul class="remed-list">' +
+          '<li>Excellente appropriation des méthodes fondamentales pour une majorité du groupe.</li>' +
+          '<li>Les exercices de compréhension directe ont été très bien réussis.</li>' +
+          '<li>Progression notable sur la clarté et le soin apporté à la rédaction.</li>' +
+        '</ul>' +
+      '</div>' +
+
+      '<div class="remed-card">' +
+        '<div class="remed-card-title" style="color:#ef4444">⚠️ Erreurs récurrentes à corriger ensemble</div>' +
+        '<ul class="remed-list">' +
+          '<li>Confusion fréquente sur la justification et le développement des étapes intermédiaires.</li>' +
+          '<li>Omission ponctuelle des unités ou des termes de vocabulaire spécifiques.</li>' +
+          '<li>Précipitation dans la lecture de la dernière consigne du devoir.</li>' +
+        '</ul>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="remed-card" style="margin-bottom:20px">' +
+      '<div class="remed-card-title" style="color:var(--blue-primary)">📋 Plan d\'action pour l\'heure de correction</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-top:10px">' +
+        '<div style="background:var(--bg-card);padding:12px;border-radius:8px;border:1px solid var(--border-subtle)">' +
+          '<div style="font-weight:700;font-size:13px;color:var(--blue-primary);margin-bottom:4px">1. Mise en commun (15 min)</div>' +
+          '<div style="font-size:12.5px;color:var(--text-muted)">Projeter les meilleures démarches et analyser collectivement le piège principal.</div>' +
+        '</div>' +
+        '<div style="background:var(--bg-card);padding:12px;border-radius:8px;border:1px solid var(--border-subtle)">' +
+          '<div style="font-weight:700;font-size:13px;color:var(--blue-primary);margin-bottom:4px">2. Atelier en binômes (20 min)</div>' +
+          '<div style="font-size:12.5px;color:var(--text-muted)">Faire réécrire la réponse type par binômes hétérogènes.</div>' +
+        '</div>' +
+        '<div style="background:var(--bg-card);padding:12px;border-radius:8px;border:1px solid var(--border-subtle)">' +
+          '<div style="font-weight:700;font-size:13px;color:var(--blue-primary);margin-bottom:4px">3. Exercice d\'ancrage (15 min)</div>' +
+          '<div style="font-size:12.5px;color:var(--text-muted)">Mini-test flash individuel pour valider l\'acquisition de la méthode.</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+
+  modal.style.display = 'flex';
+};
+
+window.closeClassRemediationModal = function () {
+  var modal = document.getElementById('classRemediationModal');
+  if (modal) modal.style.display = 'none';
+};
+
+/* ─────────────────────────────────────────────
+   BULLETIN D'ÉVALUATION IMPRIMABLE (A4 / A5)
+───────────────────────────────────────────── */
+window.printStudentBulletin = function (idx) {
+  var s = ST.results[idx];
+  if (!s) return;
+
+  var cont = document.getElementById('bulletinPrintContainer');
+  var modal = document.getElementById('bulletinPrintModal');
+  if (!cont || !modal) return;
+
+  cont.innerHTML = renderSingleBulletinHtml(s);
+  modal.style.display = 'flex';
+};
+
+window.printAllStudentBulletins = function () {
+  if (!ST.results || !ST.results.length) return;
+
+  var cont = document.getElementById('bulletinPrintContainer');
+  var modal = document.getElementById('bulletinPrintModal');
+  if (!cont || !modal) return;
+
+  cont.innerHTML = ST.results.map(function (s) {
+    return renderSingleBulletinHtml(s);
+  }).join('');
+
+  modal.style.display = 'flex';
+};
+
+window.closeBulletinPrintModal = function () {
+  var modal = document.getElementById('bulletinPrintModal');
+  if (modal) modal.style.display = 'none';
+};
+
+function renderSingleBulletinHtml(student) {
+  return renderFicheCorrectionHTML(student);
+}
+
+/* ─────────────────────────────────────────────
+   EXPORTS (PDF, Excel, ZIP)
+───────────────────────────────────────────── */
+window.generateStudentFichePDFDoc = function (student) {
+  var doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  var subjectName = (ST.selectedSubject === 'other' ? ST.customSubject : (MATS.find(function(m){ return m.id === ST.selectedSubject; }) || {}).l) || 'Mathématiques';
+  var dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  var scoreVal = Number(student.score).toFixed(1).replace('.0', '');
+  var scoreMax = student.scoreMax || 20;
+
+  var curPage = 1;
+
+  function renderPageHeader() {
+    // Top Blue Banner
+    doc.setFillColor(0, 118, 255);
+    doc.roundedRect(12, 12, 186, 20, 3, 3, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('FICHE DE CORRECTION INDIVIDUELLE', 105, 21, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(subjectName + ' • ' + dateStr, 105, 28, { align: 'center' });
+  }
+
+  function renderPageFooter() {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Généré par ProfCorrec\' IA — ' + dateStr, 14, 287);
+    doc.text('Page ' + curPage, 196, 287, { align: 'right' });
+  }
+
+  renderPageHeader();
+
+  // Student info row
+  var y = 42;
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(student.name, 14, y);
+
+  doc.setTextColor(22, 163, 74);
+  doc.setFontSize(16);
+  doc.text(scoreVal + ' / ' + scoreMax + ' (' + scoreVal + '/' + scoreMax + ')', 196, y, { align: 'right' });
+
+  // Appreciation box
+  y += 6;
+  var apprText = 'Appréciation : ' + (student.insight || 'Bon travail global.');
+  var splitAppr = doc.splitTextToSize(apprText, 178);
+  var apprHeight = Math.max(14, splitAppr.length * 4.5 + 6);
+
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(12, y, 186, apprHeight, 2, 2, 'FD');
+
+  doc.setTextColor(51, 65, 85);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.text(splitAppr, 16, y + 6);
+
+  y += apprHeight + 10;
+
+  // Section title
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('Détail des questions', 14, y);
+
+  y += 6;
+
+  // Questions
+  var questions = student.details || [];
+  questions.forEach(function (q, idx) {
+    var title = q.titre || q.q || ('Exercice ' + (idx + 1));
+    var note = q.note || '2 / 2 pt';
+    var statut = (q.statut || (note.startsWith('0') ? 'A REVOIR' : (note.includes('0.5') || note.includes('1/') ? 'EN COURS' : 'ACQUIS'))).toUpperCase();
+    var repEleve = 'Réponse élève : ' + (q.reponse_eleve || q.reponse || 'Réponse de la copie');
+    var attendu = 'Attendu : ' + (q.attendu || 'Conforme au corrigé');
+    var comm = 'Commentaire : ' + (q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct.' : 'Erreur identifiée.'));
+
+    var splitRep = doc.splitTextToSize(repEleve, 176);
+    var splitAtt = doc.splitTextToSize(attendu, 176);
+    var splitCom = doc.splitTextToSize(comm, 176);
+
+    var cardHeight = 10 + (splitRep.length * 4) + (splitAtt.length * 4) + (splitCom.length * 4) + 6;
+
+    if (y + cardHeight > 275) {
+      renderPageFooter();
+      doc.addPage();
+      curPage++;
+      renderPageHeader();
+      y = 40;
+    }
+
+    // Question Card Background
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(12, y, 186, cardHeight, 2, 2, 'FD');
+
+    // Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text(title, 16, y + 6);
+
+    // Status / Note
+    if (statut.indexOf('REVOIR') !== -1) {
+      doc.setTextColor(220, 38, 38);
+    } else if (statut.indexOf('COURS') !== -1) {
+      doc.setTextColor(217, 119, 6);
+    } else {
+      doc.setTextColor(22, 163, 74);
+    }
+    doc.text(note + ' [' + statut + ']', 194, y + 6, { align: 'right' });
+
+    // Lines
+    var lineY = y + 12;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(51, 65, 85);
+
+    doc.text(splitRep, 16, lineY);
+    lineY += splitRep.length * 4;
+
+    doc.text(splitAtt, 16, lineY);
+    lineY += splitAtt.length * 4;
+
+    doc.text(splitCom, 16, lineY);
+
+    y += cardHeight + 4;
+  });
+
+  renderPageFooter();
+  return doc;
+};
+
+window.exportSingleStudentPDFDownload = function (idx) {
+  var s = ST.results[idx];
+  if (!s) return;
+  var doc = generateStudentFichePDFDoc(s);
+  doc.save('Correction_' + s.name.replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf');
+};
+
+window.exportStudentBulletinPDF = function (idx) {
+  exportSingleStudentPDFDownload(idx);
+};
+
+window.exportCSV = function () {
+  openPronoteExportModal();
 };
 
 window.exportEvaluationPDF = function () {
@@ -979,24 +1588,6 @@ window.exportEvaluationPDF = function () {
   doc.save('PedagoAI_Rapport_Classe.pdf');
 };
 
-window.exportStudentBulletinPDF = function (idx) {
-  var s = ST.results[idx];
-  if (!s) return;
-  var doc = new jsPDF();
-  doc.setFontSize(20);
-  doc.text('PedagoAI · Fiche de correction individuelle', 14, 20);
-  doc.setFontSize(14);
-  doc.text('Élève : ' + s.name + ' (ID: ' + s.id + ')', 14, 32);
-  doc.text('Note obtenue : ' + s.score + '/' + (s.scoreMax || 20), 14, 42);
-
-  doc.setFontSize(11);
-  doc.text('Appréciation globale :', 14, 56);
-  var split = doc.splitTextToSize(s.insight || '', 180);
-  doc.text(split, 14, 64);
-
-  doc.save('Fiche_' + s.name.replace(/\s+/g, '_') + '.pdf');
-};
-
 window.exportCompleteClassZip = async function () {
   if (!ST.results || !ST.results.length) return;
   var zip = new JSZip();
@@ -1006,27 +1597,23 @@ window.exportCompleteClassZip = async function () {
   ST.results.forEach(function (s) {
     rows.push([s.name, s.id, s.score, s.scoreMax || 20, s.insight]);
   });
-  zip.file('recapitulatif_notes.csv', '\uFEFF' + rows.map(function (r) { return r.join(';'); }).join('\n'));
+  zip.file('recapitulatif_notes_pronote.csv', '\uFEFF' + rows.map(function (r) { return r.join(';'); }).join('\n'));
 
   // Add individual PDFs
   ST.results.forEach(function (s) {
-    var doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text('Fiche individuelle PedagoAI', 14, 20);
-    doc.text('Élève : ' + s.name, 14, 30);
-    doc.text('Note : ' + s.score + '/' + (s.scoreMax || 20), 14, 40);
-    var split = doc.splitTextToSize(s.insight || '', 180);
-    doc.text(split, 14, 52);
-    zip.file('copie_' + s.name.replace(/\s+/g, '_') + '.pdf', doc.output('blob'));
+    var doc = generateStudentFichePDFDoc(s);
+    zip.file('fiche_correction_' + s.name.replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf', doc.output('blob'));
   });
 
   var content = await zip.generateAsync({ type: 'blob' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(content);
-  a.download = 'PedagoAI_Paquet_Classe.zip';
+  a.download = 'ProfCorrec_Paquet_Complet_Classe.zip';
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
+  setTimeout(function() {
+    if (a.parentNode) a.parentNode.removeChild(a);
+  }, 100);
 };
 
 window.publishAndSaveAll = function () {
@@ -1064,6 +1651,25 @@ function loadDB() {
       DB.currentUser = p.currentUser || null;
     }
   } catch (e) {}
+
+  if (!DB.classes || DB.classes.length === 0) {
+    DB.classes = [
+      {
+        name: '3ème A — Collège Notre Dame d\'Afrique',
+        students: ['Koffi Yao', 'Ahou Traoré', 'Ibrahim Koné', 'Marie-Josée Bakayoko', 'Amadou Diallo', 'Fatou Coulibaly', 'Jean-Philippe Bamba', 'Grace Touré']
+      },
+      {
+        name: 'Terminale C — Lycée International Blaise Pascal',
+        students: ['Émile Kouassi', 'Aïssata Diop', 'Stéphane N\'Guessan', 'Yasmine Mensah', 'Marc-Aurèle Diabaté', 'Esther Sangaré']
+      },
+      {
+        name: '4ème B — Collège Adventiste',
+        students: ['Emmanuel Yacé', 'Priscille Cissé', 'Patrick Kaboré', 'Victoire Ouattara', 'Mohamed Fofana']
+      }
+    ];
+    saveDB();
+  }
+
   upBadge();
 }
 
@@ -1239,11 +1845,40 @@ window.deleteHistEval = function (idx) {
 };
 
 /* ─────────────────────────────────────────────
-   AUTH & TEACHER ACCOUNT MODAL
+   AUTH & TEACHER ACCOUNT MODAL (Lead Scraping & Access)
 ───────────────────────────────────────────── */
 window.openLeadGateModal = function (isDirect) {
   var m = document.getElementById('leadGateModal');
-  if (m) m.style.display = 'flex';
+  if (!m) return;
+
+  var form = document.getElementById('leadGateForm');
+  var profile = document.getElementById('leadUserProfilePanel');
+  var authTabs = document.querySelector('.auth-tabs-row');
+  var heading = document.getElementById('leadModalHeading');
+  var subtext = document.getElementById('leadModalSubtext');
+
+  if (DB.currentUser && DB.currentUser.email) {
+    if (form) form.style.display = 'none';
+    if (authTabs) authTabs.style.display = 'none';
+    if (profile) profile.style.display = 'block';
+    if (heading) heading.textContent = 'Mon Compte Enseignant';
+    if (subtext) subtext.textContent = 'Session active pour la période d\'essai gratuit (7 jours).';
+
+    var pName = document.getElementById('userProfileName');
+    var pEmail = document.getElementById('userProfileEmail');
+    var pExtra = document.getElementById('userProfileExtra');
+    if (pName) pName.textContent = DB.currentUser.name || 'Enseignant';
+    if (pEmail) pEmail.textContent = DB.currentUser.email || '';
+    if (pExtra) pExtra.textContent = '📱 ' + (DB.currentUser.whatsapp || 'Non renseigné') + ' • 🏫 ' + (DB.currentUser.school || 'Non renseigné');
+  } else {
+    if (form) form.style.display = 'block';
+    if (authTabs) authTabs.style.display = 'flex';
+    if (profile) profile.style.display = 'none';
+    if (heading) heading.textContent = 'Bienvenue sur PedagoAI';
+    if (subtext) subtext.textContent = 'Renseignez vos coordonnées pour activer votre semaine d\'essai gratuit et accéder directement au module sélectionné.';
+  }
+
+  m.style.display = 'flex';
 };
 
 window.closeLeadGateModal = function () {
@@ -1271,28 +1906,64 @@ window.setAuthTab = function (tab) {
     if (fName) fName.style.display = 'block';
     if (fWhat) fWhat.style.display = 'block';
     if (fSch) fSch.style.display = 'block';
-    if (btnTxt) btnTxt.textContent = '🚀 Activer et commencer la correction';
+    if (btnTxt) btnTxt.textContent = '🚀 Activer mon essai 7 jours et continuer';
   }
 };
 
-window.submitLeadCapture = function () {
+window.submitLeadCapture = async function () {
   var name = (document.getElementById('leadInputName') || {}).value || 'Enseignant';
   var email = (document.getElementById('leadInputEmail') || {}).value || '';
   var whatsapp = (document.getElementById('leadInputWhatsapp') || {}).value || '';
   var school = (document.getElementById('leadInputSchool') || {}).value || '';
 
-  if (!email) return;
+  if (!email || !email.trim()) {
+    alert('Veuillez renseigner une adresse email valide pour continuer.');
+    return;
+  }
 
-  DB.currentUser = { name: name, email: email, whatsapp: whatsapp, school: school };
+  var leadData = {
+    name: name.trim() || 'Enseignant',
+    email: email.trim(),
+    whatsapp: whatsapp.trim(),
+    school: school.trim(),
+    plan: 'free_trial_7d',
+    status: 'active',
+    joined: new Date().toISOString()
+  };
+
+  try {
+    await fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(leadData)
+    });
+  } catch (e) {
+    console.warn('Sync lead error:', e);
+  }
+
+  DB.currentUser = leadData;
   saveDB();
+  updateTeacherNavStatus();
   closeLeadGateModal();
-  alert('🎉 Bienvenue ' + name + ' ! Votre session est active.');
+
+  if (typeof pendingAuthCallback === 'function') {
+    var cb = pendingAuthCallback;
+    pendingAuthCallback = null;
+    cb();
+  } else {
+    gNav('corr');
+    goToStep(1);
+  }
 };
 
 window.logoutLeadUser = function () {
-  DB.currentUser = null;
-  saveDB();
-  closeLeadGateModal();
+  if (confirm('Voulez-vous vous déconnecter de votre compte enseignant ?')) {
+    DB.currentUser = null;
+    saveDB();
+    updateTeacherNavStatus();
+    closeLeadGateModal();
+    gNav('home');
+  }
 };
 
 /* ─────────────────────────────────────────────

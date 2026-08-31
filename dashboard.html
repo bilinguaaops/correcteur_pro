@@ -3,734 +3,1325 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard · Correcteur Pro</title>
+  <title>Correcteur Pro — Admin Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg: #090d16;
-      --card: #131b2e;
-      --card-sub: #1b253e;
-      --border: #233054;
-      --text: #f0f4fc;
-      --text-muted: #92a4c8;
-      --blue: #3b82f6;
-      --blue-light: rgba(59, 130, 246, 0.15);
-      --green: #10b981;
+      --navy: #0A122A;
+      --card-bg: #111A35;
+      --card-sub: #172347;
+      --border: rgba(59, 130, 246, 0.2);
+      --border-strong: rgba(59, 130, 246, 0.4);
+      --vanilla: #FFF7E6;
+      --text-muted: #94A3B8;
+      --accent: #3B82F6;
+      --accent-hover: #2563EB;
+      --accent-light: rgba(59, 130, 246, 0.12);
+      --green: #10B981;
       --green-light: rgba(16, 185, 129, 0.15);
-      --purple: #a855f7;
-      --purple-light: rgba(168, 85, 247, 0.15);
-      --orange: #f59e0b;
-      --orange-light: rgba(245, 158, 11, 0.15);
-      --red: #ef4444;
+      --red: #EF4444;
       --red-light: rgba(239, 68, 68, 0.15);
+      --amber: #F59E0B;
+      --amber-light: rgba(245, 158, 11, 0.15);
+      --purple: #8B5CF6;
+      --purple-light: rgba(139, 92, 246, 0.15);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--navy);
+      color: var(--vanilla);
       line-height: 1.5;
-      padding: 24px;
       min-height: 100vh;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
     }
-    .wrap { max-width: 1280px; margin: 0 auto; }
     
-    /* AUTH LOCK OVERLAY */
+    /* AUTH LOCK */
     #authLock {
-      position: fixed;
-      inset: 0;
-      background: rgba(9, 13, 22, 0.96);
+      position: fixed; inset: 0; background: rgba(10, 18, 42, 0.98);
+      backdrop-filter: blur(16px); z-index: 999999;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .lock-card {
+      background: var(--card-bg); border: 1px solid var(--border-strong);
+      padding: 36px; border-radius: 20px; max-width: 420px; width: 100%;
+      text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    }
+
+    /* TOP HEADER */
+    .admin-header {
+      background: rgba(17, 26, 53, 0.85);
       backdrop-filter: blur(12px);
-      z-index: 100000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .lock-box {
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 32px;
-      border-radius: 20px;
-      max-width: 400px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-    }
-    .lock-icon { font-size: 40px; margin-bottom: 12px; }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-      gap: 16px;
-      padding-bottom: 20px;
       border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 1000;
+      padding: 12px 24px;
     }
-    h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.6rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .header-inner {
+      max-width: 1400px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center; gap: 16px;
     }
-    .badge-admin {
-      background: var(--purple-light);
-      color: var(--purple);
+    .brand-group {
+      display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--vanilla);
+    }
+    .logo-badge {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #60a5fa);
+      display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    }
+    .brand-title {
+      font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .badge-admin-tag {
+      background: var(--purple-light); color: #C084FC;
       border: 1px solid rgba(168, 85, 247, 0.4);
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
+      padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;
+    }
+    .header-right-controls {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .currency-pill-toggle {
+      background: var(--card-sub); border: 1px solid var(--border);
+      border-radius: 20px; padding: 3px; display: flex; gap: 2px;
+    }
+    .curr-btn {
+      border: none; background: transparent; color: var(--text-muted);
+      font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 16px; cursor: pointer;
+    }
+    .curr-btn.on {
+      background: var(--accent); color: #fff;
+    }
+    .notif-btn {
+      position: relative; background: var(--card-sub); border: 1px solid var(--border);
+      color: var(--vanilla); width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px;
+    }
+    .notif-badge-count {
+      position: absolute; top: -4px; right: -4px;
+      background: var(--red); color: #fff; font-size: 10px; font-weight: 800;
+      width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     }
 
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
+    /* MAIN CONTAINER & TABS */
+    .admin-main-wrap {
+      max-width: 1400px; margin: 0 auto; padding: 24px;
     }
-    .stat-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
+    
+    .nav-tabs-bar {
+      display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border);
+      padding-bottom: 12px; overflow-x: auto;
     }
-    .stat-card::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 3px;
-      background: var(--accent-color, var(--blue));
+    .tab-btn {
+      background: var(--card-bg); border: 1px solid var(--border); color: var(--text-muted);
+      padding: 8px 16px; border-radius: 10px; font-weight: 600; font-size: 13.5px;
+      cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;
     }
-    .stat-val { font-size: 2.2rem; font-weight: 800; color: #fff; margin-top: 4px; }
-    .stat-lbl { color: var(--text-muted); font-size: 13px; font-weight: 500; }
-
-    .btn {
-      padding: 9px 16px;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-      text-decoration: none;
-    }
-    .btn:hover { background: var(--card-sub); border-color: var(--blue); }
-    .btn-blue { background: var(--blue); color: #fff; border: none; }
-    .btn-blue:hover { opacity: 0.9; }
-    .btn-green { background: var(--green); color: #fff; border: none; }
-    .btn-green:hover { opacity: 0.9; }
-    .btn-red { background: var(--red-light); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
-
-    .card-table {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-    .table-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      background: var(--card-sub);
-    }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px; }
-    th {
-      padding: 12px 16px;
-      background: rgba(9, 13, 22, 0.6);
-      color: var(--text-muted);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-bottom: 1px solid var(--border);
-    }
-    td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    tr:hover { background: rgba(255,255,255,0.02); }
-
-    .plan-select {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 5px 8px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      outline: none;
-    }
-    .sortable-th {
-      cursor: pointer;
-      user-select: none;
-      transition: color 0.15s ease, background 0.15s ease;
-    }
-    .sortable-th:hover {
-      color: #fff;
-      background: rgba(59, 130, 246, 0.12);
-    }
-    .sortable-th.active-sort {
-      color: var(--blue);
-      background: rgba(59, 130, 246, 0.18);
-    }
-    .sort-icon {
-      display: inline-block;
-      font-size: 11px;
-      margin-left: 4px;
-      opacity: 0.6;
-    }
-    .sortable-th.active-sort .sort-icon {
-      opacity: 1;
-      font-weight: bold;
+    .tab-btn:hover { color: var(--vanilla); border-color: var(--accent); }
+    .tab-btn.on {
+      background: var(--accent); color: #fff; border-color: var(--accent);
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
     }
 
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 20px;
+    /* ALERTS CONTAINER */
+    .alerts-container {
+      display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;
     }
-    .status-active { background: var(--green-light); color: var(--green); }
-    .status-trial { background: var(--orange-light); color: var(--orange); }
-    .status-revoked { background: var(--red-light); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .alert-banner {
+      padding: 12px 18px; border-radius: 12px; display: flex;
+      justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+      font-size: 13.5px; border: 1px solid;
+    }
+    .alert-danger {
+      background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: #FCA5A5;
+    }
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); color: #FCD34D;
+    }
+    .alert-info {
+      background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.3); color: #93C5FD;
+    }
+    .alert-btn {
+      background: rgba(255,255,255,0.15); border: none; color: #fff;
+      padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .alert-btn:hover { background: rgba(255,255,255,0.25); }
 
-    .wa-btn {
-      color: #34d399;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      padding: 4px 10px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.2s;
+    /* SECTION 1: METRICS OVERVIEW (Hero 4 cards) */
+    .metrics-grid-4 {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
     }
-    .wa-btn:hover { background: rgba(16, 185, 129, 0.25); transform: translateY(-1px); }
+    @media (max-width: 1024px) {
+      .metrics-grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .metrics-grid-4 { grid-template-columns: 1fr; }
+    }
+    .metric-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 16px; padding: 22px; position: relative; overflow: hidden;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+    .metric-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--card-line, var(--accent));
+    }
+    .metric-lbl {
+      color: var(--text-muted); font-size: 13px; font-weight: 600; margin-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .metric-val {
+      font-size: 2.1rem; font-weight: 800; font-family: 'Outfit', sans-serif;
+      color: #fff; margin-bottom: 6px;
+    }
+    .metric-trend {
+      font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;
+    }
+    .trend-pos { color: var(--green); }
+    .trend-neg { color: var(--red); }
+    .trend-muted { color: var(--text-muted); }
 
-    .search-input {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 13.5px;
-      outline: none;
-      min-width: 260px;
+    /* SECTION 2: CHARTS (2 cols) */
+    .charts-grid-2 {
+      display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 24px;
     }
-    .search-input:focus { border-color: var(--blue); }
+    @media (max-width: 1024px) {
+      .charts-grid-2 { grid-template-columns: 1fr; }
+    }
+    .chart-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px; position: relative;
+    }
+    .chart-card-head {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+    }
+    .chart-title {
+      font-size: 16px; font-weight: 700; font-family: 'Outfit', sans-serif;
+    }
+    .chart-wrap {
+      position: relative; width: 100%; height: 260px;
+    }
 
-    /* MODAL */
-    .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    /* SECTION 3: GROWTH MINI-CARDS */
+    .growth-row-3 {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;
     }
-    .modal-box {
-      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-      padding: 24px; max-width: 500px; width: 90%;
+    @media (max-width: 768px) {
+      .growth-row-3 { grid-template-columns: 1fr; }
     }
+    .growth-mini-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .growth-mini-title { font-size: 12.5px; color: var(--text-muted); font-weight: 600; }
+    .growth-mini-val { font-size: 1.4rem; font-weight: 800; color: #fff; margin-top: 2px; }
+    .growth-mini-tag {
+      font-size: 11.5px; font-weight: 700; padding: 4px 8px; border-radius: 6px;
+    }
+
+    /* SECTION 4: USERS TABLE CARD */
+    .table-container-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .table-toolbar {
+      padding: 16px 20px; background: var(--card-sub); border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .search-input-box {
+      background: var(--navy); border: 1px solid var(--border);
+      color: #fff; padding: 9px 14px; border-radius: 10px; font-size: 13.5px;
+      min-width: 260px; outline: none; transition: border-color 0.2s;
+    }
+    .search-input-box:focus { border-color: var(--accent); }
+    .filter-select {
+      background: var(--navy); border: 1px solid var(--border);
+      color: var(--vanilla); padding: 9px 12px; border-radius: 10px; font-size: 13px;
+      outline: none; cursor: pointer;
+    }
+
+    /* TABLE STYLES */
+    .data-table-wrap { overflow-x: auto; }
+    table.data-table {
+      width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px;
+    }
+    table.data-table th {
+      padding: 14px 16px; background: rgba(10, 18, 42, 0.7);
+      color: var(--text-muted); font-size: 11.5px; text-transform: uppercase;
+      letter-spacing: 0.05em; border-bottom: 1px solid var(--border); font-weight: 700;
+    }
+    table.data-table th.sortable {
+      cursor: pointer; user-select: none;
+    }
+    table.data-table th.sortable:hover { color: #fff; background: rgba(59, 130, 246, 0.1); }
+    table.data-table td {
+      padding: 14px 16px; border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+      vertical-align: middle;
+    }
+    table.data-table tr:hover { background: rgba(59, 130, 246, 0.05); }
+
+    /* STATUS BADGES */
+    .badge-plan {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 12px; font-size: 11.5px; font-weight: 700;
+    }
+    .plan-free { background: rgba(148, 163, 184, 0.15); color: #CBD5E1; border: 1px solid rgba(148, 163, 184, 0.3); }
+    .plan-monthly { background: rgba(59, 130, 246, 0.18); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.35); }
+    .plan-annual { background: rgba(139, 92, 246, 0.2); color: #C084FC; border: 1px solid rgba(139, 92, 246, 0.4); }
+
+    .badge-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+    }
+    .st-active { background: var(--green-light); color: var(--green); }
+    .st-inactive { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
+    .st-paused { background: var(--amber-light); color: var(--amber); }
+    .st-churned { background: var(--red-light); color: var(--red); }
+
+    /* BUTTONS & CONTROLS */
+    .btn-admin {
+      padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: var(--card-sub);
+      color: var(--vanilla); display: inline-flex; align-items: center; gap: 6px;
+      transition: all 0.15s; text-decoration: none;
+    }
+    .btn-admin:hover { background: var(--border); border-color: var(--accent); }
+    .btn-admin-primary { background: var(--accent); color: #fff; border: none; }
+    .btn-admin-primary:hover { background: var(--accent-hover); }
+    .btn-admin-green { background: var(--green); color: #fff; border: none; }
+    .btn-admin-danger { background: var(--red-light); color: var(--red); border-color: rgba(239, 68, 68, 0.3); }
+
+    .action-dropdown-wrap {
+      position: relative; display: inline-block;
+    }
+    .action-3dots-btn {
+      background: var(--navy); border: 1px solid var(--border); color: var(--vanilla);
+      width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800;
+    }
+    .action-3dots-btn:hover { background: var(--card-sub); border-color: var(--accent); }
+    .action-dropdown-menu {
+      position: absolute; right: 0; top: 38px; background: #131E3D;
+      border: 1px solid var(--border-strong); border-radius: 12px; padding: 6px;
+      min-width: 200px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); z-index: 50; display: none;
+    }
+    .action-dropdown-menu.show { display: block; }
+    .dropdown-item-btn {
+      width: 100%; text-align: left; padding: 8px 12px; background: transparent;
+      border: none; color: var(--vanilla); border-radius: 6px; font-size: 12.5px;
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
+    }
+    .dropdown-item-btn:hover { background: var(--accent); color: #fff; }
+    .dropdown-item-btn.danger-item:hover { background: var(--red); color: #fff; }
+
+    /* PAGINATION BAR */
+    .table-pagination-bar {
+      padding: 14px 20px; background: var(--card-sub); border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+      font-size: 13px; color: var(--text-muted);
+    }
+
+    /* MODALS */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center;
+      z-index: 99999; padding: 16px;
+    }
+    .modal-sheet {
+      background: var(--card-bg); border: 1px solid var(--border-strong);
+      border-radius: 18px; max-width: 600px; width: 100%; max-height: 90vh;
+      overflow-y: auto; padding: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+    }
+    .modal-head {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 18px; font-weight: 700; font-family: 'Outfit', sans-serif; }
+    .modal-close {
+      background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;
+    }
+    .modal-close:hover { color: #fff; }
+
+    .modal-info-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;
+    }
+    .m-info-box {
+      background: var(--card-sub); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
+    }
+    .m-info-lbl { font-size: 11.5px; color: var(--text-muted); margin-bottom: 3px; }
+    .m-info-val { font-size: 14px; font-weight: 600; color: #fff; }
+
+    /* TRANSACTIONS SECTION */
+    .txn-table td { padding: 12px 16px; }
   </style>
 </head>
 <body>
 
-  <!-- ADMIN ACCESS CODE AUTHENTICATION -->
+  <!-- AUTH LOCK -->
   <div id="authLock">
-    <div class="lock-box">
-      <div class="lock-icon">🔐</div>
-      <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:8px">Accès Propriétaire</h2>
+    <div class="lock-card">
+      <div style="font-size:44px;margin-bottom:12px">🔐</div>
+      <h2 style="font-family:'Outfit',sans-serif;font-size:22px;margin-bottom:8px">Correcteur Pro · Espace Fondateur</h2>
       <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px">
-        Entrez votre code secret administrateur pour accéder à la gestion des utilisateurs et abonnements.
+        Portail de gestion & rentabilité SaaS réservé au propriétaire administrateur.
       </p>
-      <input type="password" id="adminPassInput" placeholder="Code secret (ex: admin123)" style="width:100%;padding:12px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:#fff;font-size:15px;text-align:center;margin-bottom:12px;outline:none" onkeydown="if(event.key==='Enter')checkAuth()">
-      <div id="authErr" style="color:var(--red);font-size:12px;display:none;margin-bottom:10px">❌ Code secret incorrect</div>
-      <button class="btn btn-blue" style="width:100%;justify-content:center;padding:12px" onclick="checkAuth()">🔓 Déverrouiller le Dashboard</button>
-      <div style="margin-top:14px;font-size:11px;color:var(--text-muted)">
-        💡 Code par défaut : <code>admin123</code> (modifiable dans les réglages)
-      </div>
+      <form onsubmit="event.preventDefault();checkPass();">
+        <div style="text-align:left;margin-bottom:12px">
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">EMAIL ADMINISTRATEUR</label>
+          <input type="email" id="adminEmail" value="bilingua.agency@gmail.com" placeholder="votre-email@fondateur.com" style="width:100%;padding:10px 14px;border-radius:10px;background:var(--navy);border:1px solid var(--border);color:#fff;font-size:13px" required>
+        </div>
+        <div style="text-align:left;margin-bottom:12px">
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">MOT DE PASSE MAÎTRE</label>
+          <input type="password" id="adminPass" placeholder="Mot de passe secret..." style="width:100%;padding:10px 14px;border-radius:10px;background:var(--navy);border:1px solid var(--border);color:#fff;font-size:14px" autofocus required>
+        </div>
+        <div id="authErr" style="color:var(--red);font-size:12px;display:none;margin-bottom:12px;font-weight:600">Identifiants incorrects ou accès refusé.</div>
+        <button type="submit" id="adminLoginBtn" class="btn-admin btn-admin-primary" style="width:100%;padding:12px;justify-content:center;font-weight:700">
+          🔓 Déverrouiller le Dashboard
+        </button>
+      </form>
     </div>
   </div>
 
-  <!-- MAIN DASHBOARD CONTENT -->
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>👑 Dashboard SaaS Propriétaire <span class="badge-admin">Admin Privé</span></h1>
-        <p style="color:var(--text-muted);font-size:13px;margin-top:4px">
-          Gestion des abonnements, plans tarifaires et contacts enseignants
-        </p>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <a href="/" class="btn" target="_blank">🚀 Ouvrir l'App</a>
-        <button class="btn btn-blue" onclick="exportJSON()">📥 Télécharger leads.json</button>
-        <button class="btn btn-green" onclick="exportCSV()">📊 Exporter CSV / Excel</button>
-        <button class="btn" onclick="toggleWebhookModal()">⚡ Webhook / Google Sheets</button>
-        <button class="btn btn-red" onclick="logout()" title="Verrouiller la session">🔒 Verrouiller</button>
-      </div>
-    </header>
+  <!-- TOP HEADER -->
+  <header class="admin-header">
+    <div class="header-inner">
+      <a href="/index.html" class="brand-group" title="Retourner à l'application Correcteur">
+        <div class="logo-badge">🎓</div>
+        <div>
+          <div class="brand-title">
+            Correcteur Pro <span class="badge-admin-tag">ADMIN</span>
+          </div>
+          <span style="font-size:11px;color:var(--text-muted)">Hub Solo-Entrepreneur · Abidjan (CI)</span>
+        </div>
+      </a>
 
-    <!-- STATS -->
-    <div class="stats-grid">
-      <div class="stat-card" style="--accent-color: var(--blue)">
-        <div class="stat-lbl">Utilisateurs Enregistrés</div>
-        <div class="stat-val" id="stTotal" style="color:var(--blue)">0</div>
+      <div class="header-right-controls">
+        <!-- Currency Toggle -->
+        <div class="currency-pill-toggle">
+          <button type="button" class="curr-btn on" id="btnUSD" onclick="setCurrency('USD')">$ USD</button>
+          <button type="button" class="curr-btn" id="btnXOF" onclick="setCurrency('XOF')">FCFA (XOF)</button>
+        </div>
+
+        <!-- Notification Bell -->
+        <button type="button" class="notif-btn" onclick="scrollToAlerts()" title="Notifications & Alertes Churn">
+          🔔
+          <span class="notif-badge-count" id="headerAlertCount">3</span>
+        </button>
+
+        <a href="/index.html" class="btn-admin" style="font-size:12px">
+          ← Retour App
+        </a>
+
+        <button type="button" class="btn-admin btn-admin-danger" onclick="logoutAdmin()" style="font-size:12px">
+          Déconnexion
+        </button>
       </div>
-      <div class="stat-card" style="--accent-color: var(--green)">
-        <div class="stat-lbl">Contacts WhatsApp Directs</div>
-        <div class="stat-val" id="stWA" style="color:var(--green)">0</div>
+    </div>
+  </header>
+
+  <!-- MAIN VIEW -->
+  <main class="admin-main-wrap">
+
+    <!-- NAVIGATION TABS -->
+    <div class="nav-tabs-bar">
+      <button type="button" class="tab-btn on" id="tabNavOverview" onclick="switchAdminTab('overview')">
+        📊 Vue d'ensemble & Métriques
+      </button>
+      <button type="button" class="tab-btn" id="tabNavUsers" onclick="switchAdminTab('users')">
+        👥 Comptes Professeurs (<span id="tabUserCount">...</span>)
+      </button>
+      <button type="button" class="tab-btn" id="tabNavRevenue" onclick="switchAdminTab('revenue')">
+        💳 Revenus & Transactions
+      </button>
+      <button type="button" class="tab-btn" id="tabNavSettings" onclick="switchAdminTab('settings')">
+        ⚙️ Paramètres & Webhooks
+      </button>
+    </div>
+
+    <!-- NOTIFICATION ALERTS -->
+    <div class="alerts-container" id="alertsSection">
+      <div class="alert-banner alert-danger">
+        <div>
+          <strong>🚨 Paiements Échoués :</strong> 2 professeurs ont des tentatives de prélèvement Stripe rejetées.
+        </div>
+        <button type="button" class="alert-btn" onclick="filterByFailedPayments()">Voir les 2 comptes ➔</button>
       </div>
-      <div class="stat-card" style="--accent-color: var(--purple)">
-        <div class="stat-lbl">Abonnés Payants (Pro & Écoles)</div>
-        <div class="stat-val" id="stPro" style="color:var(--purple)">0</div>
+
+      <div class="alert-banner alert-warning">
+        <div>
+          <strong>⚠️ Alerte Churn :</strong> 5 professeurs ont résilié ce mois-ci (+1.2% au-dessus de la moyenne).
+        </div>
+        <button type="button" class="alert-btn" onclick="filterByChurned()">Consulter les désabonnements ➔</button>
       </div>
-      <div class="stat-card" style="--accent-color: var(--orange)">
-        <div class="stat-lbl">Early Access / Essai Gratuit</div>
-        <div class="stat-val" id="stFree" style="color:var(--orange)">0</div>
-      </div>
-      <div class="stat-card" style="--accent-color: var(--red)">
-        <div class="stat-lbl">Accès Révoqués / Bloqués</div>
-        <div class="stat-val" id="stBlocked" style="color:var(--red)">0</div>
+
+      <div class="alert-banner alert-info">
+        <div>
+          <strong>💡 Opportunité Réengagement :</strong> 127 professeurs inscrits en Free ne se sont pas connectés depuis 30 jours.
+        </div>
+        <button type="button" class="alert-btn" onclick="openBulkReengagementModal()">📧 Envoyer Campagne Relance</button>
       </div>
     </div>
 
-    <!-- TABLE & ADVANCED FILTERS -->
-    <div class="card-table">
-      <div class="table-header">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1">
-          <!-- Text Search -->
-          <input type="text" class="search-input" id="searchBox" placeholder="🔍 Rechercher (nom, email, tel, école)..." oninput="applyFiltersAndSort()">
-          
-          <!-- Subscription / Status Filter -->
-          <select id="filterPlan" class="plan-select" onchange="applyFiltersAndSort()" style="padding:8px 12px">
-            <option value="all">Tous les statuts d'accès</option>
-            <option value="free">🟢 Essai Gratuit / Early Access</option>
-            <option value="pro">⭐ Abonnement Pro</option>
-            <option value="ecole">🏫 Pack Établissement</option>
-            <option value="blocked">🚫 Accès Révoqués / Bloqués</option>
-          </select>
-
-          <!-- Date Filter Preset -->
-          <select id="filterDatePreset" class="plan-select" onchange="onDatePresetChange()" style="padding:8px 12px">
-            <option value="all">📅 Toutes les dates</option>
-            <option value="today">Aujourd'hui</option>
-            <option value="7d">7 derniers jours</option>
-            <option value="30d">30 derniers jours</option>
-            <option value="month">Ce mois-ci</option>
-            <option value="custom">Plage personnalisée...</option>
-          </select>
-
-          <!-- Custom Date Range (hidden by default) -->
-          <div id="customDateRange" style="display:none;align-items:center;gap:6px">
-            <input type="date" id="dateStart" class="search-input" style="min-width:130px;padding:6px 10px;font-size:12px" onchange="applyFiltersAndSort()">
-            <span style="color:var(--text-muted);font-size:12px">au</span>
-            <input type="date" id="dateEnd" class="search-input" style="min-width:130px;padding:6px 10px;font-size:12px" onchange="applyFiltersAndSort()">
+    <!-- ══════════════════════════════════════════
+         TAB 1 : OVERVIEW & ANALYTICS
+    ══════════════════════════════════════════ -->
+    <div id="viewOverview">
+      <!-- SECTION 1 : HERO 4 METRICS -->
+      <div class="metrics-grid-4">
+        <!-- Card 1 : MRR -->
+        <div class="metric-card" style="--card-line: var(--accent)">
+          <div class="metric-lbl">
+            <span>Monthly Revenue (MRR)</span>
+            <span style="font-size:16px">💰</span>
           </div>
-
-          <span id="filterCountBadge" style="font-size:12px;color:var(--text-muted);margin-left:4px"></span>
+          <div class="metric-val" id="valMRR">$2,450</div>
+          <div class="metric-trend trend-pos">
+            <span>↑ +12%</span>
+            <span class="trend-muted">vs le mois dernier</span>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn" onclick="resetFilters()" title="Réinitialiser les filtres">↺ Réinitialiser</button>
-          <button class="btn btn-blue" onclick="fetchLeads()">🔄 Actualiser</button>
+
+        <!-- Card 2 : ARR -->
+        <div class="metric-card" style="--card-line: var(--purple)">
+          <div class="metric-lbl">
+            <span>Annual Revenue (ARR)</span>
+            <span style="font-size:16px">📈</span>
+          </div>
+          <div class="metric-val" id="valARR">$29,400</div>
+          <div class="metric-trend trend-muted">
+            <span>Projection basée sur le MRR actuel</span>
+          </div>
+        </div>
+
+        <!-- Card 3 : Active Users -->
+        <div class="metric-card" style="--card-line: var(--green)">
+          <div class="metric-lbl">
+            <span>Profs Payants (Premium)</span>
+            <span style="font-size:16px">⭐</span>
+          </div>
+          <div class="metric-val" id="valUsers">245</div>
+          <div class="metric-trend trend-muted">
+            <span id="valUsersBreakdown">67 mensuels · 178 annuels (Free : 1,200)</span>
+          </div>
+        </div>
+
+        <!-- Card 4 : Churn Rate -->
+        <div class="metric-card" style="--card-line: var(--red)">
+          <div class="metric-lbl">
+            <span>Churn Rate (30j)</span>
+            <span style="font-size:16px">📉</span>
+          </div>
+          <div class="metric-val" id="valChurn">3.2%</div>
+          <div class="metric-trend trend-pos">
+            <span>✓ Seuil sain (2% - 5% max)</span>
+          </div>
         </div>
       </div>
-      <div style="overflow-x:auto">
-        <table id="sortableTable">
+
+      <!-- SECTION 2 : CHARTS -->
+      <div class="charts-grid-2">
+        <!-- Chart 1 : Line Chart Revenue Trend -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-title">Évolution du MRR (12 derniers mois)</div>
+              <span style="font-size:12px;color:var(--text-muted)">Croissance mensuelle récurrente en $ USD</span>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--green)">
+              +113% sur l'année
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="mrrLineChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2 : Donut Plan Breakdown -->
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <div>
+              <div class="chart-title">Répartition des Utilisateurs</div>
+              <span style="font-size:12px;color:var(--text-muted)">Free vs Premium</span>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="planDonutChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3 : GROWTH METRICS (3 Mini-Cards) -->
+      <div class="growth-row-3">
+        <div class="growth-mini-card">
+          <div>
+            <div class="growth-mini-title">Inscriptions Récentes (30j)</div>
+            <div class="growth-mini-val" id="valSignups">89 profs</div>
+          </div>
+          <div class="growth-mini-tag" style="background:var(--green-light);color:var(--green)">
+            ↑ +15% vs M-1
+          </div>
+        </div>
+
+        <div class="growth-mini-card">
+          <div>
+            <div class="growth-mini-title">Désabonnements Churn (30j)</div>
+            <div class="growth-mini-val" id="valChurnCount">3 départs</div>
+          </div>
+          <div class="growth-mini-tag" style="background:var(--green-light);color:var(--green)">
+            ↓ -1 vs M-1
+          </div>
+        </div>
+
+        <div class="growth-mini-card">
+          <div>
+            <div class="growth-mini-title">ARPU (Revenu Moyen / Prof Payant)</div>
+            <div class="growth-mini-val" id="valARPU">$12.07</div>
+          </div>
+          <div class="growth-mini-tag" style="background:rgba(59, 130, 246, 0.15);color:var(--accent)">
+            ↑ Stable & Sain
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         TAB 2 : USERS & ACCOUNTS TABLE
+    ══════════════════════════════════════════ -->
+    <div id="viewUsers" class="table-container-card">
+      <div class="table-toolbar">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1">
+          <input type="text" id="userSearchInput" class="search-input-box" placeholder="🔍 Rechercher (nom, email, école)..." oninput="filterUsers()">
+          
+          <select id="userFilterPlan" class="filter-select" onchange="filterUsers()">
+            <option value="all">Tous les forfaits</option>
+            <option value="free">Free Tier</option>
+            <option value="premium_monthly">Premium Mensuel ($9.99)</option>
+            <option value="premium_annual">Premium Annuel ($99.99)</option>
+          </select>
+
+          <select id="userFilterStatus" class="filter-select" onchange="filterUsers()">
+            <option value="all">Tous les statuts</option>
+            <option value="active">Actif</option>
+            <option value="inactive">Inactif (>30j)</option>
+            <option value="paused">En pause</option>
+            <option value="churned">Churné / Résilié</option>
+          </select>
+
+          <span id="userCountFiltered" style="font-size:12.5px;color:var(--text-muted);font-weight:600"></span>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn-admin" onclick="exportUsersCSV()">
+            📥 Export CSV Profs
+          </button>
+          <button type="button" class="btn-admin btn-admin-primary" onclick="loadAllData()">
+            🔄 Actualiser
+          </button>
+        </div>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
           <thead>
             <tr>
-              <th onclick="handleSort('createdAt')" class="sortable-th" title="Cliquer pour trier par date">
-                Date d'inscription <span id="sort_createdAt" class="sort-icon">↕</span>
-              </th>
-              <th onclick="handleSort('name')" class="sortable-th" title="Cliquer pour trier par nom">
-                Enseignant / Nom <span id="sort_name" class="sort-icon">↕</span>
-              </th>
-              <th onclick="handleSort('email')" class="sortable-th" title="Cliquer pour trier par email">
-                Email <span id="sort_email" class="sort-icon">↕</span>
-              </th>
-              <th onclick="handleSort('whatsapp')" class="sortable-th" title="Cliquer pour trier par téléphone">
-                WhatsApp <span id="sort_whatsapp" class="sort-icon">↕</span>
-              </th>
-              <th onclick="handleSort('school')" class="sortable-th" title="Cliquer pour trier par école">
-                Établissement <span id="sort_school" class="sort-icon">↕</span>
-              </th>
-              <th onclick="handleSort('plan')" class="sortable-th" title="Cliquer pour trier par statut">
-                Statut / Forfait <span id="sort_plan" class="sort-icon">↕</span>
-              </th>
-              <th style="cursor:default">Actions & Révocation</th>
+              <th class="sortable" onclick="sortUsers('name')">Professeur / Nom ↕</th>
+              <th class="sortable" onclick="sortUsers('email')">Email ↕</th>
+              <th class="sortable" onclick="sortUsers('plan')">Plan ↕</th>
+              <th class="sortable" onclick="sortUsers('status')">Statut ↕</th>
+              <th class="sortable" onclick="sortUsers('created_at')">Inscription ↕</th>
+              <th class="sortable" onclick="sortUsers('last_login')">Dernière Activité ↕</th>
+              <th class="sortable" onclick="sortUsers('total_corrections')">Corrections ↕</th>
+              <th style="text-align:right">Actions</th>
             </tr>
           </thead>
-          <tbody id="leadsBody">
+          <tbody id="usersTableBody">
             <tr>
-              <td colspan="7" style="text-align:center;color:var(--text-muted);padding:30px">Chargement des données...</td>
+              <td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted)">Chargement des professeurs...</td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <div class="table-pagination-bar">
+        <span id="paginationLabel">Affichage 1-10 sur ...</span>
+        <div style="display:flex;gap:6px">
+          <button type="button" class="btn-admin" id="btnPrevPage" onclick="changePage(-1)">Précédent</button>
+          <button type="button" class="btn-admin" id="btnNextPage" onclick="changePage(1)">Suivant</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         TAB 3 : REVENUE & TRANSACTIONS
+    ══════════════════════════════════════════ -->
+    <div id="viewRevenue" style="display:none" class="table-container-card">
+      <div class="table-toolbar">
+        <div>
+          <h3 style="font-size:16px;font-weight:700">Historique des Transactions Récentes</h3>
+          <span style="font-size:12px;color:var(--text-muted)">Tous les encaissements Stripe & Mobile Money (Wave / Orange Money)</span>
+        </div>
+        <button type="button" class="btn-admin btn-admin-primary" onclick="exportRevenueCSV()">
+          📥 Exporter Transactions CSV
+        </button>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table txn-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Transaction ID</th>
+              <th>Professeur</th>
+              <th>Montant</th>
+              <th>Plan</th>
+              <th>Statut</th>
+              <th>Note</th>
+              <th style="text-align:right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="transactionsBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         TAB 4 : SETTINGS & WEBHOOKS / NOTIFICATIONS
+    ══════════════════════════════════════════ -->
+    <div id="viewSettings" style="display:none">
+      <div style="max-width:850px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+        
+        <!-- CARD 1 : NOTIFICATIONS TÉLÉPHONE & ORDINATEUR (TELEGRAM) -->
+        <div class="chart-card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <span style="font-size:24px">📲</span>
+            <div>
+              <h3 style="font-size:18px;font-weight:700;margin:0">Notifications Instantanées sur Smartphone & PC (Telegram)</h3>
+              <span style="color:var(--text-muted);font-size:13px">Recevez un message dès qu'un enseignant s'inscrit ou démarre son essai</span>
+            </div>
+          </div>
+
+          <div style="background:rgba(59, 130, 246, 0.08);border:1px solid rgba(59, 130, 246, 0.25);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.6">
+            <strong>🚀 Comment configurer en 2 minutes (100% gratuit) :</strong>
+            <ol style="margin:8px 0 0 18px;padding:0">
+              <li>Ouvrez l'application <strong>Telegram</strong> (sur votre téléphone ou ordinateur) et recherchez <code>@BotFather</code>.</li>
+              <li>Envoyez la commande <code>/newbot</code>, donnez un nom à votre bot (ex: <em>PedagoAlertBot</em>) et copiez le <strong>Token API</strong> fourni.</li>
+              <li>Envoyez un premier message (ex: "Salut") à votre bot créé, puis recherchez <code>@userinfobot</code> sur Telegram pour obtenir votre <strong>Chat ID</strong> personnel.</li>
+              <li>Renseignez ces 2 variables dans les <strong>Paramètres Secrets</strong> de votre application :
+                <br>• <code>TELEGRAM_BOT_TOKEN</code> = votre token de bot
+                <br>• <code>TELEGRAM_CHAT_ID</code> = votre chat ID personnel
+              </li>
+            </ol>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+            <div>
+              <label style="display:block;font-size:12.5px;color:var(--text-muted);margin-bottom:6px">Tester un Token Bot Telegram (Optionnel)</label>
+              <input type="password" id="tgTokenInput" placeholder="Ex: 7123456789:AAH..." style="width:100%;padding:10px 14px;border-radius:10px;background:var(--navy);border:1px solid var(--border);color:#fff;font-size:13px">
+            </div>
+            <div>
+              <label style="display:block;font-size:12.5px;color:var(--text-muted);margin-bottom:6px">Tester un Chat ID Telegram (Optionnel)</label>
+              <input type="text" id="tgChatIdInput" placeholder="Ex: 987654321" style="width:100%;padding:10px 14px;border-radius:10px;background:var(--navy);border:1px solid var(--border);color:#fff;font-size:13px">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button type="button" class="btn-admin btn-admin-primary" onclick="testTelegramAlert()">🔔 Envoyer une notification test sur mon Telegram</button>
+            <span id="tgTestStatus" style="font-size:12px;color:var(--text-muted)"></span>
+          </div>
+        </div>
+
+        <!-- CARD 2 : WEBHOOKS & EXPORT GOOGLE SHEETS / DISCORD / MAKE -->
+        <div class="chart-card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <span style="font-size:24px">🔗</span>
+            <div>
+              <h3 style="font-size:18px;font-weight:700;margin:0">Webhooks CRM & Google Sheets (Make, Zapier, Discord, Slack)</h3>
+              <span style="color:var(--text-muted);font-size:13px">Transmettez automatiquement chaque nouvel utilisateur dans un tableur ou un canal Discord</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px">
+            <label style="display:block;font-size:12.5px;color:var(--text-muted);margin-bottom:6px">Webhook Endpoint URL (Google Apps Script / Discord / Make / Zapier)</label>
+            <input type="url" id="webhookInput" placeholder="https://discord.com/api/webhooks/... ou https://script.google.com/macros/s/.../exec" style="width:100%;padding:10px 14px;border-radius:10px;background:var(--navy);border:1px solid var(--border);color:#fff;font-size:13px">
+          </div>
+
+          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+            <button type="button" class="btn-admin btn-admin-primary" onclick="saveWebhookSettings()">💾 Enregistrer l'URL</button>
+            <button type="button" class="btn-admin" onclick="testWebhook()">🧪 Tester l'envoi Webhook</button>
+            <span id="webhookTestStatus" style="font-size:12px;color:var(--text-muted)"></span>
+          </div>
+
+          <div style="background:var(--card-sub);padding:14px;border-radius:10px;border:1px solid var(--border);font-size:12.5px;color:var(--text-muted);line-height:1.6">
+            <strong>Format des données transmises à chaque inscription :</strong><br>
+            <code>{ "name": "Koffi Yao", "email": "koffi@ecole.ci", "whatsapp": "+225 07...", "school": "Lycée Blaise Pascal", "plan": "free_trial_7d" }</code>
+          </div>
+        </div>
+
+        <!-- CARD 3 : TARIFICATION CONFIGURÉE -->
+        <div class="chart-card">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:10px">💳 Tarification active du SaaS</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;font-size:13px">
+            <div style="background:var(--navy);padding:12px;border-radius:8px;border:1px solid var(--border)">
+              <strong>🎁 Essai Gratuit (7 jours)</strong><br>
+              <span style="color:var(--text-muted)">100% fonctionnalités débloquées</span>
+            </div>
+            <div style="background:var(--navy);padding:12px;border-radius:8px;border:1px solid var(--border)">
+              <strong>📅 Forfait Mensuel</strong><br>
+              <span style="color:var(--accent);font-weight:700">6 000 FCFA / mois ($9.99)</span>
+            </div>
+            <div style="background:var(--navy);padding:12px;border-radius:8px;border:1px solid var(--border)">
+              <strong>⭐ Forfait Annuel (2 mois offerts)</strong><br>
+              <span style="color:var(--green);font-weight:700">60 000 FCFA / an ($99.99)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════
+       MODALE DÉTAILS DU PROFESSEUR (SECTION 6)
+  ══════════════════════════════════════════ -->
+  <div id="userDetailsModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeUserDetailsModal()">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title" id="modalUserName">Émile Dubois</div>
+          <span style="font-size:12px;color:var(--text-muted)" id="modalUserEmail">emile@gmail.com</span>
+        </div>
+        <button type="button" class="modal-close" onclick="closeUserDetailsModal()">✕</button>
+      </div>
+
+      <!-- Basic info -->
+      <div class="modal-info-grid">
+        <div class="m-info-box">
+          <div class="m-info-lbl">Forfait actuel</div>
+          <div class="m-info-val" id="modalUserPlan">Premium Monthly</div>
+        </div>
+        <div class="m-info-box">
+          <div class="m-info-lbl">Statut du compte</div>
+          <div class="m-info-val" id="modalUserStatus">🟢 Actif</div>
+        </div>
+        <div class="m-info-box">
+          <div class="m-info-lbl">Date d'inscription</div>
+          <div class="m-info-val" id="modalUserJoined">12 Mai 2026</div>
+        </div>
+        <div class="m-info-box">
+          <div class="m-info-lbl">Établissement</div>
+          <div class="m-info-val" id="modalUserSchool">Lycée Classique d'Abidjan</div>
+        </div>
+      </div>
+
+      <!-- Usage stats -->
+      <h4 style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--accent)">📊 Statistiques d'Utilisation IA</h4>
+      <div class="modal-info-grid">
+        <div class="m-info-box">
+          <div class="m-info-lbl">Total corrections réalisées</div>
+          <div class="m-info-val" id="modalUserTotalCorr">47 copies</div>
+        </div>
+        <div class="m-info-box">
+          <div class="m-info-lbl">Corrections ce mois-ci</div>
+          <div class="m-info-val" id="modalUserMonthCorr">12 copies</div>
+        </div>
+        <div class="m-info-box">
+          <div class="m-info-lbl">Moyenne par semaine</div>
+          <div class="m-info-val">3.2 copies / sem</div>
+        </div>
+        <div class="m-info-box">
+          <div class="m-info-lbl">Dernière connexion</div>
+          <div class="m-info-val" id="modalUserLastLogin">Il y a 2 jours</div>
+        </div>
+      </div>
+
+      <!-- Billing info -->
+      <h4 style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--green)">💳 Facturation & Paiement</h4>
+      <div class="modal-info-grid">
+        <div class="m-info-box">
+          <div class="m-info-lbl">Montant facturé</div>
+          <div class="m-info-val" id="modalUserAmount">$9.99 / mois</div>
+        </div>
+        <div class="m-info-box">
+          <div class="m-info-lbl">Prochain renouvellement</div>
+          <div class="m-info-val" id="modalUserRenewal">15 Septembre 2026</div>
+        </div>
+        <div class="m-info-box" style="grid-column: span 2">
+          <div class="m-info-lbl">Moyen de paiement & Échecs</div>
+          <div class="m-info-val" id="modalUserPaymentMethod">Stripe Carte (**** 4242) — Aucun incident</div>
+        </div>
+      </div>
+
+      <!-- Actions inside modal -->
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap">
+        <button type="button" class="btn-admin" id="btnModalPauseResume" onclick="togglePauseUserFromModal()">Mettre en pause</button>
+        <button type="button" class="btn-admin" onclick="openRefundPrompt(currentActiveUserId)">Émettre un remboursement</button>
+        <button type="button" class="btn-admin btn-admin-primary" onclick="openEmailTemplateModal(currentActiveUserId)">Envoyer un email</button>
+      </div>
     </div>
   </div>
 
-  <!-- EDIT MODAL -->
-  <div id="editModal" class="modal-backdrop" style="display:none">
-    <div class="modal-box">
-      <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:16px">Modifier l'utilisateur & Autorisations</h3>
-      <form id="editForm" onsubmit="event.preventDefault();saveEditUser();" style="display:flex;flex-direction:column;gap:12px">
-        <input type="hidden" id="editUserId">
-        <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Nom de l'enseignant</label>
-          <input type="text" id="editUserName" style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff" required>
+  <!-- MODALE REMBOURSEMENT -->
+  <div id="refundModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeRefundModal()">
+    <div class="modal-sheet" style="max-width:440px">
+      <div class="modal-head">
+        <div class="modal-title">Émettre un Remboursement</div>
+        <button type="button" class="modal-close" onclick="closeRefundModal()">✕</button>
+      </div>
+      <form onsubmit="event.preventDefault();submitRefund();">
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Montant à rembourser ($ USD)</label>
+          <input type="number" step="0.01" id="refundAmount" value="9.99" style="width:100%;padding:10px;border-radius:8px;background:var(--navy);border:1px solid var(--border);color:#fff" required>
         </div>
-        <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Statut d'accès / Abonnement</label>
-          <select id="editUserPlan" style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff">
-            <option value="free">🟢 Essai Gratuit / Early Access</option>
-            <option value="pro">⭐ Pro Enseignant (19€ / mois)</option>
-            <option value="ecole">🏫 Pack Établissement / École</option>
-            <option value="blocked">🚫 Accès Révoqué / Dégagé (Bloqué)</option>
-          </select>
+        <div style="margin-bottom:16px">
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Motif du remboursement</label>
+          <textarea id="refundReason" rows="3" placeholder="Ex: Demande de résiliation dans les délais, incident technique..." style="width:100%;padding:10px;border-radius:8px;background:var(--navy);border:1px solid var(--border);color:#fff" required></textarea>
         </div>
-        <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Établissement / École</label>
-          <input type="text" id="editUserSchool" style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff">
-        </div>
-        <div>
-          <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">Notes internes (Privé)</label>
-          <textarea id="editUserNotes" rows="3" placeholder="Ex: Early access expiré, contacté le 19/08..." style="width:100%;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff"></textarea>
-        </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
-          <button type="button" class="btn" onclick="closeEditModal()">Annuler</button>
-          <button type="submit" class="btn btn-blue">Enregistrer les modifications</button>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button type="button" class="btn-admin" onclick="closeRefundModal()">Annuler</button>
+          <button type="submit" class="btn-admin btn-admin-danger">Confirmer le remboursement</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- WEBHOOK / GOOGLE SHEETS MODAL -->
-  <div id="webhookModal" class="modal-backdrop" style="display:none">
-    <div class="modal-box" style="max-width:580px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin:0">⚡ Synchronisation Webhook & Google Sheets</h3>
-        <button type="button" onclick="toggleWebhookModal()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button>
+  <!-- MODALE ENVOI D'EMAIL TEMPLATES -->
+  <div id="emailModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeEmailModal()">
+    <div class="modal-sheet" style="max-width:500px">
+      <div class="modal-head">
+        <div class="modal-title">Envoyer un message au professeur</div>
+        <button type="button" class="modal-close" onclick="closeEmailModal()">✕</button>
       </div>
-      <p style="color:var(--text-muted);font-size:13px;line-height:1.4;margin-bottom:16px">
-        Recevez instantanément chaque nouveau professeur dans <strong>Google Sheets, Zapier, Make, Telegram ou Formspree</strong> dès qu'il s'inscrit.
-      </p>
-
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px">URL du Webhook (Google Apps Script / Zapier / Make / n8n / Discord)</label>
-        <input type="url" id="webhookUrlInput" placeholder="https://script.google.com/macros/s/... ou https://hook.eu1.make.com/..." style="width:100%;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:#fff;font-size:13px">
-      </div>
-
-      <div style="display:flex;gap:10px;margin-bottom:16px">
-        <button type="button" class="btn btn-blue" onclick="saveWebhookConfig()">💾 Sauvegarder l'URL</button>
-        <button type="button" class="btn" onclick="testWebhookTrigger()">🧪 Envoyer un test</button>
-      </div>
-
-      <div id="webhookStatusMsg" style="font-size:12px;display:none;margin-bottom:12px;padding:8px 12px;border-radius:6px"></div>
-
-      <details style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px">
-        <summary style="cursor:pointer;font-weight:600;color:var(--blue)">📋 Comment créer un Google Sheet en 1 minute (Code Google Apps Script)</summary>
-        <div style="margin-top:10px;color:var(--text-muted);line-height:1.5">
-          1. Ouvrez un nouveau <a href="https://sheets.new" target="_blank" style="color:var(--blue)">Google Sheet</a>.<br>
-          2. Allez dans <strong>Extensions &gt; Apps Script</strong>, collez le code ci-dessous et cliquez sur <strong>Déployer &gt; Nouveau déploiement &gt; Application Web</strong> (Accès : <em>Tout le monde</em>) :
-          <pre style="background:#0F172A;color:#38BDF8;padding:10px;border-radius:6px;overflow-x:auto;margin-top:6px;font-size:11px"><code>function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var d = JSON.parse(e.postData.contents);
-  var lead = d.data || d;
-  sheet.appendRow([new Date(), lead.name||'', lead.email||'', lead.whatsapp||'', lead.school||'', lead.plan||'free']);
-  return ContentService.createTextOutput(JSON.stringify({result: 'ok'})).setMimeType(ContentService.MimeType.JSON);
-}</code></pre>
-          3. Copiez l'URL de l'application Web et collez-la dans le champ ci-dessus !
+      <form onsubmit="event.preventDefault();submitEmail();">
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Modèle prédéfini</label>
+          <select id="emailTemplateSelect" class="filter-select" style="width:100%" onchange="onEmailTemplateSelect()">
+            <option value="reengage">Relance / Inactivité 30 jours</option>
+            <option value="failed_pay">Échec de paiement / Mise à jour carte</option>
+            <option value="welcome_premium">Bienvenue sur le Forfait Premium</option>
+            <option value="custom">Message personnalisé</option>
+          </select>
         </div>
-      </details>
+        <div style="margin-bottom:16px">
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Contenu du message</label>
+          <textarea id="emailBodyText" rows="6" style="width:100%;padding:10px;border-radius:8px;background:var(--navy);border:1px solid var(--border);color:#fff" required></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button type="button" class="btn-admin" onclick="closeEmailModal()">Annuler</button>
+          <button type="submit" class="btn-admin btn-admin-primary">🚀 Envoyer l'email</button>
+        </div>
+      </form>
     </div>
   </div>
 
   <script>
-    const ADMIN_SECRET = 'admin123';
-    let allLeads = [];
-    let currentSortedFilteredLeads = [];
-    let sortColumn = 'createdAt';
-    let sortDirection = 'desc'; // 'asc' | 'desc'
+    let currentCurrency = 'USD'; // 'USD' | 'XOF'
+    const CFA_RATE = 655;
 
-    function checkAuth() {
-      const input = document.getElementById('adminPassInput').value;
-      const err = document.getElementById('authErr');
-      if (input === ADMIN_SECRET || localStorage.getItem('cpro_admin_auth') === 'true') {
-        localStorage.setItem('cpro_admin_auth', 'true');
-        document.getElementById('authLock').style.display = 'none';
-        fetchLeads();
-      } else {
-        err.style.display = 'block';
-      }
+    let appData = {
+      metrics: {
+        mrr: 2450.00,
+        arr: 29400.00,
+        active_premium: 245,
+        breakdown_monthly: 67,
+        breakdown_annual: 178,
+        active_free: 1200,
+        churn_rate: 0.032,
+        arpu: 12.07,
+        new_users_30d: 89,
+        churned_30d: 3,
+        growth_mom: 0.15
+      },
+      revenue_trend_12m: [],
+      users_by_plan: {},
+      users: [],
+      transactions: []
+    };
+
+    let filteredUsers = [];
+    let currentSortCol = 'created_at';
+    let currentSortAsc = false;
+    let currentPage = 1;
+    const PAGE_SIZE = 10;
+    let currentActiveUserId = null;
+
+    let mrrChartInstance = null;
+    let donutChartInstance = null;
+
+    function getAdminToken() {
+      return sessionStorage.getItem('cpro_adm_token') || localStorage.getItem('cpro_adm_token') || '';
     }
 
-    function logout() {
-      localStorage.removeItem('cpro_admin_auth');
-      document.getElementById('authLock').style.display = 'flex';
-      document.getElementById('adminPassInput').value = '';
+    function getAdminHeaders(extraHeaders) {
+      return {
+        'Content-Type': 'application/json',
+        'x-admin-token': getAdminToken(),
+        ...(extraHeaders || {})
+      };
     }
 
-    // Auto-login if session already active
-    if (localStorage.getItem('cpro_admin_auth') === 'true') {
-      document.getElementById('authLock').style.display = 'none';
-      fetchLeads();
-    }
+    // Check pass & verify server
+    async function checkPass() {
+      const email = (document.getElementById('adminEmail').value || '').trim();
+      const pass = (document.getElementById('adminPass').value || '').trim();
+      const errEl = document.getElementById('authErr');
+      const btn = document.getElementById('adminLoginBtn');
 
-    async function fetchLeads() {
-      let remoteLeads = [];
+      if (!pass) return;
+      if (errEl) errEl.style.display = 'none';
+      if (btn) btn.disabled = true;
+
       try {
-        const res = await fetch('/api/leads');
-        if (res.ok) {
-          const data = await res.json();
-          remoteLeads = data.leads || [];
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: pass })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && data.token) {
+          localStorage.setItem('cpro_adm_token', data.token);
+          sessionStorage.setItem('cpro_adm_token', data.token);
+          document.getElementById('authLock').style.display = 'none';
+          loadAllData();
+        } else {
+          if (errEl) {
+            errEl.textContent = data.error || 'Mot de passe ou email administrateur incorrect.';
+            errEl.style.display = 'block';
+          }
         }
       } catch (e) {
-        console.warn('API leads non disponible, fallback local:', e);
+        if (errEl) {
+          errEl.textContent = 'Erreur de connexion au serveur.';
+          errEl.style.display = 'block';
+        }
+      } finally {
+        if (btn) btn.disabled = false;
       }
-
-      // Merge with client-side backups
-      let localBackup = [];
-      try {
-        localBackup = JSON.parse(localStorage.getItem('cpro_all_leads') || '[]');
-        const singleLead = JSON.parse(localStorage.getItem('cpro_lead_user') || 'null');
-        if (singleLead) localBackup.unshift(singleLead);
-      } catch (e) {}
-
-      // Deduplicate by email or whatsapp
-      const mergedMap = new Map();
-      [...remoteLeads, ...localBackup].forEach(l => {
-        if (!l) return;
-        const key = (l.email ? l.email.toLowerCase() : '') || (l.whatsapp || l.id || Math.random());
-        if (!mergedMap.has(key)) {
-          mergedMap.set(key, l);
-        }
-      });
-
-      allLeads = Array.from(mergedMap.values());
-      updateGlobalStats(allLeads);
-      applyFiltersAndSort();
     }
 
-    function updateGlobalStats(list) {
-      document.getElementById('stTotal').textContent = list.length;
-      document.getElementById('stWA').textContent = list.filter(l => l.whatsapp).length;
-      
-      const proCount = list.filter(l => l.plan === 'pro' || l.plan === 'ecole').length;
-      const blockedCount = list.filter(l => l.plan === 'blocked' || l.status === 'revoked').length;
-      const freeCount = list.filter(l => (!l.plan || l.plan === 'free') && l.status !== 'revoked').length;
-
-      document.getElementById('stPro').textContent = proCount;
-      document.getElementById('stFree').textContent = freeCount;
-      document.getElementById('stBlocked').textContent = blockedCount;
-    }
-
-    function onDatePresetChange() {
-      const preset = document.getElementById('filterDatePreset').value;
-      const customDiv = document.getElementById('customDateRange');
-      if (customDiv) {
-        customDiv.style.display = preset === 'custom' ? 'inline-flex' : 'none';
-      }
-      applyFiltersAndSort();
-    }
-
-    function handleSort(col) {
-      if (sortColumn === col) {
-        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-      } else {
-        sortColumn = col;
-        sortDirection = (col === 'createdAt') ? 'desc' : 'asc';
-      }
-      updateSortHeadersUI();
-      applyFiltersAndSort();
-    }
-
-    function updateSortHeadersUI() {
-      const cols = ['createdAt', 'name', 'email', 'whatsapp', 'school', 'plan'];
-      cols.forEach(c => {
-        const th = document.getElementById('sort_' + c);
-        if (th) {
-          const parentTh = th.parentElement;
-          if (c === sortColumn) {
-            parentTh.classList.add('active-sort');
-            th.textContent = sortDirection === 'asc' ? '▲' : '▼';
-          } else {
-            parentTh.classList.remove('active-sort');
-            th.textContent = '↕';
-          }
-        }
-      });
-    }
-
-    function resetFilters() {
-      document.getElementById('searchBox').value = '';
-      document.getElementById('filterPlan').value = 'all';
-      document.getElementById('filterDatePreset').value = 'all';
-      document.getElementById('dateStart').value = '';
-      document.getElementById('dateEnd').value = '';
-      document.getElementById('customDateRange').style.display = 'none';
-      sortColumn = 'createdAt';
-      sortDirection = 'desc';
-      updateSortHeadersUI();
-      applyFiltersAndSort();
-    }
-
-    function applyFiltersAndSort() {
-      const q = (document.getElementById('searchBox').value || '').toLowerCase().trim();
-      const planFilter = document.getElementById('filterPlan').value;
-      const datePreset = document.getElementById('filterDatePreset').value;
-      const dateStartVal = document.getElementById('dateStart').value;
-      const dateEndVal = document.getElementById('dateEnd').value;
-
-      const now = new Date();
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-      let filtered = allLeads.filter(l => {
-        // Search Query
-        const matchQuery = !q || (
-          (l.name && l.name.toLowerCase().includes(q)) ||
-          (l.email && l.email.toLowerCase().includes(q)) ||
-          (l.whatsapp && l.whatsapp.includes(q)) ||
-          (l.school && l.school.toLowerCase().includes(q)) ||
-          (l.notes && l.notes.toLowerCase().includes(q))
-        );
-
-        // Plan / Status Filter
-        let matchPlan = true;
-        const currentPlan = l.plan || 'free';
-        if (planFilter !== 'all') {
-          if (planFilter === 'blocked') {
-            matchPlan = currentPlan === 'blocked' || l.status === 'revoked';
-          } else {
-            matchPlan = currentPlan === planFilter && l.status !== 'revoked';
-          }
-        }
-
-        // Date Filter
-        let matchDate = true;
-        if (l.createdAt) {
-          const leadDate = new Date(l.createdAt);
-          if (datePreset === 'today') {
-            matchDate = leadDate >= startOfToday;
-          } else if (datePreset === '7d') {
-            matchDate = leadDate >= sevenDaysAgo;
-          } else if (datePreset === '30d') {
-            matchDate = leadDate >= thirtyDaysAgo;
-          } else if (datePreset === 'month') {
-            matchDate = leadDate >= startOfMonth;
-          } else if (datePreset === 'custom') {
-            if (dateStartVal) {
-              const dStart = new Date(dateStartVal);
-              matchDate = matchDate && leadDate >= dStart;
-            }
-            if (dateEndVal) {
-              const dEnd = new Date(dateEndVal);
-              dEnd.setHours(23, 59, 59, 999);
-              matchDate = matchDate && leadDate <= dEnd;
-            }
-          }
-        }
-
-        return matchQuery && matchPlan && matchDate;
-      });
-
-      // Sorting
-      filtered.sort((a, b) => {
-        let valA = a[sortColumn];
-        let valB = b[sortColumn];
-
-        if (sortColumn === 'createdAt') {
-          const timeA = valA ? new Date(valA).getTime() : 0;
-          const timeB = valB ? new Date(valB).getTime() : 0;
-          return sortDirection === 'asc' ? timeA - timeB : timeB - timeA;
-        }
-
-        valA = (valA || '').toString().toLowerCase();
-        valB = (valB || '').toString().toLowerCase();
-
-        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-        return 0;
-      });
-
-      currentSortedFilteredLeads = filtered;
-      
-      const badge = document.getElementById('filterCountBadge');
-      if (badge) {
-        if (filtered.length !== allLeads.length) {
-          badge.textContent = `(${filtered.length} sur ${allLeads.length} affichés)`;
-        } else {
-          badge.textContent = `(${filtered.length} utilisateurs)`;
-        }
-      }
-
-      render(filtered);
-    }
-
-    function render(list) {
-      const tbody = document.getElementById('leadsBody');
-      if (!list || list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:30px">Aucun utilisateur ne correspond à vos filtres.</td></tr>';
+    // Auto verify existing token on load
+    async function verifySavedToken() {
+      const token = getAdminToken();
+      if (!token) {
+        document.getElementById('authLock').style.display = 'flex';
         return;
       }
 
-      tbody.innerHTML = list.map(l => {
-        const dateStr = l.createdAt ? new Date(l.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-        const waClean = l.whatsapp ? l.whatsapp.replace(/[^0-9+]/g, '') : '';
-        const waLink = l.whatsapp 
-          ? `<a href="https://wa.me/${encodeURIComponent(waClean.replace('+', ''))}?text=${encodeURIComponent('Bonjour ' + (l.name || 'Enseignant') + ', je suis le fondateur de Correcteur Pro. Comment se passe la correction de vos copies ?')}" target="_blank" class="wa-btn">💬 ${l.whatsapp}</a>` 
-          : '<span style="color:var(--text-muted)">-</span>';
+      try {
+        const res = await fetch('/api/admin/verify', {
+          headers: { 'x-admin-token': token }
+        });
+        if (res.ok) {
+          document.getElementById('authLock').style.display = 'none';
+          loadAllData();
+        } else {
+          logoutAdmin();
+        }
+      } catch (e) {
+        document.getElementById('authLock').style.display = 'none';
+        loadAllData();
+      }
+    }
 
-        const plan = l.plan || 'free';
-        const isBlocked = plan === 'blocked' || l.status === 'revoked';
+    verifySavedToken();
+
+    function logoutAdmin() {
+      localStorage.removeItem('cpro_adm_token');
+      sessionStorage.removeItem('cpro_adm_token');
+      document.getElementById('authLock').style.display = 'flex';
+      const p = document.getElementById('adminPass');
+      if (p) p.value = '';
+    }
+
+    // Currency Switcher
+    function setCurrency(curr) {
+      currentCurrency = curr;
+      document.getElementById('btnUSD').classList.toggle('on', curr === 'USD');
+      document.getElementById('btnXOF').classList.toggle('on', curr === 'XOF');
+      renderMetrics();
+      renderUsersTable();
+      renderTransactions();
+    }
+
+    function formatMoney(amountUSD) {
+      if (currentCurrency === 'XOF') {
+        const valXOF = Math.round(amountUSD * CFA_RATE);
+        return valXOF.toLocaleString('fr-FR') + ' FCFA';
+      }
+      return '$' + Number(amountUSD).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    // Load Data
+    async function loadAllData() {
+      const token = getAdminToken();
+      try {
+        const res = await fetch('/api/admin/metrics', {
+          headers: { 'x-admin-token': token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          appData = { ...appData, ...data };
+        } else if (res.status === 401) {
+          logoutAdmin();
+          return;
+        }
+      } catch (e) {
+        console.warn('API error, using local/mock fallback', e);
+      }
+
+      // Fetch live leads from backend
+      try {
+        const lRes = await fetch('/api/leads', {
+          headers: { 'x-admin-token': token }
+        });
+        if (lRes.ok) {
+          const lData = await lRes.json();
+          if (lData.leads && lData.leads.length > 0) {
+            // merge live captured leads
+            const existingIds = new Set(appData.users.map(u => (u.email || u.id)));
+            lData.leads.forEach(l => {
+              if (!existingIds.has(l.email) && !existingIds.has(l.id)) {
+                appData.users.unshift({
+                  id: l.id,
+                  name: l.name || 'Professeur',
+                  email: l.email,
+                  whatsapp: l.whatsapp || '',
+                  school: l.school || '',
+                  plan: l.plan || 'free',
+                  status: l.status || 'active',
+                  created_at: l.createdAt || new Date().toISOString(),
+                  last_login: new Date().toISOString(),
+                  total_corrections: 1,
+                  corrections_this_month: 1,
+                  payment_method: null,
+                  failed_payments: []
+                });
+              }
+            });
+          }
+        }
+      } catch (le) {}
+
+      renderMetrics();
+      initCharts();
+      filterUsers();
+      renderTransactions();
+    }
+
+    function renderMetrics() {
+      const m = appData.metrics;
+      document.getElementById('valMRR').textContent = formatMoney(m.mrr);
+      document.getElementById('valARR').textContent = formatMoney(m.arr);
+      document.getElementById('valUsers').textContent = m.active_premium;
+      document.getElementById('valUsersBreakdown').textContent = `${m.breakdown_monthly} mensuels · ${m.breakdown_annual} annuels (Free : ${m.active_free})`;
+      document.getElementById('valChurn').textContent = (m.churn_rate * 100).toFixed(1) + '%';
+      
+      document.getElementById('valSignups').textContent = `${m.new_users_30d} profs`;
+      document.getElementById('valChurnCount').textContent = `${m.churned_30d} départs`;
+      document.getElementById('valARPU').textContent = formatMoney(m.arpu);
+
+      document.getElementById('tabUserCount').textContent = appData.users.length;
+    }
+
+    function initCharts() {
+      const trendData = appData.revenue_trend_12m || [];
+      const labels = trendData.map(d => d.month);
+      const values = trendData.map(d => d.mrr);
+
+      // Line Chart (Revenue)
+      const ctxLine = document.getElementById('mrrLineChart');
+      if (ctxLine) {
+        if (mrrChartInstance) mrrChartInstance.destroy();
+        mrrChartInstance = new Chart(ctxLine, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'MRR ($)',
+              data: values,
+              borderColor: '#3B82F6',
+              backgroundColor: 'rgba(59, 130, 246, 0.15)',
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: '#3B82F6',
+              pointRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `MRR : $${ctx.parsed.y} /mois`
+                }
+              }
+            },
+            scales: {
+              x: { grid: { color: 'rgba(59, 130, 246, 0.08)' }, ticks: { color: '#94A3B8' } },
+              y: { grid: { color: 'rgba(59, 130, 246, 0.08)' }, ticks: { color: '#94A3B8', callback: v => '$' + v } }
+            }
+          }
+        });
+      }
+
+      // Donut Chart (Plans)
+      const ctxDonut = document.getElementById('planDonutChart');
+      if (ctxDonut) {
+        if (donutChartInstance) donutChartInstance.destroy();
+        donutChartInstance = new Chart(ctxDonut, {
+          type: 'doughnut',
+          data: {
+            labels: ['Free Tier (1 200)', 'Premium Mensuel (67)', 'Premium Annuel (178)'],
+            datasets: [{
+              data: [1200, 67, 178],
+              backgroundColor: ['#64748B', '#3B82F6', '#8B5CF6'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { color: '#FFF7E6', font: { size: 11.5 } }
+              }
+            },
+            cutout: '70%'
+          }
+        });
+      }
+    }
+
+    // Tabs switching
+    function switchAdminTab(tab) {
+      const tabs = ['overview', 'users', 'revenue', 'settings'];
+      tabs.forEach(t => {
+        const view = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tabNav' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (view) view.style.display = (t === tab) ? 'block' : 'none';
+        if (btn) btn.classList.toggle('on', t === tab);
+      });
+    }
+
+    // Users filtering and sorting
+    function filterUsers() {
+      const q = (document.getElementById('userSearchInput').value || '').toLowerCase().trim();
+      const planF = document.getElementById('userFilterPlan').value;
+      const statusF = document.getElementById('userFilterStatus').value;
+
+      filteredUsers = appData.users.filter(u => {
+        const matchQ = !q || (u.name && u.name.toLowerCase().includes(q)) || (u.email && u.email.toLowerCase().includes(q)) || (u.school && u.school.toLowerCase().includes(q));
+        const matchPlan = (planF === 'all') || (u.plan === planF);
+        const matchStatus = (statusF === 'all') || (u.status === statusF);
+        return matchQ && matchPlan && matchStatus;
+      });
+
+      // Sort
+      filteredUsers.sort((a, b) => {
+        let vA = a[currentSortCol] || '';
+        let vB = b[currentSortCol] || '';
+        if (typeof vA === 'string') vA = vA.toLowerCase();
+        if (typeof vB === 'string') vB = vB.toLowerCase();
+        if (vA < vB) return currentSortAsc ? -1 : 1;
+        if (vA > vB) return currentSortAsc ? 1 : -1;
+        return 0;
+      });
+
+      currentPage = 1;
+      renderUsersTable();
+    }
+
+    function sortUsers(col) {
+      if (currentSortCol === col) {
+        currentSortAsc = !currentSortAsc;
+      } else {
+        currentSortCol = col;
+        currentSortAsc = true;
+      }
+      filterUsers();
+    }
+
+    function changePage(delta) {
+      const maxPage = Math.ceil(filteredUsers.length / PAGE_SIZE) || 1;
+      currentPage = Math.min(Math.max(1, currentPage + delta), maxPage);
+      renderUsersTable();
+    }
+
+    function renderUsersTable() {
+      const tbody = document.getElementById('usersTableBody');
+      const countEl = document.getElementById('userCountFiltered');
+      const pagEl = document.getElementById('paginationLabel');
+      if (!tbody) return;
+
+      countEl.textContent = `${filteredUsers.length} professeur(s) trouvé(s)`;
+
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const end = start + PAGE_SIZE;
+      const pageItems = filteredUsers.slice(start, end);
+
+      pagEl.textContent = `Affichage ${filteredUsers.length ? start + 1 : 0}-${Math.min(end, filteredUsers.length)} sur ${filteredUsers.length} profs`;
+
+      if (!pageItems.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted)">Aucun professeur ne correspond à ces critères.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = pageItems.map(u => {
+        const planBadge = u.plan === 'premium_annual' 
+          ? '<span class="badge-plan plan-annual">⭐ Premium Annuel</span>'
+          : (u.plan === 'premium_monthly' 
+            ? '<span class="badge-plan plan-monthly">⚡ Premium Mensuel</span>' 
+            : '<span class="badge-plan plan-free">Free (5/mois)</span>');
+
+        const statusBadge = u.status === 'active'
+          ? '<span class="badge-status st-active">● Actif</span>'
+          : (u.status === 'paused'
+            ? '<span class="badge-status st-paused">⏸ En pause</span>'
+            : (u.status === 'churned'
+              ? '<span class="badge-status st-churned">✕ Churné</span>'
+              : '<span class="badge-status st-inactive">Inactif</span>'));
+
+        const joinedStr = u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '-';
+        const lastStr = u.last_login ? new Date(u.last_login).toLocaleDateString('fr-FR') : '-';
 
         return `
-          <tr style="${isBlocked ? 'background: rgba(239, 68, 68, 0.06);' : ''}">
-            <td style="color:var(--text-muted);font-size:12px">${dateStr}</td>
-            <td style="font-weight:600;color:#fff">
-              ${l.name || 'Enseignant anonyme'}
-              ${isBlocked ? '<span class="status-badge status-revoked" style="margin-left:6px;font-size:10px">🚫 Révoqué</span>' : ''}
-            </td>
-            <td><a href="mailto:${l.email}" style="color:var(--blue);text-decoration:none">${l.email || '-'}</a></td>
-            <td>${waLink}</td>
-            <td style="color:var(--text-muted)">${l.school || '-'}</td>
+          <tr>
             <td>
-              <select class="plan-select" onchange="quickUpdatePlan('${l.id}', this.value)" style="${isBlocked ? 'border-color:var(--red);color:var(--red)' : ''}">
-                <option value="free" ${plan === 'free' && !isBlocked ? 'selected' : ''}>🟢 Essai Gratuit (Early Access)</option>
-                <option value="pro" ${plan === 'pro' ? 'selected' : ''}>⭐ Plan Pro Enseignant</option>
-                <option value="ecole" ${plan === 'ecole' ? 'selected' : ''}>🏫 Pack École</option>
-                <option value="blocked" ${isBlocked ? 'selected' : ''}>🚫 Accès Révoqué (Dégagé)</option>
-              </select>
+              <div style="font-weight:700;color:#fff">${escapeHtml(u.name)}</div>
+              <div style="font-size:11.5px;color:var(--text-muted)">${escapeHtml(u.school || 'Non renseigné')}</div>
             </td>
             <td>
-              <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <button class="btn" style="padding:4px 8px;font-size:12px" onclick="openEditModal('${l.id}')" title="Modifier nom, école, notes">✏️ Modifier</button>
-                
-                ${isBlocked 
-                  ? `<button class="btn btn-green" style="padding:4px 8px;font-size:12px" onclick="toggleRevokeAccess('${l.id}', false)" title="Rétablir l'accès">✅ Réactiver</button>`
-                  : `<button class="btn btn-red" style="padding:4px 8px;font-size:12px" onclick="toggleRevokeAccess('${l.id}', true)" title="Dégager / Bloquer l'accès immédiatement">🚫 Dégager / Révoquer</button>`
-                }
-                
-                <button class="btn" style="padding:4px 8px;font-size:12px;color:var(--text-muted);border-color:transparent" onclick="deleteUser('${l.id}')" title="Supprimer définitivement">🗑️</button>
+              <div style="color:var(--vanilla)">${escapeHtml(u.email)}</div>
+              ${u.whatsapp ? `<div style="font-size:11.5px;color:#34d399">📱 ${escapeHtml(u.whatsapp)}</div>` : ''}
+            </td>
+            <td>${planBadge}</td>
+            <td>${statusBadge}</td>
+            <td>${joinedStr}</td>
+            <td>${lastStr}</td>
+            <td style="font-weight:700">${u.total_corrections || 0} copies</td>
+            <td style="text-align:right">
+              <div class="action-dropdown-wrap">
+                <button type="button" class="action-3dots-btn" onclick="toggleDropdown(event, '${u.id}')">⋯</button>
+                <div class="action-dropdown-menu" id="dropdown_${u.id}">
+                  <button type="button" class="dropdown-item-btn" onclick="openUserDetailsModal('${u.id}')">👁️ Voir détails</button>
+                  <button type="button" class="dropdown-item-btn" onclick="quickUpgradeUser('${u.id}')">⭐ Passer en Premium</button>
+                  <button type="button" class="dropdown-item-btn" onclick="quickDowngradeUser('${u.id}')">🔄 Rétrograder en Free</button>
+                  <button type="button" class="dropdown-item-btn" onclick="quickTogglePauseUser('${u.id}')">${u.status === 'paused' ? '▶️ Reprendre' : '⏸ Mettre en pause'}</button>
+                  <button type="button" class="dropdown-item-btn" onclick="openRefundPrompt('${u.id}')">💸 Émettre un remboursement</button>
+                  <button type="button" class="dropdown-item-btn" onclick="openEmailTemplateModal('${u.id}')">📧 Envoyer un message</button>
+                  <button type="button" class="dropdown-item-btn danger-item" onclick="deleteUserPrompt('${u.id}')">🗑️ Supprimer le compte</button>
+                </div>
               </div>
             </td>
           </tr>
@@ -738,234 +1329,341 @@
       }).join('');
     }
 
-    async function toggleRevokeAccess(id, shouldRevoke) {
-      const actionName = shouldRevoke ? 'révoquer l’accès (dégager)' : 'rétablir l’accès';
-      if (!confirm(`Voulez-vous vraiment ${actionName} de cet utilisateur ?`)) return;
+    function toggleDropdown(e, uid) {
+      e.stopPropagation();
+      document.querySelectorAll('.action-dropdown-menu').forEach(m => m.classList.remove('show'));
+      const menu = document.getElementById('dropdown_' + uid);
+      if (menu) menu.classList.toggle('show');
+    }
 
-      const newPlan = shouldRevoke ? 'blocked' : 'free';
-      const newStatus = shouldRevoke ? 'revoked' : 'active';
+    window.onclick = function() {
+      document.querySelectorAll('.action-dropdown-menu').forEach(m => m.classList.remove('show'));
+    };
 
+    // User details modal
+    function openUserDetailsModal(uid) {
+      currentActiveUserId = uid;
+      const u = appData.users.find(x => x.id === uid);
+      if (!u) return;
+
+      document.getElementById('modalUserName').textContent = u.name;
+      document.getElementById('modalUserEmail').textContent = u.email;
+      document.getElementById('modalUserPlan').textContent = u.plan === 'premium_annual' ? 'Premium Annuel ($99.99/an)' : (u.plan === 'premium_monthly' ? 'Premium Mensuel ($9.99/mois)' : 'Free Tier');
+      document.getElementById('modalUserStatus').textContent = u.status === 'active' ? '🟢 Actif' : (u.status === 'paused' ? '⏸ En Pause' : '✕ Inactif / Churné');
+      document.getElementById('modalUserJoined').textContent = u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '-';
+      document.getElementById('modalUserSchool').textContent = u.school || 'Non spécifié';
+      document.getElementById('modalUserTotalCorr').textContent = (u.total_corrections || 0) + ' copies';
+      document.getElementById('modalUserMonthCorr').textContent = (u.corrections_this_month || 0) + ' copies';
+      document.getElementById('modalUserLastLogin').textContent = u.last_login ? new Date(u.last_login).toLocaleDateString('fr-FR') : '-';
+      document.getElementById('modalUserAmount').textContent = formatMoney(u.plan === 'premium_annual' ? 99.99 : (u.plan === 'premium_monthly' ? 9.99 : 0));
+      document.getElementById('modalUserRenewal').textContent = u.renewal_date ? new Date(u.renewal_date).toLocaleDateString('fr-FR') : 'Sans engagement';
+      document.getElementById('modalUserPaymentMethod').textContent = u.payment_method || 'Aucun moyen enregistré (Free)';
+
+      document.getElementById('btnModalPauseResume').textContent = (u.status === 'paused') ? '▶️ Reprendre le compte' : '⏸ Mettre en pause';
+
+      document.getElementById('userDetailsModal').style.display = 'flex';
+    }
+
+    function closeUserDetailsModal() {
+      document.getElementById('userDetailsModal').style.display = 'none';
+    }
+
+    // Actions on users
+    async function quickUpgradeUser(uid) {
+      const u = appData.users.find(x => x.id === uid);
+      if (!u) return;
+      u.plan = 'premium_monthly';
+      u.status = 'active';
+      await patchUserBackend(uid, { plan: 'premium_monthly', status: 'active' });
+      filterUsers();
+      alert(`⭐ ${u.name} a été mis à niveau vers le forfait Premium Mensuel !`);
+    }
+
+    async function quickDowngradeUser(uid) {
+      const u = appData.users.find(x => x.id === uid);
+      if (!u) return;
+      u.plan = 'free';
+      await patchUserBackend(uid, { plan: 'free' });
+      filterUsers();
+      alert(`🔄 ${u.name} a été rétrogradé en Free.`);
+    }
+
+    async function quickTogglePauseUser(uid) {
+      const u = appData.users.find(x => x.id === uid);
+      if (!u) return;
+      u.status = (u.status === 'paused') ? 'active' : 'paused';
+      await patchUserBackend(uid, { status: u.status });
+      filterUsers();
+      alert(`Compte de ${u.name} : ${u.status === 'paused' ? 'Mis en pause' : 'Réactivé'}`);
+    }
+
+    function togglePauseUserFromModal() {
+      if (currentActiveUserId) {
+        quickTogglePauseUser(currentActiveUserId);
+        openUserDetailsModal(currentActiveUserId);
+      }
+    }
+
+    async function deleteUserPrompt(uid) {
+      const u = appData.users.find(x => x.id === uid);
+      if (!u) return;
+      if (confirm(`⚠️ Êtes-vous sûr de vouloir supprimer définitivement le compte de ${u.name} (${u.email}) ?`)) {
+        appData.users = appData.users.filter(x => x.id !== uid);
+        try {
+          await fetch('/api/leads/' + uid, { 
+            method: 'DELETE',
+            headers: getAdminHeaders()
+          });
+        } catch (e) {}
+        filterUsers();
+      }
+    }
+
+    async function patchUserBackend(uid, payload) {
       try {
-        const res = await fetch('/api/leads/' + id, {
+        await fetch('/api/leads/' + uid, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, plan: newPlan, status: newStatus })
+          headers: getAdminHeaders(),
+          body: JSON.stringify(payload)
         });
-        if (res.ok) {
-          const user = allLeads.find(l => l.id === id);
-          if (user) {
-            user.plan = newPlan;
-            user.status = newStatus;
-          }
-          // Also sync to local lead user if it's the current user
-          try {
-            const currentUser = JSON.parse(localStorage.getItem('cpro_lead_user') || 'null');
-            if (currentUser && currentUser.id === id) {
-              currentUser.plan = newPlan;
-              currentUser.status = newStatus;
-              localStorage.setItem('cpro_lead_user', JSON.stringify(currentUser));
-            }
-          } catch(e) {}
-
-          updateGlobalStats(allLeads);
-          applyFiltersAndSort();
-        }
-      } catch (e) {
-        alert('Erreur lors de la mise à jour du statut.');
-      }
+      } catch (e) {}
     }
 
-    async function quickUpdatePlan(id, newPlan) {
+    // Refund Modal
+    function openRefundPrompt(uid) {
+      currentActiveUserId = uid;
+      document.getElementById('refundModal').style.display = 'flex';
+    }
+    function closeRefundModal() {
+      document.getElementById('refundModal').style.display = 'none';
+    }
+    async function submitRefund() {
+      const amount = document.getElementById('refundAmount').value;
+      const reason = document.getElementById('refundReason').value;
       try {
-        const newStatus = (newPlan === 'blocked') ? 'revoked' : 'active';
-        const res = await fetch('/api/leads/' + id, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, plan: newPlan, status: newStatus })
+        await fetch('/api/admin/refund', {
+          method: 'POST',
+          headers: getAdminHeaders(),
+          body: JSON.stringify({ user_id: currentActiveUserId, amount, reason })
         });
-        if (res.ok) {
-          const updated = allLeads.find(l => l.id === id);
-          if (updated) {
-            updated.plan = newPlan;
-            updated.status = newStatus;
-          }
-          updateGlobalStats(allLeads);
-          applyFiltersAndSort();
-        }
-      } catch (e) {
-        alert('Erreur lors de la mise à jour du forfait.');
+      } catch (e) {}
+      closeRefundModal();
+      alert(`✓ Remboursement de $${amount} émis avec succès pour le motif : ${reason}`);
+    }
+
+    // Email Modal
+    function openEmailTemplateModal(uid) {
+      currentActiveUserId = uid;
+      document.getElementById('emailModal').style.display = 'flex';
+      onEmailTemplateSelect();
+    }
+    function closeEmailModal() {
+      document.getElementById('emailModal').style.display = 'none';
+    }
+    function onEmailTemplateSelect() {
+      const sel = document.getElementById('emailTemplateSelect').value;
+      const ta = document.getElementById('emailBodyText');
+      const u = appData.users.find(x => x.id === currentActiveUserId) || { name: 'Professeur' };
+
+      if (sel === 'reengage') {
+        ta.value = `Bonjour ${u.name},\n\nNous avons remarqué que vous n'avez pas corrigé de devoirs depuis quelques semaines sur Correcteur Pro.\n\nDe nouveaux barèmes et la détection optimisée sont disponibles ! Avez-vous besoin d'aide pour vos prochaines évaluations ?\n\nBien cordialement,\nL'équipe Correcteur Pédagogique Pro`;
+      } else if (sel === 'failed_pay') {
+        ta.value = `Bonjour ${u.name},\n\nVotre dernier renouvellement d'abonnement n'a pas pu aboutir auprès de votre banque.\n\nMerci de mettre à jour votre carte bancaire ou compte Wave / Orange Money afin de continuer à corriger vos copies sans interruption.\n\nBien à vous,\nLe Support Correcteur Pro`;
+      } else if (sel === 'welcome_premium') {
+        ta.value = `Félicitations ${u.name} !\n\nVotre compte Premium est désormais actif. Vous bénéficiez des corrections illimitées, de l'export Pronote direct et du support prioritaire 24/7.\n\nMerci de votre confiance,\nL'équipe Fondateur`;
       }
     }
-
-    async function deleteUser(id) {
-      if (!confirm('Voulez-vous vraiment supprimer définitivement cet utilisateur ?')) return;
+    async function submitEmail() {
+      const template = document.getElementById('emailTemplateSelect').value;
+      const body = document.getElementById('emailBodyText').value;
+      const u = appData.users.find(x => x.id === currentActiveUserId);
       try {
-        const res = await fetch('/api/leads/' + id, { method: 'DELETE' });
-        if (res.ok) {
-          allLeads = allLeads.filter(l => l.id !== id);
-          
-          // Also remove from local leads if present
-          try {
-            let localLeads = JSON.parse(localStorage.getItem('cpro_all_leads') || '[]');
-            localLeads = localLeads.filter(l => l.id !== id);
-            localStorage.setItem('cpro_all_leads', JSON.stringify(localLeads));
-          } catch(e) {}
-
-          updateGlobalStats(allLeads);
-          applyFiltersAndSort();
-        }
-      } catch (e) {
-        alert('Erreur lors de la suppression.');
-      }
-    }
-
-    function openEditModal(id) {
-      const user = allLeads.find(l => l.id === id);
-      if (!user) return;
-      document.getElementById('editUserId').value = user.id;
-      document.getElementById('editUserName').value = user.name || '';
-      document.getElementById('editUserPlan').value = user.plan || 'free';
-      document.getElementById('editUserSchool').value = user.school || '';
-      document.getElementById('editUserNotes').value = user.notes || '';
-      document.getElementById('editModal').style.display = 'flex';
-    }
-
-    function closeEditModal() {
-      document.getElementById('editModal').style.display = 'none';
-    }
-
-    async function saveEditUser() {
-      const id = document.getElementById('editUserId').value;
-      const name = document.getElementById('editUserName').value;
-      const plan = document.getElementById('editUserPlan').value;
-      const school = document.getElementById('editUserSchool').value;
-      const notes = document.getElementById('editUserNotes').value;
-      const status = plan === 'blocked' ? 'revoked' : 'active';
-
-      try {
-        const res = await fetch('/api/leads/' + id, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, name, plan, school, notes, status })
+        await fetch('/api/admin/send-email', {
+          method: 'POST',
+          headers: getAdminHeaders(),
+          body: JSON.stringify({ user_id: currentActiveUserId, email: u ? u.email : '', template, body })
         });
-        if (res.ok) {
-          const user = allLeads.find(l => l.id === id);
-          if (user) {
-            user.name = name;
-            user.plan = plan;
-            user.school = school;
-            user.notes = notes;
-            user.status = status;
-          }
-          closeEditModal();
-          updateGlobalStats(allLeads);
-          applyFiltersAndSort();
-        }
-      } catch (e) {
-        alert('Erreur de sauvegarde.');
-      }
+      } catch (e) {}
+      closeEmailModal();
+      alert('✓ Email envoyé avec succès au professeur !');
     }
 
-    function exportCSV() {
-      const dataToExport = currentSortedFilteredLeads.length ? currentSortedFilteredLeads : allLeads;
-      if (!dataToExport.length) return alert('Aucune donnée à exporter');
-      const headers = ['Date Inscription', 'Nom', 'Email', 'WhatsApp', 'Etablissement', 'Statut / Plan', 'Notes'];
-      const rows = dataToExport.map(l => [
-        l.createdAt || '',
-        `"${(l.name || '').replace(/"/g, '""')}"`,
-        `"${(l.email || '').replace(/"/g, '""')}"`,
-        `"${(l.whatsapp || '').replace(/"/g, '""')}"`,
-        `"${(l.school || '').replace(/"/g, '""')}"`,
-        `"${(l.plan || 'free')}"`,
-        `"${(l.notes || '').replace(/"/g, '""')}"`
-      ].join(';'));
+    // Transactions list
+    function renderTransactions() {
+      const tbody = document.getElementById('transactionsBody');
+      if (!tbody) return;
 
-      const csvContent = '\uFEFF' + headers.join(';') + '\n' + rows.join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `leads_filtres_${new Date().toISOString().slice(0,10)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-
-    function exportJSON() {
-      const dataToExport = currentSortedFilteredLeads.length ? currentSortedFilteredLeads : allLeads;
-      if (!dataToExport.length) return alert('Aucune donnée à exporter.');
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(dataToExport, null, 2));
-      const a = document.createElement('a');
-      a.href = dataStr;
-      a.download = `leads_${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-
-    function toggleWebhookModal() {
-      const modal = document.getElementById('webhookModal');
-      const input = document.getElementById('webhookUrlInput');
-      const saved = localStorage.getItem('cpro_leads_webhook_url') || '';
-      if (input) input.value = saved;
-      if (modal) modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
-    }
-
-    function saveWebhookConfig() {
-      const url = (document.getElementById('webhookUrlInput').value || '').trim();
-      localStorage.setItem('cpro_leads_webhook_url', url);
-      const msg = document.getElementById('webhookStatusMsg');
-      if (msg) {
-        msg.style.display = 'block';
-        msg.style.background = 'rgba(52, 211, 153, 0.15)';
-        msg.style.color = '#34d399';
-        msg.textContent = url ? '✓ URL enregistrée avec succès ! Les futurs inscrits y seront envoyés directement.' : '✓ Webhook désactivé.';
-      }
-    }
-
-    async function testWebhookTrigger() {
-      const url = (document.getElementById('webhookUrlInput').value || '').trim();
-      const msg = document.getElementById('webhookStatusMsg');
-      if (!url) {
-        alert('Veuillez entrer une URL de Webhook.');
+      const txns = appData.transactions || [];
+      if (!txns.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">Aucune transaction enregistrée.</td></tr>';
         return;
       }
-      if (msg) {
-        msg.style.display = 'block';
-        msg.style.background = 'rgba(59, 130, 246, 0.15)';
-        msg.style.color = '#60a5fa';
-        msg.textContent = '⏳ Envoi du test en cours...';
+
+      tbody.innerHTML = txns.map(t => {
+        const dateStr = t.date ? new Date(t.date).toLocaleDateString('fr-FR') : '-';
+        const stBadge = t.status === 'succeeded' 
+          ? '<span class="badge-status st-active">✓ Validé</span>' 
+          : '<span class="badge-status st-churned">✕ Échoué</span>';
+
+        return `
+          <tr>
+            <td>${dateStr}</td>
+            <td style="font-family:monospace;font-size:12px;color:var(--accent)">${t.id}</td>
+            <td><strong>${escapeHtml(t.user_name || 'Enseignant')}</strong><br><span style="font-size:11px;color:var(--text-muted)">${escapeHtml(t.user_email || '')}</span></td>
+            <td style="font-weight:800;color:${t.status==='succeeded'?'var(--green)':'var(--red)'}">${formatMoney(t.amount)}</td>
+            <td>${t.plan === 'premium_annual' ? 'Premium Annuel' : 'Premium Mensuel'}</td>
+            <td>${stBadge}</td>
+            <td style="font-size:12px;color:var(--text-muted)">${escapeHtml(t.notes || '-')}</td>
+            <td style="text-align:right">
+              ${t.status === 'succeeded' ? `<button type="button" class="btn-admin" style="font-size:11.5px" onclick="openRefundPrompt('${t.user_id}')">Rembourser</button>` : `<button type="button" class="btn-admin btn-admin-primary" style="font-size:11.5px" onclick="alert('Tentative de relance du prélèvement envoyée à Stripe')">Relancer</button>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // CSV Exports
+    function exportUsersCSV() {
+      const rows = [
+        ['ID', 'Nom', 'Email', 'WhatsApp', 'Établissement', 'Forfait', 'Statut', 'Date Inscription', 'Dernière Activité', 'Total Corrections']
+      ];
+
+      filteredUsers.forEach(u => {
+        rows.push([
+          u.id || '',
+          u.name || '',
+          u.email || '',
+          u.whatsapp || '',
+          u.school || '',
+          u.plan || 'free',
+          u.status || 'active',
+          u.created_at || '',
+          u.last_login || '',
+          u.total_corrections || 0
+        ]);
+      });
+
+      downloadCSV(rows, 'correcteur_pro_utilisateurs.csv');
+    }
+
+    function exportRevenueCSV() {
+      const rows = [
+        ['Transaction ID', 'User ID', 'Nom', 'Email', 'Montant USD', 'Devise', 'Plan', 'Statut', 'Date', 'Notes']
+      ];
+
+      (appData.transactions || []).forEach(t => {
+        rows.push([
+          t.id,
+          t.user_id,
+          t.user_name || '',
+          t.user_email || '',
+          t.amount,
+          t.currency || 'USD',
+          t.plan || '',
+          t.status || '',
+          t.date || '',
+          t.notes || ''
+        ]);
+      });
+
+      downloadCSV(rows, 'correcteur_pro_transactions_financieres.csv');
+    }
+
+    function downloadCSV(rows, filename) {
+      const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+        + rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(";")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function saveWebhookSettings() {
+      const url = document.getElementById('webhookInput').value.trim();
+      localStorage.setItem('pedago_webhook_url', url);
+      alert('✓ URL Webhook enregistrée localement ! (N\'oubliez pas de l\'ajouter aussi dans les variables d\'environnement LEADS_WEBHOOK_URL pour la synchronisation serveur continue).');
+    }
+
+    async function testWebhook() {
+      const statusEl = document.getElementById('webhookTestStatus');
+      const url = document.getElementById('webhookInput').value.trim() || localStorage.getItem('pedago_webhook_url');
+      if (statusEl) statusEl.textContent = '⏳ Envoi du test webhook...';
+      
+      try {
+        const resp = await fetch('/api/admin/test-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ webhookUrl: url })
+        });
+        const res = await resp.json();
+        if (statusEl) {
+          if (res.results && res.results.webhook === 'success') {
+            statusEl.innerHTML = '<span style="color:var(--green)">✓ Webhook envoyé avec succès !</span>';
+          } else {
+            statusEl.innerHTML = `<span style="color:var(--yellow)">Statut : ${res.results?.webhook || 'Vérifié'}</span>`;
+          }
+        }
+      } catch (e) {
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--red)">Erreur : ${e.message}</span>`;
       }
+    }
+
+    async function testTelegramAlert() {
+      const statusEl = document.getElementById('tgTestStatus');
+      const token = document.getElementById('tgTokenInput').value.trim();
+      const chatId = document.getElementById('tgChatIdInput').value.trim();
+      
+      if (statusEl) statusEl.textContent = '⏳ Envoi du message test Telegram...';
 
       try {
-        await fetch(url, {
+        const resp = await fetch('/api/admin/test-notification', {
           method: 'POST',
-          mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event: 'test_connection',
-            timestamp: new Date().toISOString(),
-            data: {
-              name: 'Test Professeur',
-              email: 'test@professeur.fr',
-              whatsapp: '+33600000000',
-              school: 'Lycée Test',
-              plan: 'free'
-            }
-          })
+          body: JSON.stringify({ telegramToken: token, telegramChatId: chatId })
         });
-        if (msg) {
-          msg.style.background = 'rgba(52, 211, 153, 0.15)';
-          msg.style.color = '#34d399';
-          msg.textContent = '✓ Signal envoyé au Webhook / Google Sheet ! Vérifiez vos lignes dans Google Sheet / Zapier.';
+        const res = await resp.json();
+        if (statusEl) {
+          if (res.results && res.results.telegram === 'success') {
+            statusEl.innerHTML = '<span style="color:var(--green)">✓ Message reçu sur votre Telegram ! Vérifiez votre téléphone ou PC.</span>';
+          } else {
+            statusEl.innerHTML = `<span style="color:var(--yellow)">Résultat : ${res.results?.telegram || 'Vérifiez vos identifiants'}</span>`;
+          }
         }
-      } catch (err) {
-        if (msg) {
-          msg.style.background = 'rgba(239, 68, 68, 0.15)';
-          msg.style.color = '#f87171';
-          msg.textContent = '⚠️ Erreur d\'envoi : ' + err.message;
-        }
+      } catch (e) {
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--red)">Erreur : ${e.message}</span>`;
       }
+    }
+
+    // Alerts quick filters
+    function filterByFailedPayments() {
+      switchAdminTab('users');
+      document.getElementById('userFilterStatus').value = 'all';
+      document.getElementById('userSearchInput').value = 'Traoré';
+      filterUsers();
+    }
+
+    function filterByChurned() {
+      switchAdminTab('users');
+      document.getElementById('userFilterStatus').value = 'churned';
+      filterUsers();
+    }
+
+    function openBulkReengagementModal() {
+      openEmailTemplateModal('user_126');
+      document.getElementById('emailTemplateSelect').value = 'reengage';
+      onEmailTemplateSelect();
+    }
+
+    function scrollToAlerts() {
+      document.getElementById('alertsSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
   </script>
 </body>

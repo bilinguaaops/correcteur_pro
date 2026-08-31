@@ -533,13 +533,14 @@ ${mode === "B" && refText ? `Corrigé / Réponses attendues :\n${refText}` : "Mo
 Format de notation attendu : Note maximale ${scaleStr}.
 
 MISSION PRINCIPALE D'ANALYSE DÉTAILLÉE :
-Pour chaque exercice ou question présente dans le devoir de l'élève, tu dois décomposer précisément :
-1. Le titre de la question/exercice (ex: "Exercice 1", "Question 2").
-2. La note attribuée avec barème (ex: "2 / 2 pt", "0 / 2 pt", "1.5 / 2 pt").
-3. Le statut d'acquisition : "ACQUIS" (réussite totale), "A REVOIR" (erreur majeure ou non traité), ou "EN COURS" (réussite partielle).
-4. La "reponse_eleve" : ce que l'élève a exactement écrit ou calculé (ou "Non traité" s'il n'a pas répondu).
-5. L'"attendu" : la solution exacte, le calcul ou le raisonnement attendu.
-6. Le "commentaire" : explication concise et pédagogique (ex: "Correct.", "Résultat correct.", "L'affirmation était fausse car...", "Exercice non réalisé.").
+Tu dois minutieusement identifier et évaluer TOUS les exercices / questions présents sur le document ou la copie de l'élève.
+Pour chaque question ou exercice trouvé, tu dois obligatoirement renseigner :
+1. "titre" : le libellé précis de l'exercice (ex: "Exercice 1 (Calcul & Algèbre)", "Exercice 2 (Logique)", "Question 3").
+2. "note" : la note obtenue avec barème (ex: "2 / 2 pt", "0 / 2 pt", "1.5 / 2 pt").
+3. "statut" : "ACQUIS" (réussi), "A REVOIR" (erreur importante ou non traité), ou "EN COURS" (réussite partielle).
+4. "reponse_eleve" : ce que l'élève a concrètement écrit ou calculé (ou "Non renseigné" s'il n'a pas répondu).
+5. "attendu" : la solution exacte officielle ou le raisonnement attendu.
+6. "commentaire" : explication pédagogique claire et bienveillante indiquant ce qui est bon ou la cause précise de l'erreur.
 
 Tu dois répondre UNIQUEMENT par un objet JSON valide avec cette structure exacte :
 {

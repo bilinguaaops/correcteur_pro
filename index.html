@@ -27,7 +27,7 @@
       <span class="logo-text">Pedago<span class="logo-ai">AI</span></span>
     </a>
 
-    <!-- Center Navigation Links (4 Onglets) -->
+    <!-- Center Navigation Links (4 Onglets + Admin) -->
     <div class="pedago-navlinks">
       <button type="button" class="pnav-link on" id="pnav-home" onclick="gNav('home')">
         <span class="nav-tab-icon">🏠</span>
@@ -46,6 +46,10 @@
         <span>Historique des résultats</span>
         <span class="nav-badge-count" id="hbadge" style="display:none">0</span>
       </button>
+      <a href="/dashboard.html" class="pnav-link pnav-admin-link" style="color:var(--text-muted);border:1px dashed var(--border);padding:6px 12px;border-radius:20px;text-decoration:none" title="Tableau de bord fondateur & administration">
+        <span class="nav-tab-icon">🔐</span>
+        <span>Admin</span>
+      </a>
     </div>
 
     <!-- Right Controls -->
@@ -114,10 +118,10 @@
       
       <div class="hero-actions">
         <button type="button" class="btn-pedago-primary hero-cta-btn" onclick="startNewCorrection()">
-          <span>🚀 Débuter l'Essai Gratuit (7 jours)</span>
+          <span>🚀 Débuter la Correction (Essai 7j)</span>
         </button>
-        <button type="button" class="btn-pedago-outline hero-demo-btn" onclick="gNav('classes')">
-          <span>👥 Accéder au Module Classes & Suivi</span>
+        <button type="button" class="btn-pedago-outline hero-demo-btn" onclick="openInteractiveTour()">
+          <span>🎯 Démarrer le Tour Guidé Interactif</span>
         </button>
       </div>
 
@@ -691,8 +695,8 @@
     <!-- ── ÉTAPE 1 : IMPORTATION DES COPIES ── -->
     <div id="wizStep1View">
       <div class="step-heading-area">
-        <h1 class="step-main-title">Upload Source Material</h1>
-        <p class="step-sub-title">Drop your PDF, JPG, or PNG files below to begin the analysis process.</p>
+        <h1 class="step-main-title">Importer les Copies d'Élèves</h1>
+        <p class="step-sub-title">Déposez vos fichiers PDF, photos JPG ou PNG pour démarrer la correction automatique.</p>
       </div>
 
       <div class="import-container-card">
@@ -724,8 +728,8 @@
                 <path d="M12 13v6M9 16l3-3 3 3"/>
               </svg>
             </div>
-            <h3 class="dropzone-title">Drag & Drop files here</h3>
-            <p class="dropzone-subtitle">or click to browse from your computer</p>
+            <h3 class="dropzone-title">Glissez & déposez vos copies ici</h3>
+            <p class="dropzone-subtitle">ou cliquez pour parcourir les fichiers depuis votre appareil</p>
             <div class="format-badges-row">
               <span class="fmt-pill">PDF</span>
               <span class="fmt-pill">JPG</span>
@@ -1522,6 +1526,47 @@
 </div>
 
 <!-- ══════════════════════════════════════════════
+     MODAL DU TOUR GUIDÉ INTERACTIF (Tutoriel)
+══════════════════════════════════════════════ -->
+<div id="tourModal" class="lead-gate-modal-backdrop" style="display:none;align-items:center;justify-content:center;z-index:99999;">
+  <div class="lead-gate-card" style="max-width:580px;width:92%;padding:28px 24px;border-radius:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:22px">🎯</span>
+        <span style="font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--blue-primary)">Tutoriel & Tour Guidé</span>
+      </div>
+      <button type="button" onclick="closeInteractiveTour()" class="modal-close-btn" style="position:static">✕</button>
+    </div>
+
+    <!-- Stepper indicator inside tour -->
+    <div style="display:flex;gap:6px;margin-bottom:20px" id="tourProgressDots">
+      <div class="tour-dot on" style="flex:1;height:4px;border-radius:2px;background:var(--blue-primary)"></div>
+      <div class="tour-dot" style="flex:1;height:4px;border-radius:2px;background:#e2e8f0"></div>
+      <div class="tour-dot" style="flex:1;height:4px;border-radius:2px;background:#e2e8f0"></div>
+      <div class="tour-dot" style="flex:1;height:4px;border-radius:2px;background:#e2e8f0"></div>
+    </div>
+
+    <!-- Dynamic Step Content -->
+    <div id="tourStepContent"></div>
+
+    <!-- Bottom Actions -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:16px">
+      <button type="button" id="tourPrevBtn" onclick="prevTourStep()" class="btn-pedago-outline" style="visibility:hidden">
+        ⬅ Précédent
+      </button>
+      <div style="display:flex;gap:8px">
+        <button type="button" onclick="closeInteractiveTour()" class="btn-pedago-ghost" style="font-size:13px">
+          Passer
+        </button>
+        <button type="button" id="tourNextBtn" onclick="nextTourStep()" class="btn-pedago-primary" style="padding:10px 18px">
+          Suivant ➔
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
      FOOTER PedagoAI
 ══════════════════════════════════════════════ -->
 <footer class="pedago-global-footer">
@@ -1530,12 +1575,11 @@
       <span class="footer-logo">Pedago<span class="logo-ai">AI</span></span>
     </div>
     <div class="footer-copyright">
-      © 2026 PedagoAI. All rights reserved.
+      © 2026 PedagoAI. Tous droits réservés.
     </div>
     <div class="footer-links">
-      <a href="#" onclick="return false;">Privacy Policy</a>
-      <a href="#" onclick="return false;">Terms of Service</a>
-      <a href="/dashboard.html" style="opacity:0.4;font-size:11px" title="Accès réservé au Fondateur">Administration</a>
+      <a href="#" onclick="openInteractiveTour(); return false;">🎯 Tour Guidé</a>
+      <a href="/dashboard.html" style="font-weight:700;color:var(--blue-primary)" title="Accès Panneau d'Administration Fondateur">🔐 Espace Administration</a>
     </div>
   </div>
 </footer>

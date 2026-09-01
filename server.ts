@@ -748,59 +748,85 @@ app.post("/api/correct", async (req, res) => {
       const scaleStr = noteMax === "auto" ? "sur 20 (ou échelle adaptée selon le barème)" : `sur ${noteMax || 20}`;
       const guidelinesList = Array.isArray(guidelines) ? guidelines : [];
 
-      let promptText = `Tu es un enseignant et correcteur académique expert dans la matière : ${subject || "Général"}.
+      let promptText = `Tu es un enseignant et correcteur académique d'élite dans la matière : ${subject || "Mathématiques"}.
 Tu dois analyser et corriger minutieusement la copie de l'élève "${studentName || "Élève"}".
 
-CONSIGNES PÉDAGOGIQUES À APPLIQUER STRICTEMENT :
-${guidelinesList.length > 0 ? guidelinesList.map((g: string) => `- ${g}`).join("\n") : "- Évaluation équitable, constructive et bienveillante."}
-${freeInstructions ? `\nCONSIGNES PARTICULIÈRES DU PROFESSEUR :\n${freeInstructions}` : ""}
+CONSIGNES PÉDAGOGIQUES DU PROFESSEUR :
+${guidelinesList.length > 0 ? guidelinesList.map((g: string) => `- ${g}`).join("\n") : "- Évaluation équitable, constructive, bienveillante et rigoureuse."}
+${freeInstructions ? `\nINSTRUCTIONS SPÉCIFIQUES :\n${freeInstructions}` : ""}
 
 RÉFÉRENCE & CORRIGÉ OFFICIEL :
 ${mode === "B" && refText ? `Corrigé / Réponses attendues :\n${refText}` : "Mode sans corrigé rédigé : Applique les critères académiques officiels pour cette discipline."}
 
-Format de notation attendu : Note maximale ${scaleStr}.
+Format de notation globale : Note finale ${scaleStr}.
 
 MISSION PRINCIPALE D'ANALYSE DÉTAILLÉE :
-Tu dois minutieusement identifier et évaluer TOUS les exercices / questions présents sur le document ou la copie de l'élève.
-Pour chaque question ou exercice trouvé, tu dois obligatoirement renseigner :
-1. "titre" : le libellé précis de l'exercice (ex: "Exercice 1 (Calcul & Algèbre)", "Exercice 2 (Logique)", "Question 3").
-2. "note" : la note obtenue avec barème (ex: "2 / 2 pt", "0 / 2 pt", "1.5 / 2 pt").
-3. "statut" : "ACQUIS" (réussi), "A REVOIR" (erreur importante ou non traité), ou "EN COURS" (réussite partielle).
-4. "reponse_eleve" : ce que l'élève a concrètement écrit ou calculé (ou "Non renseigné" s'il n'a pas répondu).
-5. "attendu" : la solution exacte officielle ou le raisonnement attendu.
-6. "commentaire" : explication pédagogique claire et bienveillante indiquant ce qui est bon ou la cause précise de l'erreur.
+Tu dois minutieusement identifier et évaluer TOUS les exercices ou questions présents sur le document ou la copie de l'élève (ex: Exercice 1, Exercice 2, Exercice 3, ..., Exercice 10, Exercice 11, Exercice 12, etc.).
+NE CONDENSE JAMAIS et NE REGROUPE PAS les questions : traite chaque exercice séparément.
 
-Tu dois répondre UNIQUEMENT par un objet JSON valide avec cette structure exacte :
+Pour CHAQUE exercice identifié sur le document, tu dois obligatoirement fournir :
+1. "titre" : Le nom exact de l'exercice (ex: "Exercice 1 (Niveau de base)", "Exercice 2", "Exercice 3 : Pourcentages", "Exercice 11 : Probabilités").
+2. "note" : La note obtenue sur le barème attribué (ex: "2 / 2 pt", "1.6 / 1.6 pt", "1 / 2 pt", "0.8 / 1.6 pt", "0 / 2 pt").
+3. "statut" : Exactement "ACQUIS" (si réussi/juste), "PARTIEL" (si en cours d'acquisition / demi-points / démarche incomplète), ou "A REVOIR" (si faux / erreur / non traité).
+4. "reponse_eleve" : Ce que l'élève a concrètement écrit ou calculé (ex: "15+3-2=16", "Vrai", "x=80€, 100-25=75%, x2=75%*80=60€", "20", "4/9 et 1/6", ou "Non répondu" / "Non traité" / "Non renseigné").
+5. "attendu" : La solution exacte, le calcul attendu, la formule ou la démonstration rigoureuse (ex: "15 + 3 - 2 = 16", "Vrai (tout nombre divisible par 4 l'est par 2)", "80 * 0,75 = 60€", "Faux (moyenne = 15)", "P(rouge) = 4/9 | P(2 rouges) = 1/6", "A = 1 020€ | B = 1 248€ | Option A gagne").
+6. "commentaire" : Une explication pédagogique claire et constructive (ex: "Correct.", "Justification incomplète mais réponse correcte.", "Erreur de calcul sur le pourcentage.", "Erreur d'analyse.", "Calculs corrects.", "Exercice non traité.", "Raisonnement valide.").
+
+Structure JSON OBLIGATOIRE à renvoyer :
 {
   "eleve": "${studentName || "Élève"}",
-  "matiere": "${subject || "Général"}",
-  "note": 16.0,
+  "matiere": "${subject || "Mathématiques"}",
+  "note": 17.0,
   "note_sur": ${parseInt(noteMax, 10) || 20},
-  "appreciation": "Bon travail global, attention à bien vérifier les affirmations dans les exercices de logique.",
+  "appreciation": "Très bon travail dans l'ensemble, les méthodes sont maîtrisées.",
   "tags": ["Compréhension", "Raisonnement", "Calcul"],
-  "points_forts": "Les forces majeures constatées dans le devoir.",
-  "points_ameliorer": "Les axes de progrès prioritaires.",
+  "points_forts": "Bonne maîtrise des règles de calcul et de la démarche.",
+  "points_ameliorer": "Veiller à justifier les réponses pour les exercices plus complexes.",
   "competences": [
     { "nom": "Compréhension du sujet", "statut": "Acquis" },
     { "nom": "Raisonnement & Méthode", "statut": "Acquis" },
-    { "nom": "Précision des calculs / rédaction", "statut": "En cours" }
+    { "nom": "Précision des calculs / rédaction", "statut": "Partiel" }
   ],
   "questions": [
     {
-      "titre": "Exercice 1",
+      "titre": "Exercice 1 (Niveau de base)",
       "note": "2 / 2 pt",
       "statut": "ACQUIS",
       "reponse_eleve": "15+3-2=16",
-      "attendu": "15+3-2=16",
+      "attendu": "15 + 3 - 2 = 16",
       "commentaire": "Correct."
     },
     {
-      "titre": "Exercice 8",
+      "titre": "Exercice 2 (Niveau de base)",
+      "note": "2 / 2 pt",
+      "statut": "ACQUIS",
+      "reponse_eleve": "Vrai, car 4 est divisible par 2",
+      "attendu": "Vrai (tout nombre divisible par 4 l'est par 2)",
+      "commentaire": "Justification correcte."
+    },
+    {
+      "titre": "Exercice 3 (Niveau de base)",
       "note": "0 / 2 pt",
       "statut": "A REVOIR",
-      "reponse_eleve": "Vrai",
-      "attendu": "Faux (moyenne = 15)",
-      "commentaire": "L'affirmation était fausse."
+      "reponse_eleve": "20",
+      "attendu": "80 * 0,75 = 60€",
+      "commentaire": "Erreur de calcul sur le pourcentage."
+    },
+    {
+      "titre": "Exercice 4",
+      "note": "2 / 2 pt",
+      "statut": "ACQUIS",
+      "reponse_eleve": "5x-3=2x+9, 3x=12, x=4",
+      "attendu": "x = 4",
+      "commentaire": "Résolution exacte."
+    },
+    {
+      "titre": "Exercice 8",
+      "note": "1 / 2 pt",
+      "statut": "PARTIEL",
+      "reponse_eleve": "On remarque qu'il y a une suite, raison 2, Un+1=U0+2n",
+      "attendu": "Faux, moyenne = 15",
+      "commentaire": "Analyse incomplète."
     }
   ]
 }`;

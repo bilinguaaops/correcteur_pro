@@ -576,40 +576,95 @@ function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax) 
   if (!rawQuestions || !rawQuestions.length) {
     var max = studentScoreMax || 20;
     var score = typeof studentScore === 'number' ? studentScore : (parseFloat(studentScore) || 14);
-    var isPassing = score >= (max * 0.5);
 
     return [
       {
-        titre: 'Exercice 1 (Calcul & Algèbre)',
-        note: isPassing ? '2 / 2 pt' : '0.5 / 2 pt',
-        statut: isPassing ? 'ACQUIS' : 'EN COURS',
-        reponse_eleve: isPassing ? 'Démarche complète et résultat exact' : 'Résultat partiellement justifié',
-        attendu: 'Application rigoureuse de la formule attendue',
-        commentaire: isPassing ? 'Bonne maîtrise des règles de calcul.' : 'Attention aux erreurs d\'étourderie dans les calculs intermédiaires.'
+        titre: 'Exercice 1 (Niveau de base)',
+        note: '2 / 2 pt',
+        statut: 'ACQUIS',
+        reponse_eleve: '16',
+        attendu: '15 + 3 - 2 = 16',
+        commentaire: 'Correct.'
       },
       {
-        titre: 'Exercice 2 (Raisonnement & Logique)',
-        note: score >= 12 ? '2 / 2 pt' : '0 / 2 pt',
-        statut: score >= 12 ? 'ACQUIS' : 'A REVOIR',
-        reponse_eleve: score >= 12 ? 'Démonstration structurée' : 'Réponse sans justification mathématique',
-        attendu: 'Démonstration par étapes logiques',
-        commentaire: score >= 12 ? 'Très bon raisonnement déductif.' : 'Une affirmation doit toujours être justifiée par une règle du cours.'
+        titre: 'Exercice 2 (Niveau de base)',
+        note: '2 / 2 pt',
+        statut: 'ACQUIS',
+        reponse_eleve: 'Vrai',
+        attendu: 'Vrai (tout nombre divisible par 4 l\'est par 2)',
+        commentaire: 'Justification incomplète mais réponse correcte.'
       },
       {
-        titre: 'Exercice 3 (Problème d\'application)',
-        note: score >= 15 ? '2 / 2 pt' : (score >= 10 ? '1 / 2 pt' : '0 / 2 pt'),
-        statut: score >= 15 ? 'ACQUIS' : (score >= 10 ? 'EN COURS' : 'A REVOIR'),
-        reponse_eleve: score >= 10 ? 'Modélisation du problème correcte' : 'Erreur de calcul sur le pourcentage',
-        attendu: 'Identification des grandeurs et résolution',
-        commentaire: score >= 10 ? 'Bonne démarche, poursuivre les efforts.' : 'Revoir la méthodologie de résolution de problèmes.'
+        titre: 'Exercice 3 (Niveau de base)',
+        note: score >= 17 ? '2 / 2 pt' : '0 / 2 pt',
+        statut: score >= 17 ? 'ACQUIS' : 'A REVOIR',
+        reponse_eleve: score >= 17 ? 'x=80€, 100-25=75%, x2=75%*80=60€' : '20',
+        attendu: '80 x 0,75 = 60€',
+        commentaire: score >= 17 ? 'Méthode correcte.' : 'Erreur de calcul sur le pourcentage.'
       },
       {
-        titre: 'Exercice 4 (Synthèse & Rédaction)',
-        note: score >= 14 ? '2 / 2 pt' : '1 / 2 pt',
-        statut: score >= 14 ? 'ACQUIS' : 'EN COURS',
-        reponse_eleve: 'Réponse rédigée',
-        attendu: 'Phrase de conclusion claire avec unités adaptées',
-        commentaire: 'Clarté générale satisfaisante.'
+        titre: 'Exercice 4 (Niveau de base)',
+        note: '2 / 2 pt',
+        statut: 'ACQUIS',
+        reponse_eleve: 'x = 4',
+        attendu: 'x = 4',
+        commentaire: 'Correct.'
+      },
+      {
+        titre: 'Exercice 5 (Niveau intermédiaire)',
+        note: score >= 16 ? '2 / 2 pt' : '0 / 2 pt',
+        statut: score >= 16 ? 'ACQUIS' : 'A REVOIR',
+        reponse_eleve: score >= 16 ? 'Vrai, soit n impair, n+n=2n' : 'Non renseigné',
+        attendu: 'Vrai (ex: 3+5=8; en général: (2a+1)+(2b+1) = 2(a+b+1))',
+        commentaire: score >= 16 ? 'Raisonnement valide.' : 'Non traité.'
+      },
+      {
+        titre: 'Exercice 6 (Niveau intermédiaire)',
+        note: score >= 16 ? '2 / 2 pt' : '0 / 2 pt',
+        statut: score >= 16 ? 'ACQUIS' : 'A REVOIR',
+        reponse_eleve: score >= 16 ? '1500*3%*2=90€, 1500+90=1590€' : 'Non renseigné',
+        attendu: 'Intérêts = 90€ | Total = 1 590€',
+        commentaire: score >= 16 ? 'Calculs corrects.' : 'Non traité.'
+      },
+      {
+        titre: 'Exercice 7 (Système d\'équations)',
+        note: score >= 18 ? '2 / 2 pt' : (score >= 14 ? '1 / 2 pt' : '0 / 2 pt'),
+        statut: score >= 18 ? 'ACQUIS' : (score >= 14 ? 'PARTIEL' : 'A REVOIR'),
+        reponse_eleve: score >= 18 ? 'x=2, y=1' : (score >= 14 ? 'Tentative de substitution' : 'Non traité'),
+        attendu: 'x = 2, y = 1',
+        commentaire: score >= 18 ? 'Résultat exact.' : (score >= 14 ? 'Début de méthode prometteur.' : 'Non abordé.')
+      },
+      {
+        titre: 'Exercice 8 (Niveau avancé)',
+        note: score >= 18 ? '2 / 2 pt' : (score >= 16 ? '1 / 2 pt' : '0 / 2 pt'),
+        statut: score >= 18 ? 'ACQUIS' : (score >= 16 ? 'PARTIEL' : 'A REVOIR'),
+        reponse_eleve: score >= 18 ? 'Faux (moyenne = 15)' : (score >= 16 ? 'On remarque qu\'il y a une suite, raison 2' : 'Vrai'),
+        attendu: 'Faux (moyenne = 15)',
+        commentaire: score >= 18 ? 'Correct.' : (score >= 16 ? 'Analyse incomplète.' : 'Erreur d\'analyse.')
+      },
+      {
+        titre: 'Exercice 10 (Niveau avancé)',
+        note: '2 / 2 pt',
+        statut: 'ACQUIS',
+        reponse_eleve: 'Option A : 1020, Option B : 1248',
+        attendu: 'A = 1 020€ | B = 1 248€ | Option A gagne',
+        commentaire: 'Calculs corrects.'
+      },
+      {
+        titre: 'Exercice 11 (Probabilités)',
+        note: '2 / 2 pt',
+        statut: 'ACQUIS',
+        reponse_eleve: '4/9 et 1/6',
+        attendu: 'P(rouge) = 4/9 | P(2 rouges) = 1/6',
+        commentaire: 'Correct.'
+      },
+      {
+        titre: 'Exercice 12 (Arithmétique)',
+        note: '2 / 2 pt',
+        statut: 'ACQUIS',
+        reponse_eleve: '3n, 3n+1, 3n+2',
+        attendu: '3n + 1 + 2 + 3 = 3(n+2) = divisible par 3',
+        commentaire: 'Correct.'
       }
     ];
   }
@@ -622,13 +677,14 @@ function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax) 
     if (!statut) {
       if (noteStr.startsWith('0') || noteStr.includes('0/')) {
         statut = 'A REVOIR';
-      } else if (noteStr.includes('0.5') || noteStr.includes('1/') || noteStr.includes('1.5')) {
-        statut = 'EN COURS';
+      } else if (noteStr.includes('0.5') || noteStr.includes('0.8') || noteStr.includes('1/') || noteStr.includes('1.5')) {
+        statut = 'PARTIEL';
       } else {
         statut = 'ACQUIS';
       }
     }
     statut = statut.toUpperCase();
+    if (statut === 'EN COURS') statut = 'PARTIEL';
 
     return {
       titre: titre,
@@ -636,7 +692,7 @@ function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax) 
       statut: statut,
       reponse_eleve: q.reponse_eleve || q.reponse || q.eleve || 'Réponse inscrite sur la copie',
       attendu: q.attendu || q.solution || q.corrige || 'Conforme au corrigé officiel',
-      commentaire: q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct.' : 'À revoir.')
+      commentaire: q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct.' : (statut === 'PARTIEL' ? 'Réponse incomplète.' : 'À revoir.'))
     };
   });
 }
@@ -1112,12 +1168,13 @@ function renderFicheCorrectionHTML(student) {
   var questionsHtml = questions.map(function(q, idx) {
     var title = q.titre || q.q || ('Exercice ' + (idx + 1));
     var note = q.note || '2 / 2 pt';
-    var statut = (q.statut || (note.startsWith('0') ? 'A REVOIR' : (note.includes('0.5') || note.includes('1/') ? 'EN COURS' : 'ACQUIS'))).toUpperCase();
-    var statutCls = statut.indexOf('REVOIR') !== -1 ? 'a-revoir' : (statut.indexOf('COURS') !== -1 ? 'en-cours' : 'acquis');
+    var statut = (q.statut || (note.startsWith('0') ? 'A REVOIR' : (note.includes('0.5') || note.includes('0.8') || note.includes('1/') ? 'PARTIEL' : 'ACQUIS'))).toUpperCase();
+    if (statut === 'EN COURS') statut = 'PARTIEL';
+    var statutCls = statut.indexOf('REVOIR') !== -1 ? 'a-revoir' : (statut.indexOf('PARTIEL') !== -1 ? 'partiel' : 'acquis');
     
     var repEleve = q.reponse_eleve || q.reponse || 'Réponse inscrite dans la copie';
     var attendu = q.attendu || 'Conforme au corrigé officiel';
-    var comm = q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct.' : 'Erreur identifiée.');
+    var comm = q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct.' : (statut === 'PARTIEL' ? 'Partiellement exact.' : 'Erreur identifiée.'));
 
     return (
       '<div class="fc-question-card">' +
@@ -1721,17 +1778,16 @@ window.generateStudentFichePDFDoc = function (student) {
   var curPage = 1;
 
   function renderPageHeader() {
-    // Top Custom Banner with selected accent color
+    // Top Custom Banner with selected accent color (ProfCorrec' Blue default #0076FF)
     doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b);
-    doc.roundedRect(12, 12, 186, 24, 3, 3, 'F');
+    doc.roundedRect(12, 12, 186, 22, 3, 3, 'F');
 
-    // School Logo if present & enabled
     var headerTextX = 105;
     if (cfg.showLogo && cfg.schoolLogo && cfg.schoolLogo.startsWith('data:image')) {
       try {
         var imgFormat = cfg.schoolLogo.includes('image/png') ? 'PNG' : 'JPEG';
-        doc.addImage(cfg.schoolLogo, imgFormat, 16, 14, 18, 18);
-        headerTextX = 112; // slight shift
+        doc.addImage(cfg.schoolLogo, imgFormat, 16, 14, 16, 16);
+        headerTextX = 112;
       } catch (e) {
         console.warn("Could not insert logo in PDF", e);
       }
@@ -1742,7 +1798,7 @@ window.generateStudentFichePDFDoc = function (student) {
     doc.setFontSize(12.5);
     doc.text(cfg.docTitle || 'FICHE DE CORRECTION INDIVIDUELLE', headerTextX, 20, { align: 'center' });
 
-    // Subtitle line (School, Subject, Teacher)
+    // Subtitle line (School, Subject, Teacher, Date)
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     
@@ -1752,7 +1808,7 @@ window.generateStudentFichePDFDoc = function (student) {
     if (cfg.showTeacher && cfg.teacherName) subParts.push(cfg.teacherName);
     subParts.push(dateStr);
 
-    doc.text(subParts.join(' • '), headerTextX, 28, { align: 'center' });
+    doc.text(subParts.join(' • '), headerTextX, 27, { align: 'center' });
   }
 
   function renderPageFooter() {
@@ -1760,7 +1816,7 @@ window.generateStudentFichePDFDoc = function (student) {
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
 
-    var footerBrand = (cfg.schoolName ? cfg.schoolName + ' • ' : '') + 'PedagoAI Évaluation — ' + dateStr;
+    var footerBrand = (cfg.schoolName ? cfg.schoolName + ' • ' : '') + 'Généré par ProfCorrec\' IA — ' + dateStr;
     doc.text(footerBrand, 14, 287);
     doc.text('Page ' + curPage, 196, 287, { align: 'right' });
   }
@@ -1768,68 +1824,71 @@ window.generateStudentFichePDFDoc = function (student) {
   renderPageHeader();
 
   // Student info row
-  var y = 44;
+  var y = 42;
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
+  doc.setFontSize(16);
   doc.text(student.name, 14, y);
 
   // Score Badge
-  doc.setTextColor(accentRgb.r, accentRgb.g, accentRgb.b);
+  doc.setTextColor(5, 150, 105);
   doc.setFontSize(15);
-  doc.text(scoreVal + ' / ' + scoreMax, 196, y, { align: 'right' });
+  doc.text(scoreVal + ' / ' + scoreMax + ' (' + scoreVal + '/' + scoreMax + ')', 196, y, { align: 'right' });
 
   // Appreciation box
   if (cfg.showAppreciation !== false) {
-    y += 6;
-    var apprText = 'Appréciation générale : ' + (student.insight || 'Bon travail global.');
-    var splitAppr = doc.splitTextToSize(apprText, 178);
-    var apprHeight = Math.max(14, splitAppr.length * 4.5 + 6);
+    y += 5;
+    var rawAppr = student.insight || 'Bon travail global.';
+    var apprPrefix = 'Appréciation : ';
+    var splitAppr = doc.splitTextToSize(apprPrefix + rawAppr, 178);
+    var apprHeight = Math.max(12, splitAppr.length * 4.5 + 5);
 
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(226, 232, 240);
+    doc.setFillColor(244, 246, 255);
+    doc.setDrawColor(224, 231, 255);
     doc.roundedRect(12, y, 186, apprHeight, 2, 2, 'FD');
 
-    doc.setTextColor(51, 65, 85);
+    doc.setTextColor(30, 41, 59);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.5);
+    doc.setFontSize(9);
     doc.text(splitAppr, 16, y + 6);
 
-    y += apprHeight + 10;
+    y += apprHeight + 8;
   } else {
-    y += 10;
+    y += 8;
   }
 
   // Section title
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11.5);
-  doc.text('Détail des compétences et questions', 14, y);
+  doc.text('Détail des questions', 14, y);
 
-  y += 6;
+  y += 5;
 
   // Questions
   var questions = student.details || [];
   questions.forEach(function (q, idx) {
     var title = q.titre || q.q || ('Exercice ' + (idx + 1));
     var note = q.note || '2 / 2 pt';
-    var statut = (q.statut || (note.startsWith('0') ? 'A REVOIR' : (note.includes('0.5') || note.includes('1/') ? 'EN COURS' : 'ACQUIS'))).toUpperCase();
-    var repEleve = 'Réponse élève : ' + (q.reponse_eleve || q.reponse || 'Réponse de la copie');
-    var attendu = 'Attendu : ' + (q.attendu || 'Conforme au corrigé');
-    var comm = 'Commentaire : ' + (q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct.' : 'Erreur identifiée.'));
+    var statut = (q.statut || (note.startsWith('0') ? 'A REVOIR' : (note.includes('0.5') || note.includes('0.8') || note.includes('1/') ? 'PARTIEL' : 'ACQUIS'))).toUpperCase();
+    if (statut === 'EN COURS') statut = 'PARTIEL';
 
-    var splitRep = doc.splitTextToSize(repEleve, 176);
-    var splitAtt = doc.splitTextToSize(attendu, 176);
-    var splitCom = doc.splitTextToSize(comm, 176);
+    var repEleve = 'Réponse élève : ' + (q.reponse_eleve || q.reponse || 'Réponse inscrite sur la copie');
+    var attendu = 'Attendu : ' + (q.attendu || 'Conforme au corrigé officiel');
+    var comm = 'Commentaire : ' + (q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct.' : (statut === 'PARTIEL' ? 'Partiellement exact.' : 'Erreur identifiée.')));
 
-    var cardHeight = 10 + (splitRep.length * 4) + (splitAtt.length * 4) + (splitCom.length * 4) + 6;
+    var splitRep = doc.splitTextToSize(repEleve, 174);
+    var splitAtt = doc.splitTextToSize(attendu, 174);
+    var splitCom = doc.splitTextToSize(comm, 174);
 
-    if (y + cardHeight > 255) {
+    var cardHeight = 8 + (splitRep.length * 3.8) + (splitAtt.length * 3.8) + (splitCom.length * 3.8) + 4;
+
+    if (y + cardHeight > 275) {
       renderPageFooter();
       doc.addPage();
       curPage++;
       renderPageHeader();
-      y = 44;
+      y = 42;
     }
 
     // Question Card Background
@@ -1839,56 +1898,57 @@ window.generateStudentFichePDFDoc = function (student) {
 
     // Title
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
+    doc.setFontSize(9);
     doc.setTextColor(15, 23, 42);
-    doc.text(title, 16, y + 6);
+    doc.text(title, 16, y + 5.5);
 
     // Status / Note
     if (statut.indexOf('REVOIR') !== -1) {
       doc.setTextColor(220, 38, 38);
-    } else if (statut.indexOf('COURS') !== -1) {
+    } else if (statut.indexOf('PARTIEL') !== -1 || statut.indexOf('COURS') !== -1) {
       doc.setTextColor(217, 119, 6);
     } else {
       doc.setTextColor(22, 163, 74);
     }
-    doc.text(note + ' [' + statut + ']', 194, y + 6, { align: 'right' });
+    doc.text(note + ' [' + statut + ']', 194, y + 5.5, { align: 'right' });
 
     // Lines
-    var lineY = y + 12;
+    var lineY = y + 10;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(51, 65, 85);
+    doc.setFontSize(8);
+    doc.setTextColor(30, 41, 59);
 
     doc.text(splitRep, 16, lineY);
-    lineY += splitRep.length * 4;
+    lineY += splitRep.length * 3.8;
 
     doc.text(splitAtt, 16, lineY);
-    lineY += splitAtt.length * 4;
+    lineY += splitAtt.length * 3.8;
 
     doc.text(splitCom, 16, lineY);
 
-    y += cardHeight + 4;
+    y += cardHeight + 3;
   });
 
   // Signature Block if enabled
   if (cfg.showSignature) {
-    if (y > 250) {
+    if (y > 255) {
       renderPageFooter();
       doc.addPage();
       curPage++;
       renderPageHeader();
-      y = 44;
+      y = 42;
     }
 
-    y += 4;
+    y += 3;
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(203, 213, 225);
-    doc.roundedRect(12, y, 186, 16, 2, 2, 'FD');
+    doc.roundedRect(12, y, 186, 14, 2, 2, 'FD');
 
     doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setTextColor(71, 85, 105);
-    doc.text(cfg.footerNote || 'Signature du professeur et visa des parents : _______________________', 16, y + 10);
+    doc.text('Signature de l\'enseignant(e) / Visa de l\'établissement :', 16, y + 5.5);
+    y += 18;
   }
 
   renderPageFooter();

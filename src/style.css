@@ -3760,7 +3760,8 @@ body:not(.dark) .student-avatar-circle {
   color: #dc2626;
 }
 
-.fc-q-status.en-cours {
+.fc-q-status.en-cours,
+.fc-q-status.partiel {
   color: #d97706;
 }
 

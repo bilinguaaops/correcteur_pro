@@ -147,9 +147,9 @@ function saveStoredLeads(leads: any[]) {
 }
 
 // Leads API endpoints
-app.post("/api/leads", (req, res) => {
+app.post("/api/leads", async (req, res) => {
   try {
-    const { email, whatsapp, name, school, plan } = req.body || {};
+    const { email, whatsapp, name, school, plan, action } = req.body || {};
     if (!email && !whatsapp) {
       return res.status(400).json({ error: "Un email ou un numéro WhatsApp est requis." });
     }
@@ -157,36 +157,48 @@ app.post("/api/leads", (req, res) => {
     const leads = getStoredLeads();
     const cleanEmail = (email || "").trim().toLowerCase();
     const cleanPhone = (whatsapp || "").trim();
+    const cleanName = (name || "").trim();
+    const cleanSchool = (school || "").trim();
+    const eventType = action === "login" ? "login" : "signup";
 
     // Check if user already exists -> update or create
     const existingIndex = leads.findIndex((l: any) => 
-      (cleanEmail && l.email === cleanEmail) || (cleanPhone && l.whatsapp === cleanPhone)
+      (cleanEmail && l.email === cleanEmail) || (cleanPhone && l.whatsapp && l.whatsapp === cleanPhone)
     );
+
+    let currentLead: any;
+    let isNewUser = false;
 
     if (existingIndex >= 0) {
       // Update existing lead
-      leads[existingIndex].name = (name || leads[existingIndex].name || "").trim();
-      leads[existingIndex].school = (school || leads[existingIndex].school || "").trim();
+      if (cleanName) leads[existingIndex].name = cleanName;
+      if (cleanSchool) leads[existingIndex].school = cleanSchool;
+      if (cleanPhone) leads[existingIndex].whatsapp = cleanPhone;
       if (plan) leads[existingIndex].plan = plan;
       leads[existingIndex].updatedAt = new Date().toISOString();
-      saveStoredLeads(leads);
-      return res.status(200).json({ success: true, lead: leads[existingIndex] });
+      leads[existingIndex].last_login = new Date().toISOString();
+      currentLead = leads[existingIndex];
+    } else {
+      isNewUser = true;
+      currentLead = {
+        id: "lead_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+        email: cleanEmail,
+        whatsapp: cleanPhone,
+        name: cleanName || "Enseignant",
+        school: cleanSchool,
+        plan: plan || "free_trial_7d",
+        status: "active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        last_login: new Date().toISOString(),
+        total_corrections: 0,
+        corrections_this_month: 0,
+        userAgent: req.headers["user-agent"] || "",
+        ip: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "",
+      };
+      leads.unshift(currentLead);
     }
 
-    const lead = {
-      id: "lead_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
-      email: cleanEmail,
-      whatsapp: cleanPhone,
-      name: (name || "").trim(),
-      school: (school || "").trim(),
-      plan: plan || "free",
-      status: "active",
-      createdAt: new Date().toISOString(),
-      userAgent: req.headers["user-agent"] || "",
-      ip: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "",
-    };
-
-    leads.unshift(lead);
     saveStoredLeads(leads);
 
     // 1. Forward to Telegram Bot if configured (Instant phone notification)
@@ -194,12 +206,13 @@ app.post("/api/leads", (req, res) => {
     const telegramChatId = process.env.TELEGRAM_CHAT_ID;
     if (telegramBotToken && telegramChatId) {
       try {
-        const text = `🔔 *NOUVEL UTILISATEUR INSCRIT !*\n\n` +
-          `👤 *Nom :* ${lead.name || "Enseignant non spécifié"}\n` +
-          `📧 *Email :* ${lead.email || "Non renseigné"}\n` +
-          `📱 *WhatsApp :* ${lead.whatsapp || "Non renseigné"}\n` +
-          `🏫 *Établissement :* ${lead.school || "Non renseigné"}\n` +
-          `📦 *Offre :* ${lead.plan}\n` +
+        const title = isNewUser ? "🔔 NOUVEL UTILISATEUR INSCRIT !" : "🔑 CONNEXION ENSEIGNANT SUR PEDAGOAI";
+        const text = `*${title}*\n\n` +
+          `👤 *Nom :* ${currentLead.name || "Enseignant non spécifié"}\n` +
+          `📧 *Email :* ${currentLead.email || "Non renseigné"}\n` +
+          `📱 *WhatsApp :* ${currentLead.whatsapp || "Non renseigné"}\n` +
+          `🏫 *Établissement :* ${currentLead.school || "Non renseigné"}\n` +
+          `📦 *Offre :* ${currentLead.plan || "free_trial_7d"}\n` +
           `🕒 *Date :* ${new Date().toLocaleString("fr-FR", { timeZone: "Africa/Abidjan" })} (Abidjan)`;
 
         fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
@@ -210,33 +223,45 @@ app.post("/api/leads", (req, res) => {
             text: text,
             parse_mode: "Markdown",
           }),
-        }).catch((err) => console.error("Telegram notification error:", err));
+        }).then(async (tgRes) => {
+          const resData = await tgRes.json();
+          if (resData.ok) {
+            console.log(`[Telegram Bot] Alerte envoyée avec succès pour ${currentLead.email}`);
+          } else {
+            console.warn(`[Telegram Bot Warning]:`, resData);
+          }
+        }).catch((err) => console.error("[Telegram Bot Error]:", err));
       } catch (te) {
         console.error("Telegram dispatch error:", te);
       }
+    } else {
+      console.log(`[Notification Info] Utilisateur enregistré (${currentLead.email}). Pour activer les alertes Telegram sur votre téléphone, renseignez TELEGRAM_BOT_TOKEN et TELEGRAM_CHAT_ID.`);
     }
 
     // 2. Forward to Webhook if configured (Google Sheets, Make, Zapier, Discord, Slack, etc.)
     const webhookUrl = process.env.LEADS_WEBHOOK_URL;
     if (webhookUrl) {
       try {
-        // Formatted for Discord / Slack / Zapier / Google Sheets
         const isDiscord = webhookUrl.includes("discord.com/api/webhooks");
         const isSlack = webhookUrl.includes("slack.com/services");
         
         let payload: any = {
-          event: "new_lead",
+          event: isNewUser ? "new_lead" : "user_login",
           timestamp: new Date().toISOString(),
-          data: lead,
+          data: currentLead,
         };
 
         if (isDiscord) {
           payload = {
-            content: `🎉 **Nouvel enseignant inscrit sur PedagoAI !**\n**Nom :** ${lead.name || "Non spécifié"}\n**Email :** ${lead.email}\n**WhatsApp :** ${lead.whatsapp || "N/A"}\n**Établissement :** ${lead.school || "N/A"}`
+            content: isNewUser
+              ? `🎉 **Nouvel enseignant inscrit sur PedagoAI !**\n**Nom :** ${currentLead.name || "Non spécifié"}\n**Email :** ${currentLead.email}\n**WhatsApp :** ${currentLead.whatsapp || "N/A"}\n**Établissement :** ${currentLead.school || "N/A"}`
+              : `🔑 **Connexion enseignant :** ${currentLead.name} (${currentLead.email})`
           };
         } else if (isSlack) {
           payload = {
-            text: `🎉 *Nouvel enseignant inscrit :* ${lead.name} (${lead.email}) - ${lead.school || "N/A"} - WhatsApp: ${lead.whatsapp || "N/A"}`
+            text: isNewUser
+              ? `🎉 *Nouvel enseignant inscrit :* ${currentLead.name} (${currentLead.email}) - ${currentLead.school || "N/A"} - WhatsApp: ${currentLead.whatsapp || "N/A"}`
+              : `🔑 *Connexion enseignant :* ${currentLead.name} (${currentLead.email})`
           };
         }
 
@@ -250,8 +275,8 @@ app.post("/api/leads", (req, res) => {
       }
     }
 
-    console.log("✨ Nouveau Lead Enregistré :", lead.email || lead.whatsapp);
-    return res.status(200).json({ success: true, lead });
+    console.log(`✨ Utilisateur enregistré / synchronisé : ${currentLead.email || currentLead.whatsapp} (${isNewUser ? 'Nouveau' : 'Existant'})`);
+    return res.status(200).json({ success: true, lead: currentLead, isNewUser });
   } catch (e: any) {
     return res.status(500).json({ error: e.message || "Erreur serveur" });
   }
@@ -611,8 +636,8 @@ app.get("/api/health", (req, res) => {
 
 // Helper with exponential backoff and fast model execution for high-speed grading
 async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
-  // Use ultra-fast flash models with thinking budget 0 to minimize latency
-  const models = ["gemini-3.7-flash", "gemini-flash-latest", "gemini-3.5-flash-lite"];
+  // Valid @google/genai model names
+  const models = ["gemini-3.7-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
   let lastError: any = null;
 
   for (const modelName of models) {
@@ -626,12 +651,8 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
         const config: any = {
           systemInstruction: "Tu es un correcteur pédagogique expert, précis, rapide et bienveillant. Tu réponds UNIQUEMENT par un objet JSON valide, sans balises Markdown ni texte superflu.",
           responseMimeType: "application/json",
-          temperature: 0.1,
+          temperature: 0.2,
         };
-
-        if (modelName.includes("3.7")) {
-          config.thinkingConfig = { thinkingBudget: 0 };
-        }
 
         const response = await ai.models.generateContent({
           model: modelName,

@@ -1059,9 +1059,14 @@
       return '$' + Number(amountUSD).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     }
 
-    // Load Data
+    // Load Data with real-time sync
+    let isDataLoading = false;
+
     async function loadAllData() {
+      if (isDataLoading) return;
+      isDataLoading = true;
       const token = getAdminToken();
+
       try {
         const res = await fetch('/api/admin/metrics', {
           headers: { 'x-admin-token': token }
@@ -1071,10 +1076,11 @@
           appData = { ...appData, ...data };
         } else if (res.status === 401) {
           logoutAdmin();
+          isDataLoading = false;
           return;
         }
       } catch (e) {
-        console.warn('API error, using local/mock fallback', e);
+        console.warn('Metrics API warning:', e);
       }
 
       // Fetch live leads from backend
@@ -1084,37 +1090,43 @@
         });
         if (lRes.ok) {
           const lData = await lRes.json();
-          if (lData.leads && lData.leads.length > 0) {
-            // merge live captured leads
-            const existingIds = new Set(appData.users.map(u => (u.email || u.id)));
-            lData.leads.forEach(l => {
-              if (!existingIds.has(l.email) && !existingIds.has(l.id)) {
-                appData.users.unshift({
-                  id: l.id,
-                  name: l.name || 'Professeur',
-                  email: l.email,
-                  whatsapp: l.whatsapp || '',
-                  school: l.school || '',
-                  plan: l.plan || 'free',
-                  status: l.status || 'active',
-                  created_at: l.createdAt || new Date().toISOString(),
-                  last_login: new Date().toISOString(),
-                  total_corrections: 1,
-                  corrections_this_month: 1,
-                  payment_method: null,
-                  failed_payments: []
-                });
-              }
-            });
+          const liveLeads = Array.isArray(lData) ? lData : (lData.leads || []);
+          if (liveLeads.length > 0) {
+            appData.users = liveLeads.map(l => ({
+              id: l.id,
+              name: l.name || 'Professeur',
+              email: l.email || '',
+              whatsapp: l.whatsapp || '',
+              school: l.school || '',
+              plan: l.plan || 'free_trial_7d',
+              status: l.status || 'active',
+              created_at: l.createdAt || l.created_at || new Date().toISOString(),
+              last_login: l.last_login || l.updatedAt || new Date().toISOString(),
+              total_corrections: l.total_corrections || 1,
+              corrections_this_month: l.corrections_this_month || 1,
+              payment_method: null,
+              failed_payments: []
+            }));
           }
         }
-      } catch (le) {}
+      } catch (le) {
+        console.warn('Leads API warning:', le);
+      }
 
       renderMetrics();
       initCharts();
       filterUsers();
       renderTransactions();
+      isDataLoading = false;
     }
+
+    // Auto-refresh every 8 seconds for live dashboard monitoring
+    setInterval(() => {
+      const lock = document.getElementById('authLock');
+      if (!lock || lock.style.display === 'none') {
+        loadAllData();
+      }
+    }, 8000);
 
     function renderMetrics() {
       const m = appData.metrics || {};

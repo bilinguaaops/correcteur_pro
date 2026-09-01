@@ -50,10 +50,17 @@
         <span class="nav-tab-icon">🎯</span>
         <span>Guide interactif</span>
       </button>
+      <button type="button" class="pnav-link" id="pnav-faq" onclick="openTeacherFaqModal()" title="Foire aux questions pour les enseignants">
+        <span class="nav-tab-icon">❓</span>
+        <span>FAQ Enseignants</span>
+      </button>
     </div>
 
     <!-- Right Controls -->
     <div class="nav-actions">
+      <button type="button" class="nav-tour-badge-btn" onclick="openTeacherFaqModal()" title="Foire aux questions & guide pratique">
+        <span>❓ FAQ Enseignants</span>
+      </button>
       <button type="button" class="nav-tour-badge-btn" onclick="openInteractiveTour()" title="Comment utiliser PedagoAI">
         <span>🎯 Guide</span>
       </button>
@@ -840,7 +847,117 @@
       </div>
     </section>
 
-    <!-- 10. FINAL BOTTOM CALL TO ACTION -->
+    <!-- 10. SECTION FAQ ENSEIGNANTS (Foire Aux Questions Pédagogiques) -->
+    <section class="home-section-block" id="faqHomeSection">
+      <div class="home-section-header">
+        <div class="hero-tag-pill" style="margin-bottom:10px;">
+          <span>❓</span> Réponses à vos questions
+        </div>
+        <h2 class="home-section-title">Foire Aux Questions des Enseignants</h2>
+        <p class="home-section-subtitle">Tout ce que vous devez savoir sur le fonctionnement, les barèmes, la correction littéraire et la sécurité de vos copies.</p>
+      </div>
+
+      <div class="faq-accordion-container">
+        <!-- FAQ Item 1 -->
+        <div class="faq-item active" onclick="toggleFaqItem(this)">
+          <div class="faq-question">
+            <span class="faq-q-title">🚀 Comment utiliser PedagoAI au quotidien en 3 étapes simples ?</span>
+            <span class="faq-icon-chevron">▼</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Étape 1 — Choisissez vos critères :</strong> Sélectionnez la discipline (Mathématiques, Français, SVT, Histoire-Géo, etc.), choisissez votre barème (sur 20, ou libre) et activez vos règles pédagogiques (tolérance orthographe, demi-points, valorisation démarche).</p>
+            <p><strong>Étape 2 — Importez vos copies :</strong> Prenez en photo les copies avec votre smartphone ou glissez-déposez vos fichiers (photos JPG, scans PDF d'une copie ou d'une classe entière). L'IA gère les écritures manuscrites difficiles et les pages multiples.</p>
+            <p><strong>Étape 3 — Révisez & Exportez :</strong> En quelques secondes, l'IA génère les notes, les fiches détaillées question par question et les appréciations. Vous gardez la main totale pour ajuster une note en 1 clic et exporter vers Pronote, ÉcoleDirecte ou PDF.</p>
+          </div>
+        </div>
+
+        <!-- FAQ Item 2 -->
+        <div class="faq-item" onclick="toggleFaqItem(this)">
+          <div class="faq-question">
+            <span class="faq-q-title">📚 Comment sont corrigées les matières littéraires (Dissertations, Français, Philo, Histoire-Géo) ?</span>
+            <span class="faq-icon-chevron">▼</span>
+          </div>
+          <div class="faq-answer">
+            <p>Notre IA ne se contente pas d'un simple contrôle de mots-clés : elle utilise une analyse sémantique approfondie du raisonnement académique :</p>
+            <ul>
+              <li><strong>Structure argumentative :</strong> Vérification de la présence d'une problématique, d'un plan structuré (thèse/antithèse/synthèse ou axes d'analyse), de transitions logiques et d'une conclusion cohérente.</li>
+              <li><strong>Qualité des exemples & citations :</strong> Évaluation de la pertinence des références historiques, littéraires ou philosophiques mobilisées par l'élève.</li>
+              <li><strong>Expression & Syntaxe :</strong> Analyse du niveau de langue, de la clarté et de la richesse lexicale.</li>
+              <li><strong>Appréciations constructives :</strong> Production de commentaires individualisés qui soulignent les points forts de l'élève et donnent des conseils concrets pour progresser.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- FAQ Item 3 -->
+        <div class="faq-item" onclick="toggleFaqItem(this)">
+          <div class="faq-question">
+            <span class="faq-q-title">⚖️ Comment fonctionnent les "Règles du jeu" (Tolérance orthographe sans pénalité de points) ?</span>
+            <span class="faq-icon-chevron">▼</span>
+          </div>
+          <div class="faq-answer">
+            <p>Le panneau de configuration pédagogique vous permet d'activer des règles précises :</p>
+            <ul>
+              <li><strong>Tolérer l'orthographe :</strong> Si l'élève commet des erreurs de syntaxe ou d'accord, l'IA les signale explicitement pour son apprentissage, mais <em>aucun point n'est retiré</em>. La fiche de correction notifie alors : <em>« Grâce à la règle "Tolérer l'orthographe", les fautes ont été relevées pour information mais l'élève n'a pas été pénalisé. »</em></li>
+              <li><strong>Valoriser la démarche & Créditer les demi-points :</strong> Même si le calcul final comporte une étourderie, l'élève reçoit des points pour son raisonnement et sa méthodologie avec mention de la règle appliquée.</li>
+              <li><strong>Barème strict :</strong> Application rigoureuse sans arrondi.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- FAQ Item 4 -->
+        <div class="faq-item" onclick="toggleFaqItem(this)">
+          <div class="faq-question">
+            <span class="faq-q-title">📝 Exhaustivité : L'IA peut-elle corriger un sujet long de 10, 12 ou 15 exercices sans en oublier ?</span>
+            <span class="faq-icon-chevron">▼</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Oui, absolument.</strong> Notre modèle analyse l'intégralité du sujet et de la copie de manière séquentielle et exhaustive. S'il y a 12 exercices sur votre sujet, la fiche de correction contiendra très exactement les 12 exercices dans l'ordre chronologique.</p>
+            <p>Si un exercice n'a pas été traité par l'élève, l'IA ne l'ignore pas : elle le liste avec la mention <em>« Non traité »</em> et <em>0 pt</em>, ce qui permet à l'élève et aux parents de visualiser précisément ce qui manquait.</p>
+          </div>
+        </div>
+
+        <!-- FAQ Item 5 -->
+        <div class="faq-item" onclick="toggleFaqItem(this)">
+          <div class="faq-question">
+            <span class="faq-q-title">🔒 Sécurité des données & RGPD : Les copies des élèves sont-elles protégées ?</span>
+            <span class="faq-icon-chevron">▼</span>
+          </div>
+          <div class="faq-answer">
+            <p>La protection des données scolaires est notre priorité absolue :</p>
+            <ul>
+              <li><strong>Chiffrement de bout en bout :</strong> Toutes les copies et évaluations sont chiffrées selon le standard bancaire <strong>AES-256</strong>.</li>
+              <li><strong>Serveurs Européens & RGPD :</strong> Hébergement strict en Europe, respect intégral de la réglementation RGPD.</li>
+              <li><strong>Zéro entraînement de modèles publics :</strong> Vos copies d'élèves ne sont <strong>JAMAIS</strong> utilisées pour réentraîner des modèles d'IA publics. Vos données vous appartiennent exclusivement.</li>
+              <li><strong>Droit à l'effacement :</strong> Vous pouvez supprimer définitivement vos classes et copies à tout moment en 1 clic.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- FAQ Item 6 -->
+        <div class="faq-item" onclick="toggleFaqItem(this)">
+          <div class="faq-question">
+            <span class="faq-q-title">📤 Comment exporter les notes vers Pronote, ÉcoleDirecte et imprimer les fiches ?</span>
+            <span class="faq-icon-chevron">▼</span>
+          </div>
+          <div class="faq-answer">
+            <p>À la fin de la correction, vous disposez de 3 options d'export instantanées :</p>
+            <ul>
+              <li><strong>Export Pronote & ÉcoleDirecte :</strong> Téléchargez un fichier CSV/Excel parfaitement pré-formaté avec les noms des élèves et leurs notes pour un import immédiat dans votre logiciel de vie scolaire.</li>
+              <li><strong>Fiches PDF Individuelles :</strong> Générez en 1 clic les bulletins de correction individuels paginés (Page 1/2, Page 2/2) prêts à imprimer ou à envoyer aux familles.</li>
+              <li><strong>Tableau Récapitulatif de Classe :</strong> Imprimez la synthèse globale avec moyennes, taux de réussite et répartition par compétences.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:28px">
+        <button type="button" class="btn-pedago-outline" onclick="openTeacherFaqModal()">
+          <span>📖 Ouvrir le Guide FAQ Complet & Recherche</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 11. FINAL BOTTOM CALL TO ACTION -->
     <section class="cta-banner-section">
       <div class="cta-banner-card">
         <h2 class="cta-banner-title">Révolutionnez Votre Enseignement Dès Aujourd’hui</h2>
@@ -1222,22 +1339,22 @@
             <div class="consignes-list-box">
               <label class="consigne-item">
                 <input type="checkbox" id="c_no_ortho" class="custom-chk">
-                <span class="consigne-txt">🤝 Orthographe forgettable — ce qu'ils savent compte</span>
+                <span class="consigne-txt">💛 Tolérer l'orthographe — valoriser le fond et le raisonnement avant tout</span>
               </label>
 
               <label class="consigne-item">
                 <input type="checkbox" id="c_half_pts" checked class="custom-chk">
-                <span class="consigne-txt">📊 Créditer la demi-réponse — la démarche a un prix</span>
+                <span class="consigne-txt">📊 Créditer les demi-points — chaque étape de la démarche compte</span>
               </label>
 
               <label class="consigne-item">
                 <input type="checkbox" id="c_strict" class="custom-chk">
-                <span class="consigne-txt">📐 Barème strict, zéro flexibilité — par contre c'est juste</span>
+                <span class="consigne-txt">📐 Barème strict et rigoureux — notation exacte au point près</span>
               </label>
 
               <label class="consigne-item">
                 <input type="checkbox" id="c_encouraging" checked class="custom-chk">
-                <span class="consigne-txt">✨ Présentation + organisation = points — apprentissage valorisé</span>
+                <span class="consigne-txt">✨ Soin et présentation valorisés — encourager la clarté de la copie</span>
               </label>
 
               <label class="consigne-item">
@@ -1247,7 +1364,7 @@
 
               <label class="consigne-item">
                 <input type="checkbox" id="c_reasoning_first" class="custom-chk">
-                <span class="consigne-txt">🛤 La démarche est la moitié du prix — même si la réponse est fausse</span>
+                <span class="consigne-txt">🛤 Valoriser la démarche — attribuer des points même si le résultat final est incomplet</span>
               </label>
             </div>
 
@@ -2024,6 +2141,135 @@
     </div>
   </div>
 </footer>
+
+<!-- ══════════════════════════════════════════════
+     MODAL FAQ ENSEIGNANTS COMPLÈTE & INTERACTIVE
+══════════════════════════════════════════════ -->
+<div class="mo" id="teacherFaqModal" style="display:none;" onclick="if(event.target===this) closeTeacherFaqModal()">
+  <div class="modal-card-pedago faq-modal-card">
+    <div class="modal-header-pedago">
+      <div class="modal-title-group">
+        <div class="modal-icon-badge" style="background:rgba(59,130,246,0.12);color:var(--blue-primary)">❓</div>
+        <div>
+          <h2 class="modal-heading-title">Guide & FAQ des Enseignants</h2>
+          <p class="modal-heading-sub">Réponses détaillées sur le fonctionnement, les matières littéraires, les règles du jeu et la sécurité.</p>
+        </div>
+      </div>
+      <button type="button" class="modal-close-btn" onclick="closeTeacherFaqModal()" aria-label="Fermer la FAQ">✕</button>
+    </div>
+
+    <!-- Search filter input -->
+    <div style="margin-bottom:18px">
+      <div style="position:relative">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-muted)">🔍</span>
+        <input type="text" id="faqFilterInput" placeholder="Rechercher une question (ex: orthographe, dissertation, sécurité, 12 exercices, Pronote)..." oninput="filterFaqQuestions(this.value)" class="pedago-input" style="width:100%;padding:10px 12px 10px 36px;font-size:13px;border-radius:10px;background:var(--bg-input);border:1px solid var(--border-subtle);color:var(--text-main)" />
+      </div>
+    </div>
+
+    <!-- Interactive FAQ List -->
+    <div class="faq-modal-scroll-body" id="faqModalList">
+      <!-- Item 1 -->
+      <div class="faq-item active" onclick="toggleFaqItem(this)">
+        <div class="faq-question">
+          <span class="faq-q-title">🚀 1. Comment utiliser PedagoAI au quotidien en 3 étapes ?</span>
+          <span class="faq-icon-chevron">▼</span>
+        </div>
+        <div class="faq-answer">
+          <p><strong>Étape 1 — Choisissez vos critères :</strong> Sélectionnez la matière, précisez le barème (sur 20 ou personnalisé) et activez vos règles pédagogiques (tolérance orthographe, demi-points, valorisation démarche).</p>
+          <p><strong>Étape 2 — Importez vos copies :</strong> Prenez en photo les copies avec votre smartphone ou glissez-déposez vos fichiers (photos JPG/PNG, scans PDF d'une copie ou de la classe entière). L'IA prend en charge les écritures manuscrites difficiles et les pages multiples.</p>
+          <p><strong>Étape 3 — Révisez & Exportez :</strong> En quelques secondes, l'IA génère les notes, les fiches détaillées question par question et les appréciations. Vous gardez la main totale pour ajuster une note en 1 clic et exporter vers Pronote, ÉcoleDirecte ou PDF.</p>
+        </div>
+      </div>
+
+      <!-- Item 2 -->
+      <div class="faq-item" onclick="toggleFaqItem(this)">
+        <div class="faq-question">
+          <span class="faq-q-title">📚 2. Comment sont corrigées les matières littéraires (Dissertations, Français, Philo, Histoire-Géo) ?</span>
+          <span class="faq-icon-chevron">▼</span>
+        </div>
+        <div class="faq-answer">
+          <p>Notre IA ne se contente pas d'un simple contrôle de mots-clés : elle utilise une analyse sémantique approfondie du raisonnement académique :</p>
+          <ul>
+            <li><strong>Structure argumentative :</strong> Vérification de la présence d'une problématique, d'un plan structuré (thèse/antithèse/synthèse ou axes d'analyse), de transitions logiques et d'une conclusion cohérente.</li>
+            <li><strong>Qualité des exemples & citations :</strong> Évaluation de la pertinence des références historiques, littéraires ou philosophiques mobilisées par l'élève.</li>
+            <li><strong>Expression & Syntaxe :</strong> Analyse du niveau de langue, de la clarté et de la richesse lexicale.</li>
+            <li><strong>Appréciations constructives :</strong> Production de commentaires individualisés qui soulignent les points forts de l'élève et donnent des conseils concrets pour progresser.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Item 3 -->
+      <div class="faq-item" onclick="toggleFaqItem(this)">
+        <div class="faq-question">
+          <span class="faq-q-title">⚖️ 3. Comment fonctionnent les "Règles du jeu" (Tolérance orthographe sans pénalité de points) ?</span>
+          <span class="faq-icon-chevron">▼</span>
+        </div>
+        <div class="faq-answer">
+          <p>Le panneau de configuration pédagogique vous permet d'activer des règles précises :</p>
+          <ul>
+            <li><strong>Tolérer l'orthographe :</strong> Si l'élève commet des erreurs de syntaxe ou d'accord, l'IA les signale explicitement pour son apprentissage, mais <em>aucun point n'est retiré</em>. La fiche de correction notifie alors : <em>« Grâce à la règle "Tolérer l'orthographe", les fautes ont été relevées pour information mais l'élève n'a pas été pénalisé sur sa note. »</em></li>
+            <li><strong>Valoriser la démarche & Créditer les demi-points :</strong> Même si le résultat final comporte une étourderie, l'élève reçoit des points pour son raisonnement et sa méthodologie avec mention de la règle appliquée.</li>
+            <li><strong>Barème strict :</strong> Application rigoureuse sans arrondi.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Item 4 -->
+      <div class="faq-item" onclick="toggleFaqItem(this)">
+        <div class="faq-question">
+          <span class="faq-q-title">📝 4. Exhaustivité : L'IA peut-elle corriger un sujet long de 10, 12 ou 15 exercices sans en oublier ?</span>
+          <span class="faq-icon-chevron">▼</span>
+        </div>
+        <div class="faq-answer">
+          <p><strong>Oui, absolument.</strong> Notre moteur Gemini analyse l'intégralité du sujet et de la copie de manière séquentielle et exhaustive. S'il y a 12 exercices sur votre sujet, la fiche de correction contiendra très exactement les 12 exercices dans l'ordre chronologique.</p>
+          <p>Si un exercice n'a pas été traité par l'élève, l'IA ne l'ignore pas : elle le liste avec la mention <em>« Non traité »</em> et <em>0 pt</em>, ce qui permet à l'élève et aux parents de visualiser précisément ce qui manquait.</p>
+        </div>
+      </div>
+
+      <!-- Item 5 -->
+      <div class="faq-item" onclick="toggleFaqItem(this)">
+        <div class="faq-question">
+          <span class="faq-q-title">🔒 5. Sécurité des données & RGPD : Les copies des élèves sont-elles protégées ?</span>
+          <span class="faq-icon-chevron">▼</span>
+        </div>
+        <div class="faq-answer">
+          <p>La protection des données scolaires est notre priorité absolue :</p>
+          <ul>
+            <li><strong>Chiffrement de bout en bout :</strong> Toutes les copies et évaluations sont chiffrées selon le standard bancaire <strong>AES-256</strong>.</li>
+            <li><strong>Serveurs Européens & RGPD :</strong> Hébergement strict en Europe, respect intégral de la réglementation RGPD.</li>
+            <li><strong>Zéro entraînement de modèles publics :</strong> Vos copies d'élèves ne sont <strong>JAMAIS</strong> utilisées pour réentraîner des modèles d'IA publics. Vos données vous appartiennent exclusivement.</li>
+            <li><strong>Droit à l'effacement :</strong> Vous pouvez supprimer définitivement vos classes et copies à tout moment en 1 clic.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Item 6 -->
+      <div class="faq-item" onclick="toggleFaqItem(this)">
+        <div class="faq-question">
+          <span class="faq-q-title">📤 6. Comment exporter les notes vers Pronote, ÉcoleDirecte et imprimer les fiches ?</span>
+          <span class="faq-icon-chevron">▼</span>
+        </div>
+        <div class="faq-answer">
+          <p>À la fin de la correction, vous disposez de 3 options d'export instantanées :</p>
+          <ul>
+            <li><strong>Export Pronote & ÉcoleDirecte :</strong> Téléchargez un fichier CSV/Excel parfaitement pré-formaté avec les noms des élèves et leurs notes pour un import immédiat dans votre logiciel de vie scolaire.</li>
+            <li><strong>Fiches PDF Individuelles :</strong> Générez en 1 clic les bulletins de correction individuels paginés (Page 1/2, Page 2/2) prêts à imprimer ou à envoyer aux familles.</li>
+            <li><strong>Tableau Récapitulatif de Classe :</strong> Imprimez la synthèse globale avec moyennes, taux de réussite et répartition par compétences.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-subtle);padding-top:16px;margin-top:18px">
+      <button type="button" class="btn-pedago-primary" onclick="closeTeacherFaqModal(); startNewCorrection();">
+        🚀 Lancer une correction maintenant
+      </button>
+      <button type="button" class="btn-pedago-ghost" onclick="closeTeacherFaqModal()">
+        Fermer
+      </button>
+    </div>
+  </div>
+</div>
 
 <div id="pz"></div>
 

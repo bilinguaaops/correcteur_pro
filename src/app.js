@@ -1504,6 +1504,185 @@ function renderSingleBulletinHtml(student) {
 }
 
 /* ─────────────────────────────────────────────
+   PDF CUSTOMIZATION & BRANDING CONFIG
+───────────────────────────────────────────── */
+window.getPdfCustomConfig = function () {
+  try {
+    var raw = localStorage.getItem('pedago_pdf_custom');
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {}
+
+  var defaultTeacher = (window.DB && window.DB.currentUser && window.DB.currentUser.name) || '';
+  var defaultSchool = (window.DB && window.DB.currentUser && window.DB.currentUser.school) || '';
+
+  return {
+    schoolName: defaultSchool || "Établissement Scolaire",
+    teacherName: defaultTeacher || "Professeur Enseignant",
+    docTitle: "FICHE DE CORRECTION INDIVIDUELLE",
+    accentColor: "#0076FF",
+    schoolLogo: "",
+    showLogo: true,
+    showTeacher: true,
+    showAppreciation: true,
+    showSignature: true,
+    footerNote: "Signature de l'enseignant et visa des parents : _______________________"
+  };
+};
+
+window.savePdfCustomConfig = function (cfg) {
+  try {
+    localStorage.setItem('pedago_pdf_custom', JSON.stringify(cfg));
+  } catch (e) {
+    console.error("Failed to save PDF config to localStorage", e);
+  }
+};
+
+window.openPdfCustomizerModal = function () {
+  var modal = document.getElementById('pdfCustomizerModal');
+  if (!modal) return;
+
+  var cfg = getPdfCustomConfig();
+  
+  var schoolInp = document.getElementById('pdfSchoolNameInput');
+  var teacherInp = document.getElementById('pdfTeacherNameInput');
+  var titleInp = document.getElementById('pdfDocTitleInput');
+  var colorSel = document.getElementById('pdfAccentColorSelect');
+  var footerInp = document.getElementById('pdfFooterNoteInput');
+
+  var chkLogo = document.getElementById('pdfOptShowLogo');
+  var chkTeacher = document.getElementById('pdfOptShowTeacher');
+  var chkAppr = document.getElementById('pdfOptShowAppreciation');
+  var chkSign = document.getElementById('pdfOptShowSignature');
+
+  var logoImg = document.getElementById('pdfLogoPreviewImg');
+  var logoPlaceholder = document.getElementById('pdfLogoPlaceholder');
+
+  if (schoolInp) schoolInp.value = cfg.schoolName || '';
+  if (teacherInp) teacherInp.value = cfg.teacherName || '';
+  if (titleInp) titleInp.value = cfg.docTitle || 'FICHE DE CORRECTION INDIVIDUELLE';
+  if (colorSel) colorSel.value = cfg.accentColor || '#0076FF';
+  if (footerInp) footerInp.value = cfg.footerNote || 'Signature du professeur et visa des parents : _______________________';
+
+  if (chkLogo) chkLogo.checked = cfg.showLogo !== false;
+  if (chkTeacher) chkTeacher.checked = cfg.showTeacher !== false;
+  if (chkAppr) chkAppr.checked = cfg.showAppreciation !== false;
+  if (chkSign) chkSign.checked = cfg.showSignature !== false;
+
+  if (cfg.schoolLogo && logoImg && logoPlaceholder) {
+    logoImg.src = cfg.schoolLogo;
+    logoImg.style.display = 'block';
+    logoPlaceholder.style.display = 'none';
+  } else if (logoImg && logoPlaceholder) {
+    logoImg.src = '';
+    logoImg.style.display = 'none';
+    logoPlaceholder.style.display = 'block';
+  }
+
+  modal.style.display = 'flex';
+};
+
+window.closePdfCustomizerModal = function () {
+  var modal = document.getElementById('pdfCustomizerModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.handlePdfLogoUpload = function (event) {
+  var file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    var base64 = e.target.result;
+    var logoImg = document.getElementById('pdfLogoPreviewImg');
+    var logoPlaceholder = document.getElementById('pdfLogoPlaceholder');
+    if (logoImg && logoPlaceholder) {
+      logoImg.src = base64;
+      logoImg.style.display = 'block';
+      logoPlaceholder.style.display = 'none';
+    }
+  };
+  reader.readAsDataURL(file);
+};
+
+window.removePdfLogo = function () {
+  var logoImg = document.getElementById('pdfLogoPreviewImg');
+  var logoPlaceholder = document.getElementById('pdfLogoPlaceholder');
+  var fileInp = document.getElementById('pdfLogoFileInput');
+  if (fileInp) fileInp.value = '';
+  if (logoImg && logoPlaceholder) {
+    logoImg.src = '';
+    logoImg.style.display = 'none';
+    logoPlaceholder.style.display = 'block';
+  }
+};
+
+window.savePdfCustomizerSettings = function () {
+  var logoImg = document.getElementById('pdfLogoPreviewImg');
+  var schoolInp = document.getElementById('pdfSchoolNameInput');
+  var teacherInp = document.getElementById('pdfTeacherNameInput');
+  var titleInp = document.getElementById('pdfDocTitleInput');
+  var colorSel = document.getElementById('pdfAccentColorSelect');
+  var footerInp = document.getElementById('pdfFooterNoteInput');
+
+  var chkLogo = document.getElementById('pdfOptShowLogo');
+  var chkTeacher = document.getElementById('pdfOptShowTeacher');
+  var chkAppr = document.getElementById('pdfOptShowAppreciation');
+  var chkSign = document.getElementById('pdfOptShowSignature');
+
+  var newCfg = {
+    schoolLogo: (logoImg && logoImg.src && !logoImg.src.endsWith('/')) ? logoImg.src : '',
+    schoolName: schoolInp ? schoolInp.value.trim() : '',
+    teacherName: teacherInp ? teacherInp.value.trim() : '',
+    docTitle: titleInp ? titleInp.value.trim() : 'FICHE DE CORRECTION INDIVIDUELLE',
+    accentColor: colorSel ? colorSel.value : '#0076FF',
+    footerNote: footerInp ? footerInp.value.trim() : '',
+    showLogo: chkLogo ? chkLogo.checked : true,
+    showTeacher: chkTeacher ? chkTeacher.checked : true,
+    showAppreciation: chkAppr ? chkAppr.checked : true,
+    showSignature: chkSign ? chkSign.checked : true
+  };
+
+  savePdfCustomConfig(newCfg);
+  closePdfCustomizerModal();
+
+  var toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-weight:700;font-size:13.5px;box-shadow:0 10px 25px rgba(0,0,0,0.3);z-index:999999;display:flex;align-items:center;gap:8px;';
+  toast.innerHTML = '<span>✅ Mise en page PDF enregistrée avec succès !</span>';
+  document.body.appendChild(toast);
+  setTimeout(function () {
+    if (toast.parentNode) toast.parentNode.removeChild(toast);
+  }, 3500);
+};
+
+window.testPdfCustomizerPreview = function () {
+  var sampleStudent = (ST.results && ST.results.length > 0) ? ST.results[0] : {
+    name: "Alexandre Dupont",
+    score: 16.5,
+    scoreMax: 20,
+    insight: "Très bon devoir. La méthode de résolution est rigoureusement respectée. Attention cependant à la justification des calculs intermédiaires.",
+    details: [
+      { titre: "Exercice 1 : Calcul littéral", note: "4 / 4 pt", statut: "ACQUIS", reponse_eleve: "Développement complet et factorisation exacte.", attendu: "A = (2x+3)(x-1)", commentaire: "Parfaitement rédigé." },
+      { titre: "Exercice 2 : Géométrie plane", note: "3.5 / 4 pt", statut: "ACQUIS", reponse_eleve: "Théorème de Pythagore appliqué avec succès.", attendu: "BC = 5 cm", commentaire: "Très bien, mentionner l'égalité des carrés." },
+      { titre: "Exercice 3 : Problème de synthèse", note: "9 / 12 pt", statut: "EN COURS", reponse_eleve: "Démarche comprise mais oubli de l'unité finale.", attendu: "Résultat en m² avec justification.", commentaire: "Bien dans l'ensemble, soigner la conclusion." }
+    ]
+  };
+
+  var doc = generateStudentFichePDFDoc(sampleStudent);
+  doc.save('Apercu_PDF_Personnalise.pdf');
+};
+
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '#0076FF');
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 0, g: 118, b: 255 };
+}
+
+/* ─────────────────────────────────────────────
    EXPORTS (PDF, Excel, ZIP)
 ───────────────────────────────────────────── */
 window.generateStudentFichePDFDoc = function (student) {
@@ -1513,6 +1692,9 @@ window.generateStudentFichePDFDoc = function (student) {
     format: 'a4'
   });
 
+  var cfg = getPdfCustomConfig();
+  var accentRgb = hexToRgb(cfg.accentColor);
+
   var subjectName = (ST.selectedSubject === 'other' ? ST.customSubject : (MATS.find(function(m){ return m.id === ST.selectedSubject; }) || {}).l) || 'Mathématiques';
   var dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   var scoreVal = Number(student.score).toFixed(1).replace('.0', '');
@@ -1521,63 +1703,90 @@ window.generateStudentFichePDFDoc = function (student) {
   var curPage = 1;
 
   function renderPageHeader() {
-    // Top Blue Banner
-    doc.setFillColor(0, 118, 255);
-    doc.roundedRect(12, 12, 186, 20, 3, 3, 'F');
+    // Top Custom Banner with selected accent color
+    doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b);
+    doc.roundedRect(12, 12, 186, 24, 3, 3, 'F');
+
+    // School Logo if present & enabled
+    var headerTextX = 105;
+    if (cfg.showLogo && cfg.schoolLogo && cfg.schoolLogo.startsWith('data:image')) {
+      try {
+        var imgFormat = cfg.schoolLogo.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(cfg.schoolLogo, imgFormat, 16, 14, 18, 18);
+        headerTextX = 112; // slight shift
+      } catch (e) {
+        console.warn("Could not insert logo in PDF", e);
+      }
+    }
 
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.text('FICHE DE CORRECTION INDIVIDUELLE', 105, 21, { align: 'center' });
+    doc.setFontSize(12.5);
+    doc.text(cfg.docTitle || 'FICHE DE CORRECTION INDIVIDUELLE', headerTextX, 20, { align: 'center' });
 
+    // Subtitle line (School, Subject, Teacher)
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.text(subjectName + ' • ' + dateStr, 105, 28, { align: 'center' });
+    doc.setFontSize(8.5);
+    
+    var subParts = [];
+    if (cfg.schoolName) subParts.push(cfg.schoolName);
+    subParts.push(subjectName);
+    if (cfg.showTeacher && cfg.teacherName) subParts.push(cfg.teacherName);
+    subParts.push(dateStr);
+
+    doc.text(subParts.join(' • '), headerTextX, 28, { align: 'center' });
   }
 
   function renderPageFooter() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
-    doc.text('Généré par ProfCorrec\' IA — ' + dateStr, 14, 287);
+
+    var footerBrand = (cfg.schoolName ? cfg.schoolName + ' • ' : '') + 'PedagoAI Évaluation — ' + dateStr;
+    doc.text(footerBrand, 14, 287);
     doc.text('Page ' + curPage, 196, 287, { align: 'right' });
   }
 
   renderPageHeader();
 
   // Student info row
-  var y = 42;
+  var y = 44;
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.text(student.name, 14, y);
 
-  doc.setTextColor(22, 163, 74);
-  doc.setFontSize(16);
-  doc.text(scoreVal + ' / ' + scoreMax + ' (' + scoreVal + '/' + scoreMax + ')', 196, y, { align: 'right' });
+  // Score Badge
+  doc.setTextColor(accentRgb.r, accentRgb.g, accentRgb.b);
+  doc.setFontSize(15);
+  doc.text(scoreVal + ' / ' + scoreMax, 196, y, { align: 'right' });
 
   // Appreciation box
-  y += 6;
-  var apprText = 'Appréciation : ' + (student.insight || 'Bon travail global.');
-  var splitAppr = doc.splitTextToSize(apprText, 178);
-  var apprHeight = Math.max(14, splitAppr.length * 4.5 + 6);
+  if (cfg.showAppreciation !== false) {
+    y += 6;
+    var apprText = 'Appréciation générale : ' + (student.insight || 'Bon travail global.');
+    var splitAppr = doc.splitTextToSize(apprText, 178);
+    var apprHeight = Math.max(14, splitAppr.length * 4.5 + 6);
 
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(226, 232, 240);
-  doc.roundedRect(12, y, 186, apprHeight, 2, 2, 'FD');
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(12, y, 186, apprHeight, 2, 2, 'FD');
 
-  doc.setTextColor(51, 65, 85);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
-  doc.text(splitAppr, 16, y + 6);
+    doc.setTextColor(51, 65, 85);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.text(splitAppr, 16, y + 6);
 
-  y += apprHeight + 10;
+    y += apprHeight + 10;
+  } else {
+    y += 10;
+  }
 
   // Section title
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('Détail des questions', 14, y);
+  doc.setFontSize(11.5);
+  doc.text('Détail des compétences et questions', 14, y);
 
   y += 6;
 
@@ -1597,12 +1806,12 @@ window.generateStudentFichePDFDoc = function (student) {
 
     var cardHeight = 10 + (splitRep.length * 4) + (splitAtt.length * 4) + (splitCom.length * 4) + 6;
 
-    if (y + cardHeight > 275) {
+    if (y + cardHeight > 255) {
       renderPageFooter();
       doc.addPage();
       curPage++;
       renderPageHeader();
-      y = 40;
+      y = 44;
     }
 
     // Question Card Background
@@ -1612,7 +1821,7 @@ window.generateStudentFichePDFDoc = function (student) {
 
     // Title
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.setTextColor(15, 23, 42);
     doc.text(title, 16, y + 6);
 
@@ -1642,6 +1851,27 @@ window.generateStudentFichePDFDoc = function (student) {
 
     y += cardHeight + 4;
   });
+
+  // Signature Block if enabled
+  if (cfg.showSignature) {
+    if (y > 250) {
+      renderPageFooter();
+      doc.addPage();
+      curPage++;
+      renderPageHeader();
+      y = 44;
+    }
+
+    y += 4;
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(12, y, 186, 16, 2, 2, 'FD');
+
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(cfg.footerNote || 'Signature du professeur et visa des parents : _______________________', 16, y + 10);
+  }
 
   renderPageFooter();
   return doc;

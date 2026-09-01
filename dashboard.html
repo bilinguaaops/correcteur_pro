@@ -443,28 +443,9 @@
       </button>
     </div>
 
-    <!-- NOTIFICATION ALERTS -->
+    <!-- NOTIFICATION ALERTS (Dynamic / Live) -->
     <div class="alerts-container" id="alertsSection">
-      <div class="alert-banner alert-danger">
-        <div>
-          <strong>🚨 Paiements Échoués :</strong> 2 professeurs ont des tentatives de prélèvement Stripe rejetées.
-        </div>
-        <button type="button" class="alert-btn" onclick="filterByFailedPayments()">Voir les 2 comptes ➔</button>
-      </div>
-
-      <div class="alert-banner alert-warning">
-        <div>
-          <strong>⚠️ Alerte Churn :</strong> 5 professeurs ont résilié ce mois-ci (+1.2% au-dessus de la moyenne).
-        </div>
-        <button type="button" class="alert-btn" onclick="filterByChurned()">Consulter les désabonnements ➔</button>
-      </div>
-
-      <div class="alert-banner alert-info">
-        <div>
-          <strong>💡 Opportunité Réengagement :</strong> 127 professeurs inscrits en Free ne se sont pas connectés depuis 30 jours.
-        </div>
-        <button type="button" class="alert-btn" onclick="openBulkReengagementModal()">📧 Envoyer Campagne Relance</button>
-      </div>
+      <!-- Live alert container -->
     </div>
 
     <!-- ══════════════════════════════════════════
@@ -476,49 +457,48 @@
         <!-- Card 1 : MRR -->
         <div class="metric-card" style="--card-line: var(--accent)">
           <div class="metric-lbl">
-            <span>Monthly Revenue (MRR)</span>
+            <span>Revenu Mensuel Réel (MRR)</span>
             <span style="font-size:16px">💰</span>
           </div>
-          <div class="metric-val" id="valMRR">$2,450</div>
+          <div class="metric-val" id="valMRR">$0</div>
           <div class="metric-trend trend-pos">
-            <span>↑ +12%</span>
-            <span class="trend-muted">vs le mois dernier</span>
+            <span id="valMRRTrend">Abonnements réels</span>
           </div>
         </div>
 
         <!-- Card 2 : ARR -->
         <div class="metric-card" style="--card-line: var(--purple)">
           <div class="metric-lbl">
-            <span>Annual Revenue (ARR)</span>
+            <span>Revenu Annuel Projeté (ARR)</span>
             <span style="font-size:16px">📈</span>
           </div>
-          <div class="metric-val" id="valARR">$29,400</div>
+          <div class="metric-val" id="valARR">$0</div>
           <div class="metric-trend trend-muted">
-            <span>Projection basée sur le MRR actuel</span>
+            <span>Projection (MRR × 12)</span>
           </div>
         </div>
 
         <!-- Card 3 : Active Users -->
         <div class="metric-card" style="--card-line: var(--green)">
           <div class="metric-lbl">
-            <span>Profs Payants (Premium)</span>
-            <span style="font-size:16px">⭐</span>
+            <span>Enseignants Inscrits (Total)</span>
+            <span style="font-size:16px">👥</span>
           </div>
-          <div class="metric-val" id="valUsers">245</div>
+          <div class="metric-val" id="valUsers">0</div>
           <div class="metric-trend trend-muted">
-            <span id="valUsersBreakdown">67 mensuels · 178 annuels (Free : 1,200)</span>
+            <span id="valUsersBreakdown">0 mensuels · 0 annuels (Free : 0)</span>
           </div>
         </div>
 
         <!-- Card 4 : Churn Rate -->
         <div class="metric-card" style="--card-line: var(--red)">
           <div class="metric-lbl">
-            <span>Churn Rate (30j)</span>
-            <span style="font-size:16px">📉</span>
+            <span>Abonnés Premium Payants</span>
+            <span style="font-size:16px">⭐</span>
           </div>
-          <div class="metric-val" id="valChurn">3.2%</div>
+          <div class="metric-val" id="valPremium">0</div>
           <div class="metric-trend trend-pos">
-            <span>✓ Seuil sain (2% - 5% max)</span>
+            <span id="valPremiumLabel">Formules Premium Pro</span>
           </div>
         </div>
       </div>
@@ -529,11 +509,11 @@
         <div class="chart-card">
           <div class="chart-card-head">
             <div>
-              <div class="chart-title">Évolution du MRR (12 derniers mois)</div>
-              <span style="font-size:12px;color:var(--text-muted)">Croissance mensuelle récurrente en $ USD</span>
+              <div class="chart-title">Évolution des Inscriptions & MRR (12 mois)</div>
+              <span style="font-size:12px;color:var(--text-muted)">Croissance réelle des comptes et revenus</span>
             </div>
             <div style="font-size:12px;font-weight:700;color:var(--green)">
-              +113% sur l'année
+              En direct
             </div>
           </div>
           <div class="chart-wrap">
@@ -545,8 +525,8 @@
         <div class="chart-card">
           <div class="chart-card-head">
             <div>
-              <div class="chart-title">Répartition des Utilisateurs</div>
-              <span style="font-size:12px;color:var(--text-muted)">Free vs Premium</span>
+              <div class="chart-title">Répartition des Formules</div>
+              <span style="font-size:12px;color:var(--text-muted)">Essai Gratuit vs Premium</span>
             </div>
           </div>
           <div class="chart-wrap">
@@ -560,30 +540,30 @@
         <div class="growth-mini-card">
           <div>
             <div class="growth-mini-title">Inscriptions Récentes (30j)</div>
-            <div class="growth-mini-val" id="valSignups">89 profs</div>
+            <div class="growth-mini-val" id="valSignups">0 profs</div>
           </div>
           <div class="growth-mini-tag" style="background:var(--green-light);color:var(--green)">
-            ↑ +15% vs M-1
+            Nouveaux enseignants
           </div>
         </div>
 
         <div class="growth-mini-card">
           <div>
-            <div class="growth-mini-title">Désabonnements Churn (30j)</div>
-            <div class="growth-mini-val" id="valChurnCount">3 départs</div>
+            <div class="growth-mini-title">Enseignants en Essai 7j</div>
+            <div class="growth-mini-val" id="valFreeTrials">0 profs</div>
           </div>
-          <div class="growth-mini-tag" style="background:var(--green-light);color:var(--green)">
-            ↓ -1 vs M-1
+          <div class="growth-mini-tag" style="background:rgba(59, 130, 246, 0.15);color:var(--accent)">
+            Période d'évaluation
           </div>
         </div>
 
         <div class="growth-mini-card">
           <div>
             <div class="growth-mini-title">ARPU (Revenu Moyen / Prof Payant)</div>
-            <div class="growth-mini-val" id="valARPU">$12.07</div>
+            <div class="growth-mini-val" id="valARPU">$0.00</div>
           </div>
           <div class="growth-mini-tag" style="background:rgba(59, 130, 246, 0.15);color:var(--accent)">
-            ↑ Stable & Sain
+            Moyenne abonnés
           </div>
         </div>
       </div>
@@ -927,17 +907,18 @@
 
     let appData = {
       metrics: {
-        mrr: 2450.00,
-        arr: 29400.00,
-        active_premium: 245,
-        breakdown_monthly: 67,
-        breakdown_annual: 178,
-        active_free: 1200,
-        churn_rate: 0.032,
-        arpu: 12.07,
-        new_users_30d: 89,
-        churned_30d: 3,
-        growth_mom: 0.15
+        mrr: 0.00,
+        arr: 0.00,
+        active_premium: 0,
+        breakdown_monthly: 0,
+        breakdown_annual: 0,
+        active_free: 0,
+        total_users: 0,
+        churn_rate: 0.0,
+        arpu: 0.0,
+        new_users_30d: 0,
+        churned_30d: 0,
+        growth_mom: 0.0
       },
       revenue_trend_12m: [],
       users_by_plan: {},
@@ -1136,24 +1117,35 @@
     }
 
     function renderMetrics() {
-      const m = appData.metrics;
-      document.getElementById('valMRR').textContent = formatMoney(m.mrr);
-      document.getElementById('valARR').textContent = formatMoney(m.arr);
-      document.getElementById('valUsers').textContent = m.active_premium;
-      document.getElementById('valUsersBreakdown').textContent = `${m.breakdown_monthly} mensuels · ${m.breakdown_annual} annuels (Free : ${m.active_free})`;
-      document.getElementById('valChurn').textContent = (m.churn_rate * 100).toFixed(1) + '%';
+      const m = appData.metrics || {};
+      const totalUsersCount = appData.users.length;
       
-      document.getElementById('valSignups').textContent = `${m.new_users_30d} profs`;
-      document.getElementById('valChurnCount').textContent = `${m.churned_30d} départs`;
-      document.getElementById('valARPU').textContent = formatMoney(m.arpu);
+      const elMRR = document.getElementById('valMRR');
+      const elARR = document.getElementById('valARR');
+      const elUsers = document.getElementById('valUsers');
+      const elPremium = document.getElementById('valPremium');
+      const elBreakdown = document.getElementById('valUsersBreakdown');
+      const elSignups = document.getElementById('valSignups');
+      const elFreeTrials = document.getElementById('valFreeTrials');
+      const elARPU = document.getElementById('valARPU');
 
-      document.getElementById('tabUserCount').textContent = appData.users.length;
+      if (elMRR) elMRR.textContent = formatMoney(m.mrr || 0);
+      if (elARR) elARR.textContent = formatMoney(m.arr || 0);
+      if (elUsers) elUsers.textContent = totalUsersCount;
+      if (elPremium) elPremium.textContent = m.active_premium || 0;
+      if (elBreakdown) elBreakdown.textContent = `${m.breakdown_monthly || 0} mensuel · ${m.breakdown_annual || 0} annuel (Free / Essai : ${m.active_free || totalUsersCount})`;
+      if (elSignups) elSignups.textContent = `${m.new_users_30d || totalUsersCount} prof(s)`;
+      if (elFreeTrials) elFreeTrials.textContent = `${m.active_free || totalUsersCount} prof(s)`;
+      if (elARPU) elARPU.textContent = formatMoney(m.arpu || 0);
+
+      const tabCount = document.getElementById('tabUserCount');
+      if (tabCount) tabCount.textContent = totalUsersCount;
     }
 
     function initCharts() {
       const trendData = appData.revenue_trend_12m || [];
-      const labels = trendData.map(d => d.month);
-      const values = trendData.map(d => d.mrr);
+      const labels = trendData.length > 0 ? trendData.map(d => d.month) : ['Ce mois'];
+      const values = trendData.length > 0 ? trendData.map(d => d.mrr) : [appData.metrics.mrr || 0];
 
       // Line Chart (Revenue)
       const ctxLine = document.getElementById('mrrLineChart');
@@ -1197,12 +1189,23 @@
       const ctxDonut = document.getElementById('planDonutChart');
       if (ctxDonut) {
         if (donutChartInstance) donutChartInstance.destroy();
+
+        const countFree = appData.metrics.active_free || appData.users.filter(u => !u.plan || u.plan.includes('free') || u.plan.includes('trial')).length;
+        const countMonthly = appData.metrics.breakdown_monthly || appData.users.filter(u => u.plan === 'premium_monthly').length;
+        const countAnnual = appData.metrics.breakdown_annual || appData.users.filter(u => u.plan === 'premium_annual').length;
+
+        const totalPl = countFree + countMonthly + countAnnual;
+        const displayData = totalPl > 0 ? [countFree, countMonthly, countAnnual] : [1, 0, 0];
+        const displayLabels = totalPl > 0 
+          ? [`Essai Gratuit / Free (${countFree})`, `Premium Mensuel (${countMonthly})`, `Premium Annuel (${countAnnual})`]
+          : ['Aucun utilisateur inscrit (0)', 'Premium Mensuel (0)', 'Premium Annuel (0)'];
+
         donutChartInstance = new Chart(ctxDonut, {
           type: 'doughnut',
           data: {
-            labels: ['Free Tier (1 200)', 'Premium Mensuel (67)', 'Premium Annuel (178)'],
+            labels: displayLabels,
             datasets: [{
-              data: [1200, 67, 178],
+              data: displayData,
               backgroundColor: ['#64748B', '#3B82F6', '#8B5CF6'],
               borderWidth: 0
             }]
@@ -1240,7 +1243,7 @@
       const statusF = document.getElementById('userFilterStatus').value;
 
       filteredUsers = appData.users.filter(u => {
-        const matchQ = !q || (u.name && u.name.toLowerCase().includes(q)) || (u.email && u.email.toLowerCase().includes(q)) || (u.school && u.school.toLowerCase().includes(q));
+        const matchQ = !q || (u.name && u.name.toLowerCase().includes(q)) || (u.email && u.email.toLowerCase().includes(q)) || (u.school && u.school.toLowerCase().includes(q)) || (u.whatsapp && u.whatsapp.toLowerCase().includes(q));
         const matchPlan = (planF === 'all') || (u.plan === planF);
         const matchStatus = (statusF === 'all') || (u.status === statusF);
         return matchQ && matchPlan && matchStatus;
@@ -1292,7 +1295,15 @@
       pagEl.textContent = `Affichage ${filteredUsers.length ? start + 1 : 0}-${Math.min(end, filteredUsers.length)} sur ${filteredUsers.length} profs`;
 
       if (!pageItems.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted)">Aucun professeur ne correspond à ces critères.</td></tr>';
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align:center;padding:48px 20px;color:var(--text-muted)">
+              <div style="font-size:32px;margin-bottom:10px">👥</div>
+              <div style="font-weight:700;font-size:15px;color:#fff;margin-bottom:6px">Aucun professeur trouvé</div>
+              <div style="font-size:13px;max-width:400px;margin:0 auto">Les enseignants qui s'inscrivent sur l'application apparaîtront ici instantanément en temps réel avec toutes leurs coordonnées.</div>
+            </td>
+          </tr>
+        `;
         return;
       }
 
@@ -1301,44 +1312,52 @@
           ? '<span class="badge-plan plan-annual">⭐ Premium Annuel</span>'
           : (u.plan === 'premium_monthly' 
             ? '<span class="badge-plan plan-monthly">⚡ Premium Mensuel</span>' 
-            : '<span class="badge-plan plan-free">Free (5/mois)</span>');
+            : '<span class="badge-plan plan-free">Essai Gratuit 7j</span>');
 
         const statusBadge = u.status === 'active'
           ? '<span class="badge-status st-active">● Actif</span>'
           : (u.status === 'paused'
             ? '<span class="badge-status st-paused">⏸ En pause</span>'
             : (u.status === 'churned'
-              ? '<span class="badge-status st-churned">✕ Churné</span>'
+              ? '<span class="badge-status st-churned">✕ Résilié</span>'
               : '<span class="badge-status st-inactive">Inactif</span>'));
 
-        const joinedStr = u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '-';
-        const lastStr = u.last_login ? new Date(u.last_login).toLocaleDateString('fr-FR') : '-';
+        const joinedDate = u.created_at || u.createdAt;
+        const joinedStr = joinedDate ? new Date(joinedDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+        const lastStr = u.last_login ? new Date(u.last_login).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : joinedStr;
+
+        const cleanPhone = (u.whatsapp || '').replace(/[^0-9]/g, '');
 
         return `
           <tr>
             <td>
-              <div style="font-weight:700;color:#fff">${escapeHtml(u.name)}</div>
-              <div style="font-size:11.5px;color:var(--text-muted)">${escapeHtml(u.school || 'Non renseigné')}</div>
+              <div style="font-weight:700;color:#fff;font-size:13.5px">${escapeHtml(u.name || 'Enseignant')}</div>
+              <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">🏫 ${escapeHtml(u.school || 'Établissement non précisé')}</div>
             </td>
             <td>
-              <div style="color:var(--vanilla)">${escapeHtml(u.email)}</div>
-              ${u.whatsapp ? `<div style="font-size:11.5px;color:#34d399">📱 ${escapeHtml(u.whatsapp)}</div>` : ''}
+              <div><a href="mailto:${encodeURIComponent(u.email)}" style="color:var(--accent);text-decoration:none;font-weight:500">${escapeHtml(u.email)}</a></div>
+              ${u.whatsapp ? `
+                <div style="margin-top:4px">
+                  <a href="https://wa.me/${cleanPhone}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:#34d399;text-decoration:none;background:rgba(52,211,153,0.1);padding:2px 6px;border-radius:4px;border:1px solid rgba(52,211,153,0.2)">
+                    <span>📱</span> ${escapeHtml(u.whatsapp)}
+                  </a>
+                </div>` : ''}
             </td>
             <td>${planBadge}</td>
             <td>${statusBadge}</td>
-            <td>${joinedStr}</td>
-            <td>${lastStr}</td>
+            <td style="font-size:12.5px">${joinedStr}</td>
+            <td style="font-size:12.5px">${lastStr}</td>
             <td style="font-weight:700">${u.total_corrections || 0} copies</td>
             <td style="text-align:right">
               <div class="action-dropdown-wrap">
                 <button type="button" class="action-3dots-btn" onclick="toggleDropdown(event, '${u.id}')">⋯</button>
                 <div class="action-dropdown-menu" id="dropdown_${u.id}">
-                  <button type="button" class="dropdown-item-btn" onclick="openUserDetailsModal('${u.id}')">👁️ Voir détails</button>
-                  <button type="button" class="dropdown-item-btn" onclick="quickUpgradeUser('${u.id}')">⭐ Passer en Premium</button>
-                  <button type="button" class="dropdown-item-btn" onclick="quickDowngradeUser('${u.id}')">🔄 Rétrograder en Free</button>
+                  <button type="button" class="dropdown-item-btn" onclick="openUserDetailsModal('${u.id}')">👁️ Voir détails & Coordonnées</button>
+                  ${u.whatsapp ? `<a href="https://wa.me/${cleanPhone}" target="_blank" class="dropdown-item-btn" style="text-decoration:none;color:#34d399">💬 Écrire sur WhatsApp</a>` : ''}
+                  <a href="mailto:${encodeURIComponent(u.email)}" class="dropdown-item-btn" style="text-decoration:none;color:var(--accent)">📧 Envoyer un Email</a>
+                  <button type="button" class="dropdown-item-btn" onclick="quickUpgradeUser('${u.id}')">⭐ Activer Formule Premium</button>
+                  <button type="button" class="dropdown-item-btn" onclick="quickDowngradeUser('${u.id}')">🔄 Remettre en Essai Gratuit</button>
                   <button type="button" class="dropdown-item-btn" onclick="quickTogglePauseUser('${u.id}')">${u.status === 'paused' ? '▶️ Reprendre' : '⏸ Mettre en pause'}</button>
-                  <button type="button" class="dropdown-item-btn" onclick="openRefundPrompt('${u.id}')">💸 Émettre un remboursement</button>
-                  <button type="button" class="dropdown-item-btn" onclick="openEmailTemplateModal('${u.id}')">📧 Envoyer un message</button>
                   <button type="button" class="dropdown-item-btn danger-item" onclick="deleteUserPrompt('${u.id}')">🗑️ Supprimer le compte</button>
                 </div>
               </div>

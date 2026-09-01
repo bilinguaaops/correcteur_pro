@@ -1353,6 +1353,9 @@
       </div>
 
       <div class="results-actions-right">
+        <button type="button" class="btn-pedago-outline" onclick="openPdfCustomizerModal()" title="Personnaliser l'en-tête, logo d'école, nom du professeur et style des PDF">
+          <span>⚙️ Personnaliser le PDF</span>
+        </button>
         <button type="button" class="btn-pedago-outline" onclick="openPronoteExportModal()" title="Importer directement vos notes dans Pronote via fichier CSV">
           <span>📊 Importer dans Pronote (CSV)</span>
         </button>
@@ -1831,6 +1834,120 @@
         </button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL DE PERSONNALISATION DES PDF
+══════════════════════════════════════════════ -->
+<div class="mo" id="pdfCustomizerModal" style="display:none;z-index:100000;" onclick="if(event.target===this)closePdfCustomizerModal()">
+  <div class="modal-card-pedago" style="max-width:620px;width:min(95%, 620px);padding:28px;border-radius:18px;box-shadow:0 25px 60px rgba(0,0,0,0.6);position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--border-subtle);padding-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">⚙️</span>
+        <div>
+          <h3 style="font-size:16px;font-weight:800;color:var(--text-main);margin:0">Personnaliser les Fichiers PDF</h3>
+          <div style="font-size:12px;color:var(--text-muted)">Personnalisez les fiches élèves et récapitulatifs avec votre établissement</div>
+        </div>
+      </div>
+      <button type="button" onclick="closePdfCustomizerModal()" class="modal-close-btn" style="position:static" aria-label="Fermer">✕</button>
+    </div>
+
+    <form id="pdfCustomizerForm" onsubmit="event.preventDefault();savePdfCustomizerSettings();">
+      <!-- Section 1 : Logo & Établissement -->
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:18px;align-items:start;margin-bottom:18px">
+        <!-- Logo Upload Area -->
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--text-main);display:block;margin-bottom:6px">Logo de l'école</label>
+          <div id="pdfLogoPreviewContainer" style="width:140px;height:100px;border:2px dashed var(--border-subtle);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-subtle);position:relative;overflow:hidden;cursor:pointer;" onclick="document.getElementById('pdfLogoFileInput').click()">
+            <img id="pdfLogoPreviewImg" src="" alt="Logo" style="display:none;max-width:90%;max-height:90%;object-fit:contain;" />
+            <div id="pdfLogoPlaceholder" style="text-align:center;padding:8px">
+              <span style="font-size:22px;display:block;margin-bottom:2px">🏫</span>
+              <span style="font-size:11px;color:var(--text-muted);font-weight:600">Ajouter un logo (PNG/JPG)</span>
+            </div>
+          </div>
+          <input type="file" id="pdfLogoFileInput" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="handlePdfLogoUpload(event)" />
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button type="button" class="btn-pedago-ghost" style="font-size:11px;padding:4px 8px;width:100%" onclick="removePdfLogo()">Supprimer</button>
+          </div>
+        </div>
+
+        <!-- School & Teacher fields -->
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--text-main);display:block;margin-bottom:4px">Nom de l'établissement</label>
+            <input type="text" id="pdfSchoolNameInput" placeholder="Ex: Lycée Blaise Pascal / Collège Victor Hugo" class="pedago-input" style="width:100%;font-size:13px;padding:9px 12px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border-subtle);color:var(--text-main)" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--text-main);display:block;margin-bottom:4px">Nom du professeur / correcteur</label>
+            <input type="text" id="pdfTeacherNameInput" placeholder="Ex: M. Kouassi / Mme Martin (Professeur de Mathématiques)" class="pedago-input" style="width:100%;font-size:13px;padding:9px 12px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border-subtle);color:var(--text-main)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2 : Titre du Document & Thème Couleur -->
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:18px">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--text-main);display:block;margin-bottom:4px">Titre de l'en-tête du document</label>
+          <input type="text" id="pdfDocTitleInput" value="FICHE DE CORRECTION INDIVIDUELLE" class="pedago-input" style="width:100%;font-size:13px;padding:9px 12px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border-subtle);color:var(--text-main)" />
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--text-main);display:block;margin-bottom:4px">Couleur d'accent du PDF</label>
+          <select id="pdfAccentColorSelect" class="filter-select" style="width:100%;padding:9px 12px;font-size:13px">
+            <option value="#0076FF">🔵 Bleu PedagoAI (Officiel)</option>
+            <option value="#1E293B">🌌 Bleu Nuit / Navy</option>
+            <option value="#059669">🌲 Vert Émeraude</option>
+            <option value="#991B1B">🍷 Rouge Bordeaux</option>
+            <option value="#7C3AED">💜 Violet Académique</option>
+            <option value="#111827">⚫ Noir & Blanc Sobre</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section 3 : Options d'affichage -->
+      <div style="background:var(--bg-subtle);border:1px solid var(--border-subtle);border-radius:10px;padding:14px;margin-bottom:18px">
+        <div style="font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:10px">Éléments visibles sur chaque fiche élève :</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px;color:var(--text-muted)">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="pdfOptShowLogo" checked />
+            <span>Afficher le logo de l'école</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="pdfOptShowTeacher" checked />
+            <span>Afficher le nom du professeur</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="pdfOptShowAppreciation" checked />
+            <span>Encadré d'appréciation globale</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="pdfOptShowSignature" checked />
+            <span>Zone signature parents & prof</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Section 4 : Mention de bas de page -->
+      <div style="margin-bottom:20px">
+        <label style="font-size:12px;font-weight:700;color:var(--text-main);display:block;margin-bottom:4px">Mention de bas de page / Signature</label>
+        <input type="text" id="pdfFooterNoteInput" placeholder="Ex: Signature du professeur et des parents" value="Signature du professeur et visa des parents : _______________________" class="pedago-input" style="width:100%;font-size:12.5px;padding:8px 12px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border-subtle);color:var(--text-main)" />
+      </div>
+
+      <!-- Actions Buttons -->
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--border-subtle);padding-top:16px">
+        <button type="button" class="btn-pedago-outline" onclick="testPdfCustomizerPreview()" style="font-size:13px;padding:9px 16px;">
+          👁️ Tester / Télécharger un aperçu
+        </button>
+        <div style="display:flex;gap:10px">
+          <button type="button" class="btn-pedago-ghost" onclick="closePdfCustomizerModal()" style="font-size:13px;padding:9px 16px;">
+            Annuler
+          </button>
+          <button type="submit" class="btn-pedago-primary" style="font-size:13px;font-weight:700;padding:9px 20px;">
+            💾 Enregistrer la mise en page
+          </button>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
 

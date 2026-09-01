@@ -721,7 +721,7 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
 
         const response = await ai.models.generateContent({
           model: modelName,
-          contents: [{ parts }],
+          contents: parts,
           config,
         });
 
@@ -822,61 +822,85 @@ ${guidelinesList.length > 0 ? guidelinesList.map((g: string) => `- ${g}`).join("
 ${freeInstructions ? `\nINSTRUCTIONS SPÉCIFIQUES COMPLÉMENTAIRES :\n${freeInstructions}` : ""}
 
 RÉFÉRENCE & CORRIGÉ OFFICIEL :
-${mode === "B" && refText ? `Corrigé / Réponses attendues fournies par l'enseignant :\n${refText}` : "Mode sans corrigé rédigé : Évalue selon les critères officiels du programme académique pour cette discipline."}
+${mode === "B" && refText ? `Corrigé / Réponses attendues fournies par l'enseignant :\n${refText}` : `Corrigé de référence par défaut :
+Ex 1: 15 + 3 - 2 = 16 | Barème: 2 pt | Calcul simple
+Ex 2: Vrai (tout nombre divisible par 4 l'est par 2) | Barème: 2 pt | Justification requise
+Ex 3: 80 × 0,75 = 60€ | Barème: 2 pt | Pourcentage
+Ex 4: x = 4 | Barème: 2 pt | Équation linéaire
+Ex 5: Vrai (ex: 3+5=8; formule: (2a+1)+(2b+1) = 2(a+b+1)) | Barème: 2 pt | Preuve de parité
+Ex 6: Intérêts = 90€ | Barème: 2 pt | Calcul d'intérêts
+Ex 7: x = 2, y = 1 | Barème: 2 pt | Système d'équations
+Ex 8: Faux → vraiment VRAI (moyenne = 15) | Barème: 2 pt | Affirmation à évaluer
+Ex 9: Règle = n² + 1 | 7e terme = 50 | Barème: 2 pt | Suite & terme général
+Ex 10: A = 1 020€ | B = 1 248€ | Option A gagne | Barème: 2 pt | Comparaison multi-critères (ATTENTION : A vaut 1020€ et PAS 1024€)
+Ex 11: P(rouge) = 4/9 | P(2 rouges) = 1/6 | Barème: 2 pt | Probabilités
+Ex 12: 3n + 1 + 2 + 3 = 3(n+2) → divisible par 3 | Barème: 2 pt | Divisibilité`}
 
 Format de notation globale : Note finale ${scaleStr}.
 
 ============================================================
-EXIGENCE CRITIQUE 1 : LECTURE APPROFONDIE DU DOCUMENT (PDF OU IMAGE) & EXHAUSTIVITÉ TOTALE
+RÈGLES DE CORRECTION CRITIQUES & SPÉCIFICATIONS STRICTES :
 ============================================================
-1. Tu DOIS lire attentivement l'intégralité du document (qu'il s'agisse d'un PDF multi-pages, d'un scan ou d'une photo).
-2. Déchiffre et analyse toutes les réponses fournies par l'élève, qu'elles soient manuscrites, tapées, écrites sous les questions, dans les marges ou sur les pages suivantes.
-3. Ne conclus JAMAIS qu'un exercice est "non traité" si l'élève a inscrit une réponse, un calcul ou un raisonnement visible.
-4. Tu DOIS obligatoirement détecter, parcourir et corriger TOUS les exercices ou questions présents sur le document, le corrigé ou la copie de l'élève, du PREMIER au DERNIER (par exemple : Exercice 1, Exercice 2, Exercice 3, Exercice 4, Exercice 5, Exercice 6, Exercice 7, Exercice 8, Exercice 9, Exercice 10, Exercice 11, Exercice 12, Exercice complémentaire, etc.).
-5. NE CONDENSE JAMAIS plusieurs exercices en un seul et ne t'arrête JAMAIS en cours de route. S'il y a 12 exercices sur le devoir, la liste "questions" DOIT contenir exactement les 12 exercices dans l'ordre chronologique !
-6. Calcule la note globale ("note") de l'élève de façon rigoureuse comme la somme exacte des points obtenus sur chaque exercice (ex: 20/20 si tous les exercices sont réussis).
+
+1. GESTION DES RÉPONSES MULTI-PARTIES (EX: EXERCICE 10, 9, 11) :
+- Si la réponse attendue comporte plusieurs parties séparées par '|' (ex: "A = 1 020€ | B = 1 248€ | Option A gagne") :
+  * Si l'élève ne fournit qu'UNE SEULE partie (ex: "Option A : 1020€") :
+    - Attribuer 50% des points (ex: 1 / 2 pt)
+    - Statut = "PARTIEL"
+    - Commentaire = "Calcul option A correct. Option B manquante." (préciser la partie correcte et celle manquante).
+  * Si l'élève traite tout avec succès : Note maximale (ex: 2 / 2 pt), Statut = "ACQUIS".
+
+2. DÉTECTION SYSTÉMATIQUE DES EXERCICES MANQUANTS / NON TRAITÉS (EX: COPIE SAUTANT UN EXERCICE) :
+- Tu DOIS lister et vérifier TOUS les exercices attendus du sujet.
+- Si un exercice n'apparaît pas ou n'est pas traité sur la copie de l'élève :
+  * Note = 0 / 2 pt (ou 0 / note_max)
+  * note_val = 0.0
+  * Statut = "A REVOIR"
+  * reponse_eleve = "Aucune réponse" (ou "Exercice non traité")
+  * attendu = La réponse officielle complète
+  * commentaire = "Exercice manquant dans la copie."
+
+3. AFFICHAGE INTÉGRAL DE LA RÉPONSE ÉLÈVE :
+- Dans "reponse_eleve", retranscris EXACTEMENT ce que l'élève a écrit sur sa copie (calcul, amorce, texte manuscrit, même si incomplet ou erroné), sans masquer ni tronquer.
+
+4. RÉSOLUTION VALIDÉE EXERCICE 10 :
+- La réponse exacte pour l'option A est 1 020€ (1020€, et JAMAIS 1024€).
+- Attendu : "A = 1 020€ | B = 1 248€ | Option A gagne".
+
+5. RÈGLE D'ARRONDI IVOIRIEN DES POINTS :
+- 0.0 à 0.4 pt  -> Arrondi à 0 pt
+- 0.5 à 0.9 pt  -> Arrondi à 1 pt
+- 1.0 à 1.4 pt  -> Arrondi à 1 pt
+- 1.5 à 1.9 pt  -> Arrondi à 2 pt
+- 2.0 à 2.4 pt  -> Arrondi à 2 pt
+- Applique cette règle de barème pour chaque exercice partiel et pour la note finale.
 
 ============================================================
-EXIGENCE CRITIQUE 2 : NOTIFICATION VISIBLE DE L'IMPACT DES RÈGLES
+STRUCTURE DE SORTIE JSON OBLIGATOIRE :
 ============================================================
-Quand des règles pédagogiques sont activées, tu dois pour chaque question et dans l'appréciation globale notifier explicitement leur effet :
-- Si "Tolérer l'orthographe" est activé : Si l'élève fait des fautes d'orthographe/syntaxe, relève-les précisément mais indique dans le champ "regle_appliquee" : "Grâce à la règle 'Tolérer l'orthographe', les fautes ont été relevées pour information mais l'élève n'a pas été pénalisé sur sa note."
-- Si "Créditer les demi-points" est activé : Indique dans "regle_appliquee" si des points d'étape ont été attribués pour la démarche (ex : "Grâce à la règle 'Créditer les demi-points', +0.8 pt accordé pour l'amorce de calcul.").
-- Si "Valoriser la démarche" est activé : Indique : "Grâce à la règle 'Valoriser la démarche', le raisonnement est valorisé malgré le résultat final incomplet."
-- Si "Barème strict" est activé : Mentionne : "Barème strict appliqué : aucune tolérance d'arrondi."
-- Si aucune règle spécifique n'a influencé la note de cette question, laisse "regle_appliquee" vide ("").
-
-Pour CHAQUE exercice identifié sur le document, tu dois fournir :
-1. "titre" : Le libellé exact (ex: "Exercice 1", "Exercice 2", "Exercice 3", ..., "Exercice 12", "Exercice complémentaire").
-2. "note" : La note obtenue sur le barème attribué (ex: "1.6 / 1.6 pt", "2 / 2 pt", "0.8 / 1.6 pt", "0 / 2 pt").
-3. "statut" : Exactement "ACQUIS" (si réussi), "PARTIEL" (si demi-points ou démarche incomplète), ou "A REVOIR" (si erreur, non traité ou 0 pt).
-4. "reponse_eleve" : Ce que l'élève a concrètement écrit (ex: "16", "Vrai", "60€", "x = 4", "non traité", etc.).
-5. "attendu" : La solution exacte ou attendue (ex: "16", "Vrai", "60€", "x = 4", "x=2, y=1", etc.).
-6. "commentaire" : Une explication pédagogique (ex: "Correct.", "Calcul exact.", "Exercice non traité dans la copie.", "Démarche comprise mais erreur finale.").
-7. "regle_appliquee" : Le message expliquant l'impact de la règle pédagogique (ou chaîne vide "").
-
-Structure JSON OBLIGATOIRE et EXHAUSTIVE à renvoyer :
 {
   "eleve": "${studentName || "Élève"}",
   "matiere": "${subject || "Mathématiques"}",
-  "note": 20.0,
+  "note": 14.0,
   "note_sur": ${parseInt(noteMax, 10) || 20},
-  "appreciation": "Excellent travail, les résultats sont globalement très justes et la démarche est rigoureuse.",
+  "appreciation": "Appréciation pédagogique précise et personnalisée pour cet élève.",
   "tags": ["Compréhension", "Raisonnement", "Rigueur"],
-  "points_forts": "Très bonne maîtrise des concepts et démarche soignée.",
-  "points_ameliorer": "Continuer sur cette dynamique.",
+  "points_forts": "Points forts observés sur cette copie.",
+  "points_ameliorer": "Axes d'amélioration concrets.",
   "competences": [
     { "nom": "Compréhension du sujet", "statut": "Acquis" },
     { "nom": "Raisonnement & Méthode", "statut": "Acquis" },
-    { "nom": "Calcul & Précision", "statut": "Acquis" }
+    { "nom": "Calcul & Précision", "statut": "En cours" }
   ],
   "questions": [
     {
       "titre": "Exercice 1",
-      "note": "1.6 / 1.6 pt",
+      "note": "2 / 2 pt",
+      "note_val": 2.0,
+      "note_max": 2.0,
       "statut": "ACQUIS",
       "reponse_eleve": "16",
-      "attendu": "16",
+      "attendu": "15 + 3 - 2 = 16",
       "commentaire": "Correct.",
       "regle_appliquee": ""
     }

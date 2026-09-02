@@ -925,6 +925,22 @@ app.post("/api/correct", async (req, res) => {
       const currentEvalTitle = evalTitle || "Devoir Surveillé N°1";
       const currentLevel = gradeLevel || "college";
 
+      let refDescription = "";
+      if (refImage) {
+        refDescription = `CORRIGÉ DE RÉFÉRENCE DE L'ENSEIGNANT :
+Un corrigé officiel de référence t'est fourni ci-dessus sous forme d'image (ou document).
+Tu DOIS IMPÉRATIVEMENT analyser ce corrigé de référence en premier, en extraire TOUTES les questions, les réponses attendues exactes et les barèmes de chaque exercice.
+Ce corrigé constitue la VÉRITÉ ABSOLUE pour cette correction.`;
+      } else if (refText && refText.trim()) {
+        refDescription = `CORRIGÉ DE RÉFÉRENCE FOURNI PAR L'ENSEIGNANT (TEXTE) :
+${refText.trim()}
+Ce corrigé constitue la VÉRITÉ ABSOLUE pour cette correction.`;
+      } else {
+        refDescription = `CORRECTION AUTONOME DU SUJET :
+L'enseignant n'a pas joint de document de corrigé séparé.
+Tu dois d'abord lire attentivement l'énoncé de chaque exercice figurant sur le document de l'élève, résoudre rigoureusement chaque exercice pour déterminer la solution exacte et le barème approprié, puis évaluer les réponses de l'élève par rapport à ces solutions exactes.`;
+      }
+
       let promptText = `Tu es un enseignant et correcteur académique dans la discipline : ${subject || "Mathématiques"} (Niveau : ${currentLevel}, Évaluation : "${currentEvalTitle}").
 Tu dois analyser et évaluer avec une rigueur absolue la copie de l'élève "${studentName || "Élève"}".
 
@@ -935,47 +951,36 @@ CONSIGNES PÉDAGOGIQUES DU PROFESSEUR :
 ${guidelinesList.length > 0 ? guidelinesList.map((g: string) => `- ${g}`).join("\n") : "- Évaluation équitable, constructive, bienveillante et rigoureuse."}
 ${freeInstructions ? `\nINSTRUCTIONS SPÉCIFIQUES COMPLÉMENTAIRES :\n${freeInstructions}` : ""}
 
-RÉFÉRENCE & CORRIGÉ OFFICIEL :
-${mode === "B" && refText ? `Corrigé / Réponses attendues fournies par l'enseignant :\n${refText}` : `Corrigé de référence par défaut :
-Ex 1: 15 + 3 - 2 = 16 | Barème: 2 pt | Calcul simple
-Ex 2: Vrai (tout nombre divisible par 4 l'est par 2) | Barème: 2 pt | Justification requise
-Ex 3: 80 × 0,75 = 60€ | Barème: 2 pt | Pourcentage
-Ex 4: x = 4 | Barème: 2 pt | Équation linéaire
-Ex 5: Vrai (ex: 3+5=8; formule: (2a+1)+(2b+1) = 2(a+b+1)) | Barème: 2 pt | Preuve de parité
-Ex 6: Intérêts = 90€ | Barème: 2 pt | Calcul d'intérêts
-Ex 7: x = 2, y = 1 | Barème: 2 pt | Système d'équations
-Ex 8: Faux → vraiment VRAI (moyenne = 15) | Barème: 2 pt | Affirmation à évaluer
-Ex 9: Règle = n² + 1 | 7e terme = 50 | Barème: 2 pt | Suite & terme général
-Ex 10: A = 1 020€ | B = 1 248€ | Option A gagne | Barème: 2 pt | Comparaison multi-critères (ATTENTION : A vaut 1020€ et PAS 1024€)
-Ex 11: P(rouge) = 4/9 | P(2 rouges) = 1/6 | Barème: 2 pt | Probabilités
-Ex 12: 3n + 1 + 2 + 3 = 3(n+2) → divisible par 3 | Barème: 2 pt | Divisibilité`}
+============================================================
+${refDescription}
+============================================================
 
 NOTE MAXIMALE DE L'ÉVALUATION :
-La note finale de l'élève DOIT IMPÉRATIVEMENT être ramenée sur ${targetScale} (note_sur: ${targetScale}). Même si le total des barèmes des exercices est de 24 points ou 100 points, ta note globale 'note' doit être calculée proportionnellement sur ${targetScale} (ex: si l'élève a 24/24 aux exercices, sa note globale est ${targetScale}/${targetScale} ; si l'élève a 18/24, sa note globale est ${(18 / 24 * targetScale).toFixed(1)}/${targetScale}).
+La note finale de l'élève DOIT IMPÉRATIVEMENT être ramenée sur ${targetScale} (note_sur: ${targetScale}). Même si le total des barèmes des exercices est de 24 points ou 100 points, ta note globale 'note' doit être calculée proportionnellement sur ${targetScale}.
 
 ============================================================
 PROTOCOLE STRICT DE CORRECTION « GRILLE MIROIR » (1-TO-1 MAPPING) :
 ============================================================
 Tu es un algorithme de vérification mathématique et pédagogique strict, factuel et impartial. Tu ne fais AUCUNE supposition ni acte de clémence arbitraire.
 
-1. EXTRACTION EXHAUSTIVE DU CORRIGÉ (LA VÉRITÉ ABSOLUE) :
-   - Extrais la liste exhaustive de TOUTES les questions/exercices et leurs barèmes respectifs à partir du document ou texte de référence.
+1. EXTRACTION EXHAUSTIVE DES QUESTIONS DU SUJET/CORRIGÉ :
+   - Extrais la liste exhaustive de TOUTES les questions/exercices et leurs barèmes respectifs à partir du corrigé de référence (ou du document).
    - Cette liste de questions constitue ta grille de référence immuable.
 
 2. COMPARAISON MIROIR QUESTION PAR QUESTION (ZÉRO HALLUCINATION) :
    - Pour chaque question du corrigé, inspecte la copie de l'élève.
+   - "titre" : Le nom ou numéro de la question (ex: "Exercice 1", "Question 2.a").
    - "attendu" : Retranscris mot-à-mot et chiffre-à-chiffre la réponse exacte attendue selon le corrigé de référence.
    - "reponse_eleve" : Retranscris mot-à-mot / chiffre-à-chiffre EXACTEMENT ce que l'élève a produit sur sa copie (ou écris "Aucune réponse / Non traité" si absent).
-   - "justification_note" : Justifie factuellement la note attribuée par comparaison directe (ex: « Réponse 16 conforme au corrigé attendu » ou « Réponse 14 au lieu de 16 attendu : 0 point » ou « Option A calculée correctement mais Option B omise : 1 pt sur 2 »).
+   - "justification_note" : Justifie factuellement la note attribuée par comparaison directe (ex: « Réponse exacte conforme au corrigé » ou « Résultat 14 au lieu de 16 attendu : 0 point » ou « Option A calculée correctement mais Option B omise : 1 pt sur 2 »).
 
 3. RÈGLE D'ATTRIBUTION DES POINTS :
-   - Réponse conforme et exacte -> Barème complet (ex: 2 / 2 pt), Statut = "ACQUIS".
-   - Réponse multi-parties partiellement traitée -> Demi-points selon la part exacte réalisée (ex: 1 / 2 pt), Statut = "PARTIEL".
-   - Réponse fausse, absente ou incomplète non conforme -> 0 point (ex: 0 / 2 pt), Statut = "A REVOIR".
+   - Réponse conforme et exacte -> Barème complet, Statut = "ACQUIS".
+   - Réponse multi-parties partiellement traitée -> Demi-points selon la part exacte réalisée, Statut = "PARTIEL".
+   - Réponse fausse, absente ou incomplète non conforme -> 0 point, Statut = "A REVOIR".
 
 4. NOTE GLOBALE STRICTE :
    - La note finale 'note' est STRICTEMENT la somme arithmétique des notes de chaque question, normalisée sur ${targetScale}.
-   - Exemple : Si la somme des questions donne 18 points sur un total possible de 24 points, la note sur ${targetScale} est exactement (18 / 24) * ${targetScale} = ${(18 / 24 * targetScale).toFixed(1)}.
 
 ============================================================
 STRUCTURE DE SORTIE JSON OBLIGATOIRE :
@@ -1001,8 +1006,8 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
       "note_val": 2.0,
       "note_max": 2.0,
       "statut": "ACQUIS",
-      "reponse_eleve": "15 + 3 - 2 = 16",
-      "attendu": "15 + 3 - 2 = 16",
+      "reponse_eleve": "Réponse exacte transcrite de la copie",
+      "attendu": "Réponse exacte attendue selon le corrigé",
       "justification_note": "Calcul exact et résultat conforme au corrigé.",
       "commentaire": "Calcul parfaitement maîtrisé.",
       "regle_appliquee": ""
@@ -1089,92 +1094,10 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
     });
   } catch (error: any) {
     console.error("Gemini Correction error:", error);
-    
-    // Return structured graceful evaluation with student differentiation
-    const maxNote = (req.body?.noteMax === "auto" || !req.body?.noteMax) ? 20 : (parseInt(req.body?.noteMax, 10) || 20);
-    const fallbackName = req.body?.studentName || "Élève";
-    const fallbackSubject = req.body?.subject || "Mathématiques";
-    
-    let hash = 0;
-    for (let i = 0; i < fallbackName.length; i++) {
-      hash = (hash << 5) - hash + fallbackName.charCodeAt(i);
-      hash |= 0;
-    }
-    const scoreOffsets = [14.0, 16.5, 12.0, 17.5, 13.5, 15.0, 18.0, 11.5];
-    const baseScore = scoreOffsets[Math.abs(hash) % scoreOffsets.length];
-    const scaledScore = Math.round(((baseScore / 20) * maxNote) * 10) / 10;
-
-    const appreciations = [
-      `Bon travail d'ensemble pour ${fallbackName}. Les méthodes de calcul sont bien appliquées avec une bonne clarté dans la rédaction.`,
-      `Copie soignée de ${fallbackName}. Les concepts fondamentaux sont bien assimilés, veiller à la rigueur sur les étapes intermédiaires.`,
-      `Très bonne copie de ${fallbackName}, la démarche logique est maîtrisée et les raisonnements sont convaincants. Continue sur cette lancée !`,
-      `Ensemble convenable. ${fallbackName} montre une bonne volonté et de bonnes bases, consolider les calculs complexes pour gagner en rapidité.`
-    ];
-    const studentAppreciation = appreciations[Math.abs(hash) % appreciations.length];
-
-    const fallbackResult = {
-      eleve: fallbackName,
-      matiere: fallbackSubject,
-      note: scaledScore,
-      note_sur: maxNote,
-      appreciation: studentAppreciation,
-      tags: scaledScore >= (maxNote * 0.7) ? ["Rigueur", "Méthode", "Calcul"] : ["Compréhension", "Raisonnement", "À consolider"],
-      points_forts: scaledScore >= (maxNote * 0.7) ? "Bonne maîtrise des règles et des formules." : "Bonne compréhension de la démarche générale.",
-      points_ameliorer: "Approfondir la justification écrite des résultats intermédiaires.",
-      competences: [
-        { nom: "Compréhension du sujet", statut: "Acquis" },
-        { nom: "Méthode & Raisonnement", statut: scaledScore >= (maxNote * 0.6) ? "Acquis" : "En cours" },
-        { nom: "Expression & Rédaction", statut: scaledScore >= (maxNote * 0.5) ? "Acquis" : "En cours" }
-      ],
-      questions: [
-        {
-          titre: "Exercice 1 (Calcul de base)",
-          note: "2 / 2 pt",
-          statut: "ACQUIS",
-          reponse_eleve: "16",
-          attendu: "15 + 3 - 2 = 16",
-          commentaire: "Calcul exact."
-        },
-        {
-          titre: "Exercice 2 (Propriété arithmétique)",
-          note: scaledScore > 14 ? "2 / 2 pt" : "1 / 2 pt",
-          statut: scaledScore > 14 ? "ACQUIS" : "PARTIEL",
-          reponse_eleve: "Vrai",
-          attendu: "Vrai (tout nombre divisible par 4 l'est par 2)",
-          commentaire: scaledScore > 14 ? "Justification claire." : "Réponse exacte, justification à développer."
-        },
-        {
-          titre: "Exercice 3 (Pourcentage)",
-          note: scaledScore > 12 ? "2 / 2 pt" : "0 / 2 pt",
-          statut: scaledScore > 12 ? "ACQUIS" : "A REVOIR",
-          reponse_eleve: scaledScore > 12 ? "60€" : "20",
-          attendu: "80 * 0,75 = 60€",
-          commentaire: scaledScore > 12 ? "Calcul de pourcentage réussi." : "Erreur de calcul sur la remise."
-        },
-        {
-          titre: "Exercice 4 (Équation)",
-          note: "2 / 2 pt",
-          statut: "ACQUIS",
-          reponse_eleve: "x = 4",
-          attendu: "x = 4",
-          commentaire: "Résolution exacte de l'équation."
-        },
-        {
-          titre: "Exercice 5 (Synthèse & Logique)",
-          note: scaledScore > 15 ? "2 / 2 pt" : "1 / 2 pt",
-          statut: scaledScore > 15 ? "ACQUIS" : "PARTIEL",
-          reponse_eleve: scaledScore > 15 ? "Démonstration complète" : "Démarche entamée",
-          attendu: "Démonstration complète par récurrence ou calcul direct",
-          commentaire: scaledScore > 15 ? "Très bonne démonstration." : "Démarche correcte, conclusion à préciser."
-        }
-      ]
-    };
-
-    return res.status(200).json({
-      result: fallbackResult,
-      content: [{ type: "text", text: JSON.stringify(fallbackResult) }],
-      fallback: true,
-      warning: "Évaluation réalisée avec le profil de secours académique suite à un format d'image non standard."
+    const errMsg = error?.message || String(error);
+    return res.status(500).json({
+      error: errMsg,
+      message: "Une erreur est survenue lors de l'analyse avec le modèle IA.",
     });
   }
 });

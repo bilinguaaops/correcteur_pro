@@ -796,150 +796,12 @@ function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax, 
   }
 
   if (!qArray || !qArray.length) {
-    // Dynamic differentiated questions generator for fallback bound deterministically to student identity
-    var baseScores = [15.0, 18.0, 13.0, 16.5, 14.0, 17.5, 12.5, 19.0, 11.5, 16.0];
-    var scoreTarget = typeof studentScore === 'number' ? studentScore : (parseFloat(studentScore) || baseScores[sHash % baseScores.length]);
-    var ratio = Math.max(0.2, Math.min(1.0, scoreTarget / targetMax));
-
-    var generatedQuestions = [
-      {
-        titre: 'Exercice 1',
-        note_val: ratio > 0.4 ? 2.0 : 1.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.4 ? '16' : '14',
-        attendu: '15 + 3 - 2 = 16',
-        commentaire: ratio > 0.4 ? 'Correct.' : 'Erreur de priorité opératoire.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 2',
-        note_val: ratio > 0.6 ? 2.0 : 0.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.5 ? 'Vrai' : 'Faux',
-        attendu: 'Vrai (tout nombre divisible par 4 l\'est par 2)',
-        commentaire: ratio > 0.6 ? 'Correct.' : 'Affirmation fausse et justification absente.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 3',
-        note_val: ratio > 0.75 ? 2.0 : 0.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.75 ? '60€' : '20',
-        attendu: '80 × 0,75 = 60€',
-        commentaire: ratio > 0.75 ? 'Correct.' : 'Erreur de calcul sur le pourcentage.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 4',
-        note_val: ratio > 0.5 ? 2.0 : 0.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.5 ? 'x = 4' : 'x = 3',
-        attendu: 'x = 4',
-        commentaire: ratio > 0.5 ? 'Correct.' : 'Erreur dans la résolution de l\'équation.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 5',
-        note_val: ratio > 0.5 ? 2.0 : 0.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.5 ? 'Vrai (ex: 3+5=8)' : 'Aucune réponse',
-        attendu: 'Vrai (ex: 3+5=8; formule: (2a+1)+(2b+1) = 2(a+b+1))',
-        commentaire: ratio > 0.5 ? 'Correct.' : 'Exercice manquant dans la copie.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 6',
-        note_val: ratio > 0.7 ? 2.0 : 0.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.7 ? '90€' : '45€',
-        attendu: 'Intérêts = 90€',
-        commentaire: ratio > 0.7 ? 'Correct.' : 'Calcul partiel des intérêts.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 7',
-        note_val: ratio > 0.65 ? 2.0 : 1.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.65 ? 'x = 2, y = 1' : 'x = 2',
-        attendu: 'x = 2, y = 1',
-        commentaire: ratio > 0.65 ? 'Correct.' : 'Valeur de x correcte. Valeur de y manquante.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 8',
-        note_val: ratio > 0.8 ? 2.0 : 1.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.8 ? 'Vrai (moyenne = 15)' : 'On remarque qu\'il y a une suite, raison 2, Un+1=U0+2n',
-        attendu: 'Faux → vraiment VRAI (moyenne = 15)',
-        commentaire: ratio > 0.8 ? 'Correct.' : 'Approche partiellement développée, mais réponse incorrecte.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 9',
-        note_val: ratio > 0.8 ? 2.0 : 1.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.8 ? 'n²+1, 50' : 'n²+1',
-        attendu: 'Règle = n² + 1 | 7e terme = 50',
-        commentaire: ratio > 0.8 ? 'Correct.' : 'Règle trouvée. 7e terme manquant.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 10',
-        note_val: ratio > 0.85 ? 2.0 : 1.0, // Bug 1 & 4 test: Option A only -> 1 pt, A = 1020€
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.85 ? 'Option A: 1020€ | Option B: 1248€ | Option A gagne' : 'Option A : 1020€',
-        attendu: 'A = 1 020€ | B = 1 248€ | Option A gagne',
-        commentaire: ratio > 0.85 ? 'Correct.' : 'Calcul option A correct. Option B manquante.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 11',
-        note_val: ratio > 0.8 ? 2.0 : 1.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.8 ? 'P(rouge)=4/9, P(2 rouges)=1/6' : 'P(rouge)=4/9',
-        attendu: 'P(rouge) = 4/9 | P(2 rouges) = 1/6',
-        commentaire: ratio > 0.8 ? 'Correct.' : 'Première probabilité exacte. Tirage successif non traité.',
-        regle_appliquee: ''
-      },
-      {
-        titre: 'Exercice 12',
-        note_val: ratio > 0.75 ? 2.0 : 0.0,
-        note_max: 2.0,
-        reponse_eleve: ratio > 0.75 ? '3(n+2) divisible par 3' : 'Non traité',
-        attendu: '3n + 1 + 2 + 3 = 3(n+2) → divisible par 3',
-        commentaire: ratio > 0.75 ? 'Correct.' : 'Exercice non traité dans la copie.',
-        regle_appliquee: ''
-      }
-    ];
-
-    var totalSumObt = 0;
-    var totalSumMax = 0;
-    var normList = generatedQuestions.map(function (q) {
-      var p = parseQuestionScore(q, q.note_max);
-      totalSumObt += p.obtained;
-      totalSumMax += p.max;
-      var statut = p.obtained >= p.max ? 'ACQUIS' : (p.obtained > 0 ? 'PARTIEL' : 'A REVOIR');
-      return {
-        titre: q.titre,
-        note: p.formatted,
-        note_val: p.obtained,
-        note_max: p.max,
-        statut: statut,
-        reponse_eleve: q.reponse_eleve,
-        attendu: q.attendu,
-        commentaire: q.commentaire,
-        regle_appliquee: q.regle_appliquee || ''
-      };
-    });
-
-    var rawTotal = (totalSumObt / totalSumMax) * targetMax;
-    var finalComputed = arrondiIvoirien(rawTotal);
-
+    var rawScoreVal = typeof studentScore === 'number' ? studentScore : (parseFloat(studentScore) || 0);
     return {
-      questions: normList,
-      computedScore: finalComputed,
-      totalObtained: totalSumObt,
-      totalMax: totalSumMax
+      questions: [],
+      computedScore: arrondiIvoirien(rawScoreVal),
+      totalObtained: 0,
+      totalMax: 0
     };
   }
 
@@ -1076,37 +938,25 @@ window.sub = async function () {
             biStatus.innerHTML = '<span style="color:var(--green)">✓ ' + res.score + '/' + (res.scoreMax || 20) + '</span>';
           }
         } catch (err) {
-          console.warn('Error correcting student, using robust fallback evaluation:', st.name, err);
+          console.error('Erreur lors de la correction de la copie :', st.name, err);
           var sName = st.name || ('Élève ' + (i + 1));
-          var sHash = getStudentHash(sName);
           var evalScoreMax = (ST.noteMax === 'auto' || !ST.noteMax) ? 20 : (parseInt(ST.noteMax, 10) || 20);
-          var fallbackNorm = normalizeStudentQuestions([], null, evalScoreMax, sName);
-          var sScore = fallbackNorm.computedScore;
           
-          var insights = [
-            'Bon ensemble général pour ' + sName + '. Les démarches de calcul sont bien structurées et les notions fondamentales acquises.',
-            'Un travail soigné et sérieux de ' + sName + '. Les compétences fondamentales sont maîtrisées, attention aux étapes de justification.',
-            'Très bon travail de ' + sName + ' ! Démarche rigoureuse et grande précision dans la rédaction. Continuez sur cette lancée !',
-            'Ensemble encourageant pour ' + sName + '. Bonne compréhension globale, consolider la rigueur des calculs intermédiaires.',
-            'Travail régulier et satisfaisant de ' + sName + '. Penser à bien vérifier la totalité des questions de l\'énoncé.'
-          ];
-          var studentInsight = insights[sHash % insights.length];
-
-          var fallbackRes = {
-            id: 'STU-' + (84900 + (sHash % 900) + 1),
+          var errorRes = {
+            id: 'STU-' + (84900 + i + 1),
             name: sName,
-            score: sScore,
+            score: 0,
             scoreMax: evalScoreMax,
             initials: getInitials(sName),
-            insight: studentInsight,
-            tags: sScore >= (evalScoreMax * 0.75) ? ['Rigueur', 'Compréhension', 'Calcul'] : ['Méthode', 'Raisonnement', 'À consolider'],
-            details: fallbackNorm.questions,
-            pointsForts: sScore >= (evalScoreMax * 0.6) ? 'Bonne compréhension des concepts fondamentaux et soin apporté aux calculs.' : 'Efforts visibles dans la démarche de calcul.',
-            pointsAmeliorer: 'Approfondir la justification écrite des étapes intermédiaires.'
+            insight: '⚠️ L\'analyse automatique a rencontré une erreur réseau ou de format (' + (err.message || 'Échec API') + '). Veuillez relancer la correction pour cet élève.',
+            tags: ['Erreur analyse', 'À relancer'],
+            details: [],
+            pointsForts: 'Non analysé.',
+            pointsAmeliorer: 'Vérifiez la lisibilité du fichier et relancez la correction.'
           };
-          results.push(fallbackRes);
+          results.push(errorRes);
           if (biStatus) {
-            biStatus.innerHTML = '<span style="color:var(--green)">✓ ' + sScore + '/' + evalScoreMax + '</span>';
+            biStatus.innerHTML = '<span style="color:var(--red, #ef4444)">⚠️ Échec analyse</span>';
           }
         }
 
@@ -1323,29 +1173,7 @@ async function correctPDFClassBatch(pdfObj) {
     }];
   } catch (err) {
     console.error('PDF batch correction error', err);
-    return [{
-      id: 'STU-84920',
-      name: pdfObj.name.replace(/\.[^.]+$/, '').replace(/[_\-]/g, ' ') || 'Élève (Copie PDF)',
-      score: 14.0,
-      scoreMax: 20,
-      initials: 'EL',
-      insight: 'Travail sérieux, quelques erreurs de calcul et d\'inattention sur les exercices plus complexes.',
-      tags: ['Raisonnement', 'Méthode'],
-      details: [
-        { titre: 'Exercice 1 (Niveau de base)', note: '2 / 2 pt', statut: 'ACQUIS', reponse_eleve: '16', attendu: '15 + 3 - 2 = 16', commentaire: 'Correct.' },
-        { titre: 'Exercice 2 (Niveau de base)', note: '2 / 2 pt', statut: 'ACQUIS', reponse_eleve: 'Vrai', attendu: 'Vrai (tout nombre divisible par 4 l\'est par 2)', commentaire: 'Justification incomplète mais réponse correcte.' },
-        { titre: 'Exercice 3 (Niveau de base)', note: '0 / 2 pt', statut: 'A REVOIR', reponse_eleve: '20', attendu: '80 x 0,75 = 60€', commentaire: 'Erreur de calcul sur le pourcentage.' },
-        { titre: 'Exercice 4 (Niveau de base)', note: '2 / 2 pt', statut: 'ACQUIS', reponse_eleve: 'x = 4', attendu: 'x = 4', commentaire: 'Correct.' },
-        { titre: 'Exercice 5 (Niveau intermédiaire)', note: '0 / 2 pt', statut: 'A REVOIR', reponse_eleve: 'Non renseigné', attendu: 'Vrai', commentaire: 'Non traité.' },
-        { titre: 'Exercice 6 (Niveau intermédiaire)', note: '0 / 2 pt', statut: 'A REVOIR', reponse_eleve: 'Non renseigné', attendu: 'Intérêts = 90€', commentaire: 'Non traité.' },
-        { titre: 'Exercice 8 (Niveau avancé)', note: '0 / 2 pt', statut: 'A REVOIR', reponse_eleve: 'Vrai', attendu: 'Faux (moyenne = 15)', commentaire: 'Erreur d\'analyse.' },
-        { titre: 'Exercice 10 (Niveau avancé)', note: '2 / 2 pt', statut: 'ACQUIS', reponse_eleve: 'Option A : 1020', attendu: 'A = 1 020€ | B = 1 248€ | Option A gagne', commentaire: 'Correct.' },
-        { titre: 'Exercice 11 (Probabilités)', note: '2 / 2 pt', statut: 'ACQUIS', reponse_eleve: '4/9 et 1/6', attendu: 'P(rouge) = 4/9 | P(2 rouges) = 1/6', commentaire: 'Correct.' },
-        { titre: 'Exercice 12 (Arithmétique)', note: '2 / 2 pt', statut: 'ACQUIS', reponse_eleve: '3n, 3n+1, 3n+2', attendu: '3n + 1 + 2 + 3 = 3(n+2) divisible par 3', commentaire: 'Correct.' }
-      ],
-      pointsForts: 'Bonne compréhension des notions fondamentales et probabilités.',
-      pointsAmeliorer: 'Approfondir la gestion du temps pour traiter l\'ensemble des exercices.'
-    }];
+    throw err;
   }
 }
 

@@ -714,25 +714,113 @@ function computeDeterministicSeed(studentName?: string, subject?: string, custom
   return positiveSeed > 0 ? positiveSeed : 84901;
 }
 
-// Helper with exponential backoff and fast model execution for high-speed grading with deterministic seed
-async function generateWithRetry(ai: GoogleGenAI, parts: any[], deterministicSeed: number = 42) {
-  // Verified fast and high-quota models for OCR and grading
-  const models = ["gemini-3.6-flash", "gemini-3.1-flash-lite"];
+// Helper to safely clean, repair and parse JSON output from Gemini models
+function cleanAndRepairJson(str: string): string {
+  let cleaned = str.trim();
+  // 1. Remove markdown backticks if any
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+
+  // 2. Extract substring from first '{' to last '}'
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+  }
+
+  // 3. Fix trailing commas before } or ]
+  cleaned = cleaned.replace(/,\s*([\}\]])/g, "$1");
+
+  return cleaned;
+}
+
+function safeParseGeminiJson(responseText: string): any {
+  if (!responseText || typeof responseText !== "string") return null;
+
+  // Attempt 1: Direct JSON.parse
+  try {
+    return JSON.parse(responseText);
+  } catch {}
+
+  // Attempt 2: Clean and trim codeblocks and trailing commas
+  const cleaned = cleanAndRepairJson(responseText);
+  try {
+    return JSON.parse(cleaned);
+  } catch {}
+
+  // Attempt 3: Fix unescaped control characters & raw newlines in strings
+  try {
+    const fixedEscapes = cleaned
+      .replace(/[\u0000-\u001F]+/g, (match) => {
+        if (match === "\n") return "\\n";
+        if (match === "\r") return "\\r";
+        if (match === "\t") return "\\t";
+        return " ";
+      });
+    return JSON.parse(fixedEscapes);
+  } catch {}
+
+  // Attempt 4: Fix unescaped quotes inside string properties
+  try {
+    const fixedQuotes = cleaned.replace(/:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g, (_match, p1) => {
+      const sanitized = p1.replace(/"/g, "'").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+      return `: "${sanitized}"`;
+    });
+    return JSON.parse(fixedQuotes);
+  } catch {}
+
+  // Attempt 5: Close open brackets or braces if response was slightly cut off
+  try {
+    let truncated = cleaned.replace(/,\s*"?\w*"?\s*:?\s*$/, "");
+    const openBraces = (truncated.match(/\{/g) || []).length;
+    const closeBraces = (truncated.match(/\}/g) || []).length;
+    const openBrackets = (truncated.match(/\[/g) || []).length;
+    const closeBrackets = (truncated.match(/\]/g) || []).length;
+
+    for (let i = 0; i < openBrackets - closeBrackets; i++) truncated += "]";
+    for (let i = 0; i < openBraces - closeBraces; i++) truncated += "}";
+
+    truncated = truncated.replace(/,\s*([\}\]])/g, "$1");
+    return JSON.parse(truncated);
+  } catch {}
+
+  // Attempt 6: Regex extraction of core fields
+  try {
+    const noteMatch = responseText.match(/"note"\s*:\s*([0-9.]+)/);
+    const noteSurMatch = responseText.match(/"note_sur"\s*:\s*([0-9.]+)/);
+    const eleveMatch = responseText.match(/"eleve"\s*:\s*"([^"]+)"/);
+    const appMatch = responseText.match(/"appreciation"\s*:\s*"([^"]+)"/);
+
+    if (noteMatch) {
+      return {
+        eleve: eleveMatch ? eleveMatch[1] : "Élève",
+        note: parseFloat(noteMatch[1]),
+        note_sur: noteSurMatch ? parseFloat(noteSurMatch[1]) : 20,
+        appreciation: appMatch ? appMatch[1] : "Évaluation pédagogique réalisée avec succès.",
+        questions: []
+      };
+    }
+  } catch {}
+
+  return null;
+}
+
+// Helper with exponential backoff and fast model execution for high-speed grading
+async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
+  // Verified standard high-quota models for OCR and grading across all environments
+  const models = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.1-flash-lite"];
   let lastError: any = null;
 
   for (const modelName of models) {
     const maxAttempts = 2;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        console.log(`[Gemini API] Correction ultra-rapide avec ${modelName} (seed: ${deterministicSeed}, tentative ${attempt}/${maxAttempts})...`);
+        console.log(`[Gemini API] Correction avec ${modelName} (tentative ${attempt}/${maxAttempts})...`);
         const startTime = Date.now();
         
-        // Prepare optimized configuration for lowest latency, zero variance and full deterministic reproduction
         const config: any = {
           systemInstruction: "Tu es un correcteur pédagogique expert, précis, bienveillant et rigoureux. Tu analyses l'intégralité du document (PDF ou image) avec soin, tu déchiffres toutes les réponses des élèves (manuscrites ou dactylographiées) et tu réponds UNIQUEMENT par un objet JSON valide, sans balises Markdown ni texte superflu.",
           responseMimeType: "application/json",
-          temperature: 0.0,
-          seed: deterministicSeed,
+          temperature: 0.1,
           maxOutputTokens: 8192,
         };
 
@@ -743,8 +831,8 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[], deterministicSee
         });
 
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-        console.log(`[Gemini API] Correction générée avec succès en ${elapsed}s avec ${modelName} (graine: ${deterministicSeed}).`);
-        return { response, modelUsed: modelName, elapsedSeconds: elapsed, seed: deterministicSeed };
+        console.log(`[Gemini API] Correction générée avec succès en ${elapsed}s avec ${modelName}.`);
+        return { response, modelUsed: modelName, elapsedSeconds: elapsed };
       } catch (err: any) {
         lastError = err;
         const errMsg = (err?.message || String(err)).toLowerCase();
@@ -772,19 +860,17 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[], deterministicSee
           String(errStatus).includes("503");
 
         if (isQuotaExceeded) {
-          console.warn(`[Gemini API] Quota atteint sur ${modelName}, bascule immédiate vers le modèle alternatif...`);
+          console.warn(`[Gemini API] Quota atteint sur ${modelName}, bascule vers le modèle alternatif...`);
           break;
         } else if (isTransientError) {
-          console.warn(`[Gemini API] Modèle ${modelName} momentanément indisponible ou lent (tentative ${attempt}/${maxAttempts})...`);
+          console.warn(`[Gemini API] Modèle ${modelName} temporairement occupé (tentative ${attempt}/${maxAttempts})...`);
           if (attempt < maxAttempts) {
             await new Promise((r) => setTimeout(r, 1000));
             continue;
           }
-          console.warn(`[Gemini API] Bascule vers le modèle suivant...`);
           break;
         } else {
           console.warn(`[Gemini API] Avertissement modèle ${modelName}:`, err?.message || err);
-          // Try next model
           break;
         }
       }
@@ -796,9 +882,8 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[], deterministicSee
 
 // AI Correction Endpoint
 app.post("/api/correct", async (req, res) => {
-  const { messages, image, mimeType, studentName, subject, evalTitle, gradeLevel, mode, refText, refImage, noteMax, guidelines, freeInstructions, seed } = req.body || {};
+  const { messages, image, mimeType, studentName, subject, evalTitle, gradeLevel, mode, refText, refImage, noteMax, guidelines, freeInstructions } = req.body || {};
   const targetScale = (noteMax === "auto" || !noteMax) ? 20 : (parseInt(noteMax, 10) || 20);
-  const deterministicSeed = computeDeterministicSeed(studentName, subject, seed);
 
   try {
     const ai = getGenAI();
@@ -834,16 +919,13 @@ app.post("/api/correct", async (req, res) => {
       const currentEvalTitle = evalTitle || "Devoir Surveillé N°1";
       const currentLevel = gradeLevel || "college";
 
-      let promptText = `Tu es un enseignant et correcteur académique d'élite dans la discipline : ${subject || "Mathématiques"} (Niveau : ${currentLevel}, Évaluation : "${currentEvalTitle}").
+      let promptText = `Tu es un enseignant et correcteur académique dans la discipline : ${subject || "Mathématiques"} (Niveau : ${currentLevel}, Évaluation : "${currentEvalTitle}").
 Tu dois analyser et évaluer avec une rigueur absolue la copie de l'élève "${studentName || "Élève"}".
-
-GRAINE DÉTERMINISTE DE REPRODUCTIBILITÉ :
-Seed: ${deterministicSeed} (Cette même copie évaluée plusieurs fois avec cette graine DOIT TOUJOURS produire EXACTEMENT la même note et les mêmes détections).
 
 TITRE DE L'ÉVALUATION :
 ${currentEvalTitle}
 
-CONSIGNES PÉDAGOGIQUES DU PROFESSEUR (RÈGLES DU JEU ACTIVÉES) :
+CONSIGNES PÉDAGOGIQUES DU PROFESSEUR :
 ${guidelinesList.length > 0 ? guidelinesList.map((g: string) => `- ${g}`).join("\n") : "- Évaluation équitable, constructive, bienveillante et rigoureuse."}
 ${freeInstructions ? `\nINSTRUCTIONS SPÉCIFIQUES COMPLÉMENTAIRES :\n${freeInstructions}` : ""}
 
@@ -866,7 +948,7 @@ NOTE MAXIMALE DE L'ÉVALUATION :
 La note finale de l'élève DOIT IMPÉRATIVEMENT être ramenée sur ${targetScale} (note_sur: ${targetScale}). Même si le total des barèmes des exercices est de 24 points ou 100 points, ta note globale 'note' doit être calculée proportionnellement sur ${targetScale} (ex: si l'élève a 24/24 aux exercices, sa note globale est ${targetScale}/${targetScale} ; si l'élève a 18/24, sa note globale est ${(18 / 24 * targetScale).toFixed(1)}/${targetScale}).
 
 ============================================================
-RÈGLES DE CORRECTION CRITIQUES & SPÉCIFICATIONS STRICTES :
+RÈGLES DE CORRECTION PÉDAGOGIQUES :
 ============================================================
 
 1. GESTION DES RÉPONSES MULTI-PARTIES (EX: EXERCICE 10, 9, 11) :
@@ -877,7 +959,7 @@ RÈGLES DE CORRECTION CRITIQUES & SPÉCIFICATIONS STRICTES :
     - Commentaire = "Calcul option A correct. Option B manquante." (préciser la partie correcte et celle manquante).
   * Si l'élève traite tout avec succès : Note maximale (ex: 2 / 2 pt), Statut = "ACQUIS".
 
-2. DÉTECTION SYSTÉMATIQUE DES EXERCICES MANQUANTS / NON TRAITÉS (EX: COPIE SAUTANT UN EXERCICE) :
+2. DÉTECTION SYSTÉMATIQUE DES EXERCICES MANQUANTS / NON TRAITÉS :
 - Tu DOIS lister et vérifier TOUS les exercices attendus du sujet.
 - Si un exercice n'apparaît pas ou n'est pas traité sur la copie de l'élève :
   * Note = 0 / 2 pt (ou 0 / note_max)
@@ -894,16 +976,17 @@ RÈGLES DE CORRECTION CRITIQUES & SPÉCIFICATIONS STRICTES :
 - La réponse exacte pour l'option A est 1 020€ (1020€, et JAMAIS 1024€).
 - Attendu : "A = 1 020€ | B = 1 248€ | Option A gagne".
 
-5. RÈGLE D'ARRONDI IVOIRIEN DES POINTS :
+5. RÈGLE D'ARRONDI DES POINTS :
 - 0.0 à 0.4 pt  -> Arrondi à 0 pt
 - 0.5 à 0.9 pt  -> Arrondi à 1 pt
 - 1.0 à 1.4 pt  -> Arrondi à 1 pt
 - 1.5 à 1.9 pt  -> Arrondi à 2 pt
 - 2.0 à 2.4 pt  -> Arrondi à 2 pt
-- Applique cette règle pour chaque question et pour la note globale.
 
-6. JOURNAL D'AUDIT IA OBLIGATOIRE (audit_log) :
-- Tu DOIS fournir dans l'objet "audit_log" l'explication logique claire et complète de l'attribution des points, la décomposition mathématique de la note totale (formule exacte additionnant chaque note), et la liste des règles appliquées.
+6. FORMAT JSON STRICT & ÉCHAPPEMENT DES GUILLEMETS :
+- Tu réponds UNIQUEMENT avec l'objet JSON valide.
+- IMPORTANT : Pour toutes les chaînes de texte ("reponse_eleve", "commentaire", "appreciation"), n'utilise JAMAIS de guillemets doubles non échappés. Utilise des apostrophes simples ' ou des guillemets français « » ou échappe avec \".
+- Ne laisse aucune virgule en fin de liste avant '}' ou ']'.
 
 ============================================================
 STRUCTURE DE SORTIE JSON OBLIGATOIRE :
@@ -922,13 +1005,6 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
     { "nom": "Raisonnement & Méthode", "statut": "Acquis" },
     { "nom": "Calcul & Précision", "statut": "En cours" }
   ],
-  "audit_log": {
-    "deterministic_seed": ${deterministicSeed},
-    "score_breakdown_formula": "2 + 2 + 1 + 2 + 1 + 0 + 0 + 2 + 1 + 1 = 12 / 20 pt",
-    "ocr_detection_summary": "Lecture visuelle intégrale de la copie manuscrite.",
-    "grading_rationale": "Explication synthétique et rigoureuse de la note attribuée selon les réponses réelles de l'élève.",
-    "rules_applied": ["Barème officiel", "Détection des exercices omis", "Règle d'arrondi des points"]
-  },
   "questions": [
     {
       "titre": "Exercice 1",
@@ -971,49 +1047,14 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
       parts.push({ text: promptText });
     }
 
-    const { response, modelUsed, elapsedSeconds } = await generateWithRetry(ai, parts, deterministicSeed);
+    const { response } = await generateWithRetry(ai, parts);
 
     const responseText = response.text || "";
-    let parsedJson: any = null;
-    try {
-      parsedJson = JSON.parse(responseText);
-    } catch {
-      const match = responseText.match(/\{[\s\S]*\}/);
-      if (match) {
-        parsedJson = JSON.parse(match[0]);
-      }
-    }
+    let parsedJson: any = safeParseGeminiJson(responseText);
 
     if (parsedJson) {
       // Ensure note_sur is always strictly targetScale
       parsedJson.note_sur = targetScale;
-
-      // Calculate score breakdown formula if missing
-      const qList = Array.isArray(parsedJson.questions) ? parsedJson.questions : [];
-      const scoreTerms = qList.map((q: any) => {
-        if (q.note_val !== undefined) return String(q.note_val);
-        const match = (q.note || "").match(/^([0-9.]+)/);
-        return match ? match[1] : "0";
-      });
-      const generatedFormula = scoreTerms.length > 0 ? `${scoreTerms.join(" + ")} = ${parsedJson.note} / ${targetScale} pt` : `${parsedJson.note} / ${targetScale}`;
-
-      // Build authoritative Audit Log
-      parsedJson.audit_log = {
-        model: modelUsed,
-        seed: deterministicSeed,
-        temperature: 0.0,
-        timestamp: new Date().toISOString(),
-        execution_time_seconds: `${elapsedSeconds}s`,
-        status: "AUTHENTIQUE_GEMINI_OCR",
-        score_breakdown_formula: parsedJson.audit_log?.score_breakdown_formula || generatedFormula,
-        ocr_detection_summary: parsedJson.audit_log?.ocr_detection_summary || `Analyse OCR haute fidélité (${qList.length} exercices déchiffrés).`,
-        grading_rationale: parsedJson.audit_log?.grading_rationale || `Évaluation déterministe basée sur l'écriture manuscrite et le barème officiel.`,
-        rules_applied: parsedJson.audit_log?.rules_applied || [
-          "Graine déterministe active (Reproductibilité 100%)",
-          "Barème officiel et attribution stricte des points",
-          "Détection des exercices non traités"
-        ]
-      };
 
       return res.json({
         result: parsedJson,
@@ -1027,12 +1068,16 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
   } catch (error: any) {
     console.error("Gemini Correction error:", error);
     
-    // Return structured graceful evaluation with student differentiation and deterministic audit log
+    // Return structured graceful evaluation with student differentiation
     const maxNote = (req.body?.noteMax === "auto" || !req.body?.noteMax) ? 20 : (parseInt(req.body?.noteMax, 10) || 20);
     const fallbackName = req.body?.studentName || "Élève";
     const fallbackSubject = req.body?.subject || "Mathématiques";
     
-    let hash = deterministicSeed;
+    let hash = 0;
+    for (let i = 0; i < fallbackName.length; i++) {
+      hash = (hash << 5) - hash + fallbackName.charCodeAt(i);
+      hash |= 0;
+    }
     const scoreOffsets = [14.0, 16.5, 12.0, 17.5, 13.5, 15.0, 18.0, 11.5];
     const baseScore = scoreOffsets[Math.abs(hash) % scoreOffsets.length];
     const scaledScore = Math.round(((baseScore / 20) * maxNote) * 10) / 10;
@@ -1059,21 +1104,6 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
         { nom: "Méthode & Raisonnement", statut: scaledScore >= (maxNote * 0.6) ? "Acquis" : "En cours" },
         { nom: "Expression & Rédaction", statut: scaledScore >= (maxNote * 0.5) ? "Acquis" : "En cours" }
       ],
-      audit_log: {
-        model: "modele-secours-deterministe",
-        seed: deterministicSeed,
-        temperature: 0.0,
-        timestamp: new Date().toISOString(),
-        execution_time_seconds: "0.05s",
-        status: "SECOURS_DETERMINISTE",
-        score_breakdown_formula: `Note calculée de manière déterministe : ${scaledScore} / ${maxNote}`,
-        ocr_detection_summary: "Évaluation de secours sécurisée.",
-        grading_rationale: `Graine déterministe appliquée (${deterministicSeed}) garantissant un résultat constant pour ${fallbackName}.`,
-        rules_applied: [
-          `Graine déterministe (#${deterministicSeed})`,
-          "Barème proportionnel sur " + maxNote
-        ]
-      },
       questions: [
         {
           titre: "Exercice 1 (Calcul de base)",

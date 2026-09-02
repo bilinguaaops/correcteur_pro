@@ -1222,26 +1222,6 @@ async function correctSingleStudent(st, idx) {
     var countAcquis = normQuestions.filter(function (q) { return q.statut === 'ACQUIS'; }).length;
     var countPartiel = normQuestions.filter(function (q) { return q.statut === 'PARTIEL'; }).length;
 
-    var computedSeed = (parsed.audit_log && parsed.audit_log.seed) || (84900 + idx);
-    var defaultFormula = normQuestions.map(function(q) {
-      if (q.note_val !== undefined) return String(q.note_val);
-      var m = (q.note || '').match(/^([0-9.]+)/);
-      return m ? m[1] : '0';
-    }).join(' + ') + ' = ' + finalScore + ' / ' + targetScoreMax + ' pt';
-
-    var authoritativeAuditLog = parsed.audit_log || {
-      model: 'gemini-3.6-flash',
-      seed: computedSeed,
-      temperature: 0.0,
-      timestamp: new Date().toISOString(),
-      execution_time_seconds: '1.75s',
-      status: 'AUTHENTIQUE_GEMINI_OCR',
-      score_breakdown_formula: defaultFormula,
-      ocr_detection_summary: 'Déchiffrage intégral des réponses manuscrites de la copie.',
-      grading_rationale: 'Notation rigoureuse déterministe basée sur le barème officiel.',
-      rules_applied: ['Graine déterministe', 'Barème officiel', 'Tolérance et demi-points']
-    };
-
     return {
       id: 'STU-' + (84900 + idx),
       name: studentIdName,
@@ -1253,7 +1233,6 @@ async function correctSingleStudent(st, idx) {
       rawImage: st.base64 || null,
       rawType: st.type || 'image/jpeg',
       annotatedImage: null,
-      audit_log: authoritativeAuditLog,
       competences: (parsed.competences && parsed.competences.length > 0) ? parsed.competences : [
         { nom: 'Compréhension du sujet', statut: countAcquis >= (normQuestions.length * 0.6) ? 'Acquis' : (countAcquis + countPartiel >= (normQuestions.length * 0.5) ? 'En cours' : 'Non acquis') },
         { nom: 'Méthode & Raisonnement', statut: finalScore >= (targetScoreMax * 0.6) ? 'Acquis' : 'En cours' },
@@ -1316,16 +1295,6 @@ async function correctPDFClassBatch(pdfObj) {
           initials: getInitials(s.eleve || s.name || 'Élève'),
           insight: s.appreciation || s.commentaire || 'Travail soigné et bonne compréhension des consignes.',
           tags: s.tags || ['Méthode', 'Calcul'],
-          audit_log: s.audit_log || {
-            model: 'gemini-3.6-flash',
-            seed: (84900 + idx + 1),
-            temperature: 0.0,
-            timestamp: new Date().toISOString(),
-            status: 'AUTHENTIQUE_GEMINI_OCR',
-            score_breakdown_formula: finalScore + ' / ' + targetScoreMax + ' pt',
-            grading_rationale: 'Correction déterministe par lot.',
-            rules_applied: ['Barème officiel']
-          },
           competences: s.competences || [],
           details: normQuestions,
           pointsForts: s.points_forts || 'Bonne rigueur.',
@@ -1347,16 +1316,6 @@ async function correctPDFClassBatch(pdfObj) {
       initials: getInitials(parsed.eleve || pdfObj.name || 'Élève'),
       insight: parsed.appreciation || parsed.commentaire || 'Travail sérieux, quelques erreurs de calcul et d\'inattention.',
       tags: parsed.tags || ['Raisonnement', 'Méthode'],
-      audit_log: parsed.audit_log || {
-        model: 'gemini-3.6-flash',
-        seed: 84920,
-        temperature: 0.0,
-        timestamp: new Date().toISOString(),
-        status: 'AUTHENTIQUE_GEMINI_OCR',
-        score_breakdown_formula: finalScore + ' / ' + targetScoreMax + ' pt',
-        grading_rationale: 'Correction déterministe basée sur le document complet.',
-        rules_applied: ['Graine déterministe', 'Barème officiel']
-      },
       competences: parsed.competences || [],
       details: normQuestions,
       pointsForts: parsed.points_forts || 'Bonne compréhension des concepts fondamentaux.',
@@ -1372,16 +1331,6 @@ async function correctPDFClassBatch(pdfObj) {
       initials: 'EL',
       insight: 'Travail sérieux, quelques erreurs de calcul et d\'inattention sur les exercices plus complexes.',
       tags: ['Raisonnement', 'Méthode'],
-      audit_log: {
-        model: 'modele-secours-deterministe',
-        seed: 84920,
-        temperature: 0.0,
-        timestamp: new Date().toISOString(),
-        status: 'SECOURS_DETERMINISTE',
-        score_breakdown_formula: '14 / 20 pt',
-        grading_rationale: 'Correction de secours déterministe.',
-        rules_applied: ['Graine déterministe #84920']
-      },
       details: [
         { titre: 'Exercice 1 (Niveau de base)', note: '2 / 2 pt', statut: 'ACQUIS', reponse_eleve: '16', attendu: '15 + 3 - 2 = 16', commentaire: 'Correct.' },
         { titre: 'Exercice 2 (Niveau de base)', note: '2 / 2 pt', statut: 'ACQUIS', reponse_eleve: 'Vrai', attendu: 'Vrai (tout nombre divisible par 4 l\'est par 2)', commentaire: 'Justification incomplète mais réponse correcte.' },
@@ -1437,11 +1386,9 @@ function renderResults() {
       return '<span class="insight-tag-pill">' + escH(t) + '</span>';
     }).join('');
 
-    var seedNumber = (s.audit_log && s.audit_log.seed) || (84900 + idx);
-
     var scoreStatusBadge = s.score_adjusted 
       ? '<span class="score-adjusted-badge" style="display:inline-block;padding:2px 8px;border-radius:12px;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;border:1px solid #fde68a">✏️ Note prof : ' + scoreFormatted + '/' + (s.scoreMax || 20) + ' (IA: ' + iaScoreFormatted + ')</span>'
-      : '<span style="font-size:11px;color:var(--text-muted)">🤖 Note IA conforme • <span style="color:#059669;font-weight:700">🌱 Seed #' + seedNumber + '</span></span>';
+      : '<span style="font-size:11px;color:var(--text-muted)">🤖 Évaluation IA validée</span>';
 
     return (
       '<div class="student-pedago-card">' +
@@ -1470,15 +1417,12 @@ function renderResults() {
           '<div class="card-tags-row">' + tagsHtml + '</div>' +
         '</div>' +
 
-        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:12px">' +
-          '<button type="button" class="btn-pedago-outline sm" onclick="openScoreEditModal(' + idx + ')" title="Modifier la note manuellement" style="border-color:var(--blue-primary);color:var(--blue-primary);font-weight:700;font-size:11px;padding:6px 2px">' +
-            '<span>✏️ Noter</span>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">' +
+          '<button type="button" class="btn-pedago-outline sm" onclick="openScoreEditModal(' + idx + ')" title="Modifier la note manuellement" style="border-color:var(--blue-primary);color:var(--blue-primary);font-weight:700;font-size:12px;padding:8px 4px">' +
+            '<span>✏️ Ajuster note</span>' +
           '</button>' +
-          '<button type="button" class="btn-pedago-outline sm" onclick="openAuditLogModal(' + idx + ')" title="Vérifier la graine déterministe et le journal d\'audit de l\'IA" style="border-color:#6366f1;color:#4f46e5;font-weight:700;font-size:11px;padding:6px 2px">' +
-            '<span>🛡️ Audit</span>' +
-          '</button>' +
-          '<button type="button" class="btn-pedago-outline sm" onclick="printStudentBulletin(' + idx + ')" title="Imprimer la fiche individuelle" style="font-size:11px;padding:6px 2px">' +
-            '<span>🖨️ Fiche</span>' +
+          '<button type="button" class="btn-pedago-outline sm" onclick="printStudentBulletin(' + idx + ')" title="Imprimer la fiche individuelle" style="font-size:12px;padding:8px 4px">' +
+            '<span>🖨️ Fiche élève</span>' +
           '</button>' +
         '</div>' +
 
@@ -1652,42 +1596,6 @@ function renderFicheCorrectionHTML(student) {
     );
   }
 
-  var auditLog = student.audit_log || {
-    model: 'gemini-3.6-flash',
-    seed: (student.audit_log && student.audit_log.seed) || 84900,
-    temperature: 0.0,
-    timestamp: new Date().toISOString(),
-    status: 'AUTHENTIQUE_GEMINI_OCR',
-    score_breakdown_formula: scoreVal + ' / ' + scoreMax + ' pt',
-    grading_rationale: 'Notation mathématiquement reproductible garantie par la graine déterministe.',
-    rules_applied: ['Graine déterministe #' + ((student.audit_log && student.audit_log.seed) || 84900), 'Barème officiel']
-  };
-
-  function renderAuditTrailBox() {
-    var formula = auditLog.score_breakdown_formula || (scoreVal + ' / ' + scoreMax + ' pt');
-    var rationale = auditLog.grading_rationale || 'Évaluation déterministe et traçable.';
-    var seed = auditLog.seed || '42';
-    var model = auditLog.model || 'gemini-3.6-flash';
-
-    return (
-      '<div class="fc-audit-trail-box" style="margin-top:20px;padding:12px 16px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">' +
-          '<div style="display:flex;align-items:center;gap:6px">' +
-            '<span style="font-size:12px;font-weight:800;color:#1e293b">🛡️ Traçabilité & Justification IA (Audit Log)</span>' +
-            '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#e0e7ff;color:#3730a3">' + escH(model) + '</span>' +
-          '</div>' +
-          '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;background:#ecfdf5;color:#065f46">🌱 Seed déterministe : #' + escH(seed) + '</span>' +
-        '</div>' +
-        '<div style="font-size:12px;color:#334155;margin-bottom:4px">' +
-          '<strong>Formule mathématique :</strong> <code style="background:#fff;padding:2px 6px;border-radius:4px;border:1px solid #e2e8f0">' + escH(formula) + '</code>' +
-        '</div>' +
-        '<div style="font-size:12px;color:#475569;line-height:1.4">' +
-          '<strong>Rationnel d\'attribution :</strong> ' + escH(rationale) +
-        '</div>' +
-      '</div>'
-    );
-  }
-
   // If we have more than 7 questions, split into authentic 2-page format like the requested model
   if (questions.length > 7) {
     var page1Questions = questions.slice(0, 7);
@@ -1735,8 +1643,6 @@ function renderFicheCorrectionHTML(student) {
             page2Questions.map(function(q, i){ return renderSingleQuestion(q, i + 7); }).join('') +
           '</div>' +
 
-          renderAuditTrailBox() +
-
           '<div class="fc-footer" style="margin-top:32px">' +
             '<span>Généré par ProfCorrec\' IA — ' + escH(dateStr) + '</span>' +
             '<span>Page 2 / 2</span>' +
@@ -1773,8 +1679,6 @@ function renderFicheCorrectionHTML(student) {
         questions.map(function(q, i){ return renderSingleQuestion(q, i); }).join('') +
       '</div>' +
 
-      renderAuditTrailBox() +
-
       '<div class="fc-footer">' +
         '<span>Généré par ProfCorrec\' IA — ' + escH(dateStr) + '</span>' +
         '<span>Page 1 / 1</span>' +
@@ -1805,7 +1709,6 @@ window.openStudentModal = function (idx) {
     ficheHtml +
 
     '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap">' +
-      '<button type="button" class="btn-pedago-outline" onclick="openAuditLogModal(' + idx + ');closeModal();" style="border-color:#6366f1;color:#4f46e5;font-weight:700">🛡️ Voir le Journal d\'Audit IA</button>' +
       '<button type="button" class="btn-pedago-outline" onclick="openScoreEditModal(' + idx + ');closeModal();">✏️ Modifier la note finale</button>' +
       '<button type="button" class="btn-pedago-outline" onclick="exportSingleStudentPDFDownload(' + idx + ')">📄 Télécharger PDF</button>' +
       '<button type="button" class="btn-pedago-outline" onclick="printStudentBulletin(' + idx + ')">🖨️ Imprimer</button>' +
@@ -1824,108 +1727,6 @@ window.closeModal = function () {
 /* ─────────────────────────────────────────────
    AUDIT LOG MODAL (Traçabilité & Preuve Déterministe)
 ───────────────────────────────────────────── */
-ST.currentAuditIdx = null;
-
-window.openAuditLogModal = function (idx) {
-  var s = ST.results[idx];
-  if (!s) return;
-
-  ST.currentAuditIdx = idx;
-  var modal = document.getElementById('auditLogModal');
-  if (!modal) return;
-
-  var audit = s.audit_log || {
-    model: 'gemini-3.6-flash',
-    seed: (84900 + idx),
-    temperature: 0.0,
-    timestamp: new Date().toISOString(),
-    execution_time_seconds: '1.82s',
-    status: 'AUTHENTIQUE_GEMINI_OCR',
-    score_breakdown_formula: Number(s.score).toFixed(1) + ' / ' + (s.scoreMax || 20) + ' pt',
-    ocr_detection_summary: 'Déchiffrage intégral des réponses manuscrites.',
-    grading_rationale: 'Notation mathématiquement reproductible garantie par la graine déterministe.',
-    rules_applied: ['Graine déterministe #' + (84900 + idx), 'Barème officiel']
-  };
-
-  var titleEl = document.getElementById('auditModalTitle');
-  var subEl = document.getElementById('auditModalSubtitle');
-  var badgeSeedEl = document.getElementById('auditSeedBadge');
-  var cardSeedEl = document.getElementById('auditCardSeed');
-  var cardModelEl = document.getElementById('auditCardModel');
-  var cardTimeEl = document.getElementById('auditCardTime');
-  var cardDateEl = document.getElementById('auditCardDate');
-  var cardScoreEl = document.getElementById('auditCardScore');
-  var formulaEl = document.getElementById('auditScoreFormula');
-  var rationaleEl = document.getElementById('auditRationaleText');
-  var rulesEl = document.getElementById('auditRulesList');
-  var jsonEl = document.getElementById('auditRawJson');
-
-  var seedVal = audit.seed || (84900 + idx);
-
-  if (titleEl) titleEl.textContent = 'Journal d\'Audit IA : ' + s.name;
-  if (subEl) subEl.textContent = 'Preuve de calcul déterministe et reproductibilité pour la copie de ' + s.name + '.';
-  if (badgeSeedEl) badgeSeedEl.textContent = '🌱 Seed: #' + seedVal;
-  if (cardSeedEl) cardSeedEl.textContent = '#' + seedVal;
-  if (cardModelEl) cardModelEl.textContent = audit.model || 'gemini-3.6-flash';
-  if (cardTimeEl) cardTimeEl.textContent = audit.execution_time_seconds || '1.85s';
-  if (cardDateEl) {
-    var d = audit.timestamp ? new Date(audit.timestamp) : new Date();
-    cardDateEl.textContent = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  }
-  if (cardScoreEl) cardScoreEl.textContent = Number(s.score).toFixed(1) + ' / ' + (s.scoreMax || 20);
-  if (formulaEl) formulaEl.textContent = audit.score_breakdown_formula || (Number(s.score).toFixed(1) + ' / ' + (s.scoreMax || 20) + ' pt');
-  if (rationaleEl) rationaleEl.textContent = audit.grading_rationale || 'Évaluation mathématiquement certifiée conforme.';
-
-  if (rulesEl) {
-    var rules = audit.rules_applied || ['Graine déterministe #' + seedVal, 'Barème officiel'];
-    rulesEl.innerHTML = rules.map(function(r) {
-      return '<span class="insight-tag-pill" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#334155">⚖️ ' + escH(r) + '</span>';
-    }).join('');
-  }
-
-  if (jsonEl) {
-    var exportPayload = {
-      eleve: s.name,
-      id: s.id,
-      note_finale: s.score,
-      note_max: s.scoreMax || 20,
-      audit_trail: audit,
-      details_questions: s.details
-    };
-    jsonEl.textContent = JSON.stringify(exportPayload, null, 2);
-  }
-
-  modal.style.display = 'flex';
-};
-
-window.closeAuditLogModal = function () {
-  var modal = document.getElementById('auditLogModal');
-  if (modal) modal.style.display = 'none';
-  ST.currentAuditIdx = null;
-};
-
-window.copyAuditLogToClipboard = function () {
-  var jsonEl = document.getElementById('auditRawJson');
-  var copyBtn = document.getElementById('auditCopyBtn');
-  if (!jsonEl) return;
-
-  navigator.clipboard.writeText(jsonEl.textContent).then(function() {
-    if (copyBtn) {
-      var oldText = copyBtn.innerHTML;
-      copyBtn.innerHTML = '✓ Rapport Copié !';
-      copyBtn.style.borderColor = 'var(--green)';
-      copyBtn.style.color = 'var(--green)';
-      setTimeout(function() {
-        copyBtn.innerHTML = oldText;
-        copyBtn.style.borderColor = '';
-        copyBtn.style.color = '';
-      }, 2000);
-    }
-  }).catch(function(err) {
-    console.warn('Clipboard write error:', err);
-  });
-};
-
 window.openStudentQuickMenu = function (idx) {
   openStudentModal(idx);
 };

@@ -71,12 +71,12 @@ function init() {
   setInterval(autoSaveCurrentSession, 30000);
 }
 
-window.requireAuth = function (callback) {
+window.requireAuth = function (callback, context) {
   if (DB.currentUser && DB.currentUser.email) {
     return true;
   }
   pendingAuthCallback = typeof callback === 'function' ? callback : null;
-  openLeadGateModal(false);
+  openLeadGateModal(false, context);
   return false;
 };
 
@@ -1001,10 +1001,10 @@ window.sub = async function () {
     return;
   }
 
-  // Check auth without infinite recursion
+  // Check auth before launching AI correction
   if (!DB.currentUser || !DB.currentUser.email) {
     pendingAuthCallback = function () { window.sub(); };
-    openLeadGateModal(false);
+    openLeadGateModal(false, 'correction');
     return;
   }
 
@@ -2700,7 +2700,10 @@ window.deleteHistEval = function (idx) {
 /* ─────────────────────────────────────────────
    AUTH & TEACHER ACCOUNT MODAL (Lead Scraping & Access)
 ───────────────────────────────────────────── */
-window.openLeadGateModal = function (isDirect) {
+window._currentAuthTab = 'signup';
+window._lastLeadContext = 'general';
+
+window.openLeadGateModal = function (isDirect, context) {
   var m = document.getElementById('leadGateModal');
   if (!m) return;
 
@@ -2709,10 +2712,14 @@ window.openLeadGateModal = function (isDirect) {
   var authTabs = document.querySelector('.auth-tabs-row');
   var heading = document.getElementById('leadModalHeading');
   var subtext = document.getElementById('leadModalSubtext');
+  var banner = document.getElementById('leadContextBanner');
+
+  window._lastLeadContext = context || (isDirect ? 'nav' : 'general');
 
   if (DB.currentUser && DB.currentUser.email) {
     if (form) form.style.display = 'none';
     if (authTabs) authTabs.style.display = 'none';
+    if (banner) banner.style.display = 'none';
     if (profile) profile.style.display = 'block';
     if (heading) heading.textContent = 'Mon Compte Enseignant';
     if (subtext) subtext.textContent = 'Session active pour la période d\'essai gratuit (7 jours).';
@@ -2727,8 +2734,21 @@ window.openLeadGateModal = function (isDirect) {
     if (form) form.style.display = 'block';
     if (authTabs) authTabs.style.display = 'flex';
     if (profile) profile.style.display = 'none';
-    if (heading) heading.textContent = 'Bienvenue sur PedagoAI';
-    if (subtext) subtext.textContent = 'Renseignez vos coordonnées pour activer votre semaine d\'essai gratuit et accéder directement au module sélectionné.';
+
+    if (context === 'correction') {
+      if (heading) heading.textContent = '📝 Inscription requise pour corriger';
+      if (subtext) subtext.textContent = 'Créez votre compte enseignant gratuit en 30 secondes pour lancer l\'analyse IA de vos copies et sauvegarder les notes.';
+      if (banner) {
+        banner.style.display = 'block';
+        banner.innerHTML = '⚡ <strong>Vos copies sont prêtes !</strong> Inscrivez-vous pour lancer la correction immédiate.';
+      }
+    } else {
+      if (heading) heading.textContent = 'Bienvenue sur PedagoAI';
+      if (subtext) subtext.textContent = 'Renseignez vos coordonnées pour activer votre semaine d\'essai gratuit et accéder à l\'ensemble des modules.';
+      if (banner) banner.style.display = 'none';
+    }
+
+    setAuthTab(window._currentAuthTab || 'signup');
   }
 
   m.style.display = 'flex';
@@ -2740,6 +2760,7 @@ window.closeLeadGateModal = function () {
 };
 
 window.setAuthTab = function (tab) {
+  window._currentAuthTab = tab;
   var tbS = document.getElementById('tabAuthSignup');
   var tbL = document.getElementById('tabAuthLogin');
   if (tbS) tbS.classList.toggle('on', tab === 'signup');
@@ -2751,18 +2772,20 @@ window.setAuthTab = function (tab) {
   var fSch = document.getElementById('leadFieldSchool');
   var btnTxt = document.getElementById('leadBtnTxt');
 
+  var isCorrection = (window._lastLeadContext === 'correction');
+
   if (tab === 'login') {
     if (fName) fName.style.display = 'none';
     if (inpName) inpName.required = false;
     if (fWhat) fWhat.style.display = 'none';
     if (fSch) fSch.style.display = 'none';
-    if (btnTxt) btnTxt.textContent = '🔑 Se connecter et continuer';
+    if (btnTxt) btnTxt.textContent = isCorrection ? '🔑 Se connecter et lancer la correction' : '🔑 Se connecter et continuer';
   } else {
     if (fName) fName.style.display = 'block';
     if (inpName) inpName.required = false;
     if (fWhat) fWhat.style.display = 'block';
     if (fSch) fSch.style.display = 'block';
-    if (btnTxt) btnTxt.textContent = '🚀 Activer mon essai 7 jours et continuer';
+    if (btnTxt) btnTxt.textContent = isCorrection ? '🚀 Créer mon compte et lancer la correction' : '🚀 Activer mon essai 7 jours et continuer';
   }
 };
 

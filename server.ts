@@ -715,7 +715,7 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
         const config: any = {
           systemInstruction: "Tu es un correcteur pédagogique expert, précis, bienveillant et rigoureux. Tu analyses l'intégralité du document (PDF ou image) avec soin, tu déchiffres toutes les réponses des élèves (manuscrites ou dactylographiées) et tu réponds UNIQUEMENT par un objet JSON valide, sans balises Markdown ni texte superflu.",
           responseMimeType: "application/json",
-          temperature: 0.2,
+          temperature: 0.0,
           maxOutputTokens: 8192,
         };
 

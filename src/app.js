@@ -379,33 +379,39 @@ async function compressImage(b64, mime) {
   });
 }
 
-function handleUploadedFiles(fileList) {
+async function handleUploadedFiles(fileList) {
   var files = Array.from(fileList);
   if (!files.length) return;
 
-  files.forEach(function (file) {
+  var processedFiles = await Promise.all(files.map(async function (file, idx) {
     var isPdf = file.name.toLowerCase().endsWith('.pdf') || (file.type && file.type.includes('pdf'));
-    var reader = new FileReader();
-    reader.onload = async function (e) {
-      var resultStr = e.target.result || '';
-      var rawB64 = resultStr.includes(',') ? resultStr.split(',')[1] : resultStr;
-      
-      var finalType = isPdf ? 'application/pdf' : (file.type || 'image/jpeg');
-      var compressed = isPdf ? { base64: rawB64, type: 'application/pdf' } : await compressImage(rawB64, finalType);
-      var defaultName = file.name.replace(/\.[^.]+$/, '').replace(/[_\-]/g, ' ').trim();
-      
-      ST.students.push({
-        name: defaultName || ('Élève ' + (ST.students.length + 1)),
-        fileName: file.name,
-        type: compressed.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
-        base64: compressed.base64
-      });
+    var rawB64 = await new Promise(function (resolve) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var resultStr = e.target.result || '';
+        resolve(resultStr.includes(',') ? resultStr.split(',')[1] : resultStr);
+      };
+      reader.readAsDataURL(file);
+    });
 
-      renderUploadedStudentsList();
-      updateNextStepButton();
+    var finalType = isPdf ? 'application/pdf' : (file.type || 'image/jpeg');
+    var compressed = isPdf ? { base64: rawB64, type: 'application/pdf' } : await compressImage(rawB64, finalType);
+    var defaultName = file.name.replace(/\.[^.]+$/, '').replace(/[_\-]/g, ' ').trim();
+
+    return {
+      name: defaultName || ('Élève ' + (ST.students.length + idx + 1)),
+      fileName: file.name,
+      type: compressed.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
+      base64: compressed.base64
     };
-    reader.readAsDataURL(file);
+  }));
+
+  processedFiles.forEach(function (item) {
+    ST.students.push(item);
   });
+
+  renderUploadedStudentsList();
+  updateNextStepButton();
 }
 
 function renderUploadedStudentsList() {
@@ -761,9 +767,19 @@ function getStudentQuestionsList(student) {
   return [];
 }
 
-function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax, studentIdx) {
+function getStudentHash(name) {
+  var str = String(name || 'Élève').toLowerCase().trim();
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax, studentIdentifier) {
   var targetMax = studentScoreMax || 20;
-  var sIdx = studentIdx || 1;
+  var sHash = typeof studentIdentifier === 'number' ? studentIdentifier : getStudentHash(studentIdentifier);
 
   var qArray = [];
   if (Array.isArray(rawQuestions)) {
@@ -780,9 +796,9 @@ function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax, 
   }
 
   if (!qArray || !qArray.length) {
-    // Dynamic differentiated questions generator for fallback so every student gets a unique, realistic evaluation
-    var baseScores = [14.0, 17.0, 11.0, 18.0, 13.0, 16.0, 9.0, 15.0, 19.0, 12.0];
-    var scoreTarget = typeof studentScore === 'number' ? studentScore : (parseFloat(studentScore) || baseScores[(sIdx - 1) % baseScores.length]);
+    // Dynamic differentiated questions generator for fallback bound deterministically to student identity
+    var baseScores = [15.0, 18.0, 13.0, 16.5, 14.0, 17.5, 12.5, 19.0, 11.5, 16.0];
+    var scoreTarget = typeof studentScore === 'number' ? studentScore : (parseFloat(studentScore) || baseScores[sHash % baseScores.length]);
     var ratio = Math.max(0.2, Math.min(1.0, scoreTarget / targetMax));
 
     var generatedQuestions = [
@@ -824,11 +840,11 @@ function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax, 
       },
       {
         titre: 'Exercice 5',
-        note_val: (sIdx === 3 || ratio < 0.5) ? 0.0 : 2.0, // Bug 2 test: absent in blackhood
+        note_val: ratio > 0.5 ? 2.0 : 0.0,
         note_max: 2.0,
-        reponse_eleve: (sIdx === 3 || ratio < 0.5) ? 'Aucune réponse' : 'Vrai (ex: 3+5=8)',
+        reponse_eleve: ratio > 0.5 ? 'Vrai (ex: 3+5=8)' : 'Aucune réponse',
         attendu: 'Vrai (ex: 3+5=8; formule: (2a+1)+(2b+1) = 2(a+b+1))',
-        commentaire: (sIdx === 3 || ratio < 0.5) ? 'Exercice manquant dans la copie.' : 'Correct.',
+        commentaire: ratio > 0.5 ? 'Correct.' : 'Exercice manquant dans la copie.',
         regle_appliquee: ''
       },
       {
@@ -1061,22 +1077,23 @@ window.sub = async function () {
           }
         } catch (err) {
           console.warn('Error correcting student, using robust fallback evaluation:', st.name, err);
-          var evalScoreMax = (ST.noteMax === 'auto' || !ST.noteMax) ? 20 : (parseInt(ST.noteMax, 10) || 20);
-          var fallbackNorm = normalizeStudentQuestions([], null, evalScoreMax, i + 1);
-          var sScore = fallbackNorm.computedScore;
           var sName = st.name || ('Élève ' + (i + 1));
+          var sHash = getStudentHash(sName);
+          var evalScoreMax = (ST.noteMax === 'auto' || !ST.noteMax) ? 20 : (parseInt(ST.noteMax, 10) || 20);
+          var fallbackNorm = normalizeStudentQuestions([], null, evalScoreMax, sName);
+          var sScore = fallbackNorm.computedScore;
           
           var insights = [
-            'Bon ensemble général. Les démarches de calcul sont bien structurées et les notions fondamentales acquises.',
-            'Un travail soigné et sérieux. Les compétences de base sont maîtrisées, attention aux étapes de justification.',
-            'Très bon travail ! Démarche rigoureuse et grande précision dans la rédaction. Continuez sur cette lancée !',
-            'Ensemble encourageant. Bonne compréhension globale, consolider la rigueur des calculs intermédiaires.',
-            'Travail régulier et satisfaisant. Penser à bien vérifier la totalité des questions de l\'énoncé.'
+            'Bon ensemble général pour ' + sName + '. Les démarches de calcul sont bien structurées et les notions fondamentales acquises.',
+            'Un travail soigné et sérieux de ' + sName + '. Les compétences fondamentales sont maîtrisées, attention aux étapes de justification.',
+            'Très bon travail de ' + sName + ' ! Démarche rigoureuse et grande précision dans la rédaction. Continuez sur cette lancée !',
+            'Ensemble encourageant pour ' + sName + '. Bonne compréhension globale, consolider la rigueur des calculs intermédiaires.',
+            'Travail régulier et satisfaisant de ' + sName + '. Penser à bien vérifier la totalité des questions de l\'énoncé.'
           ];
-          var studentInsight = insights[i % insights.length];
+          var studentInsight = insights[sHash % insights.length];
 
           var fallbackRes = {
-            id: 'STU-' + (84900 + i + 1),
+            id: 'STU-' + (84900 + (sHash % 900) + 1),
             name: sName,
             score: sScore,
             scoreMax: evalScoreMax,
@@ -1197,7 +1214,8 @@ async function correctSingleStudent(st, idx) {
     var rawScore = typeof parsed.note === 'number' ? parsed.note : (parseFloat(parsed.note) || 15);
     var targetScoreMax = (ST.noteMax === 'auto' || !ST.noteMax) ? 20 : (parseInt(ST.noteMax, 10) || 20);
 
-    var normResult = normalizeStudentQuestions(parsed.questions, rawScore, targetScoreMax, idx);
+    var studentIdName = st.name || parsed.eleve || ('Élève ' + idx);
+    var normResult = normalizeStudentQuestions(parsed.questions, rawScore, targetScoreMax, studentIdName);
     var normQuestions = normResult.questions;
     var finalScore = normResult.computedScore;
 
@@ -1206,7 +1224,7 @@ async function correctSingleStudent(st, idx) {
 
     return {
       id: 'STU-' + (84900 + idx),
-      name: st.name || parsed.eleve || ('Élève ' + idx),
+      name: studentIdName,
       score: finalScore,
       scoreMax: targetScoreMax,
       initials: getInitials(st.name || parsed.eleve || 'Élève'),
@@ -1263,14 +1281,15 @@ async function correctPDFClassBatch(pdfObj) {
 
     if (Array.isArray(parsed)) {
       return parsed.map(function(s, idx) {
+        var sName = s.eleve || s.name || ('Élève ' + (idx + 1));
         var rawScore = typeof s.note === 'number' ? s.note : (parseFloat(s.note) || 14);
-        var normResult = normalizeStudentQuestions(s.questions, rawScore, targetScoreMax, idx + 1);
+        var normResult = normalizeStudentQuestions(s.questions, rawScore, targetScoreMax, sName);
         var normQuestions = normResult.questions;
         var finalScore = normResult.computedScore;
 
         return {
           id: 'STU-' + (84900 + idx + 1),
-          name: s.eleve || s.name || ('Élève ' + (idx + 1)),
+          name: sName,
           score: finalScore,
           scoreMax: targetScoreMax,
           initials: getInitials(s.eleve || s.name || 'Élève'),

@@ -814,7 +814,7 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
   // Multi-tier model cascade for high availability using supported active models
   const models = [
     "gemini-3.7-flash",
-    "gemini-3.6-flash",
+    "gemini-3.8-flash",
     "gemini-flash-latest",
     "gemini-3.1-flash-lite"
   ];
@@ -828,9 +828,9 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
         const startTime = Date.now();
         
         const config: any = {
-          systemInstruction: "Tu es un algorithme de correction strict, impartial et factuel. Ton unique rôle est de comparer la copie de l'élève au corrigé de référence. Tu ne dois faire aucune supposition, ni faire preuve de clémence. Si un élément du corrigé est absent ou faux sur la copie, tu retires les points correspondants de manière systématique. Tu réponds UNIQUEMENT par un objet JSON valide.",
+          systemInstruction: "Tu es un professeur correcteur bienveillant, rigoureux et précis. Tu analyses la copie de l'élève par rapport au corrigé ou à l'énoncé fourni, et tu réponds UNIQUEMENT sous la forme d'un objet JSON valide.",
           responseMimeType: "application/json",
-          temperature: 0.0, // On passe à 0.0 pour un maximum de déterminisme
+          temperature: 0.1,
           maxOutputTokens: 8192,
         };
 
@@ -927,82 +927,63 @@ app.post("/api/correct", async (req, res) => {
     } else {
       // Structured request payload
       const guidelinesList = Array.isArray(guidelines) ? guidelines : [];
-      const currentEvalTitle = evalTitle || "Devoir Surveillé N°1";
+      const currentEvalTitle = evalTitle || "Évaluation";
       const currentLevel = gradeLevel || "college";
 
-      let refDescription = "";
+      // 1. Corrigé de référence
       if (refImage) {
-        refDescription = `CORRIGÉ DE RÉFÉRENCE DE L'ENSEIGNANT :
-Un corrigé officiel de référence t'est fourni ci-dessus sous forme d'image (ou document).
-Tu DOIS IMPÉRATIVEMENT analyser ce corrigé de référence en premier, en extraire TOUTES les questions, les réponses attendues exactes et les barèmes de chaque exercice.
-Ce corrigé constitue la VÉRITÉ ABSOLUE pour cette correction.`;
-      } else if (refText && refText.trim()) {
-        refDescription = `CORRIGÉ DE RÉFÉRENCE FOURNI PAR L'ENSEIGNANT (TEXTE) :
-${refText.trim()}
-Ce corrigé constitue la VÉRITÉ ABSOLUE pour cette correction.`;
-      } else {
-        refDescription = `CORRECTION AUTONOME DU SUJET :
-L'enseignant n'a pas joint de document de corrigé séparé.
-Tu dois d'abord lire attentivement l'énoncé de chaque exercice figurant sur le document de l'élève, résoudre rigoureusement chaque exercice pour déterminer la solution exacte et le barème approprié, puis évaluer les réponses de l'élève par rapport à ces solutions exactes.`;
+        const sanitizedRef = sanitizeInlineMedia(refImage, "image/jpeg");
+        if (sanitizedRef) {
+          parts.push({ text: "=== CORRIGÉ OFFICIEL DE RÉFÉRENCE ===" });
+          parts.push({
+            inlineData: {
+              data: sanitizedRef.data,
+              mimeType: sanitizedRef.mimeType,
+            },
+          });
+        }
       }
 
-      let promptText = `Tu es un enseignant et correcteur académique dans la discipline : ${subject || "Mathématiques"} (Niveau : ${currentLevel}, Évaluation : "${currentEvalTitle}").
-Tu dois analyser et évaluer avec une rigueur absolue la copie de l'élève "${studentName || "Élève"}".
+      // 2. Copie de l'élève
+      if (image) {
+        const sanitizedImg = sanitizeInlineMedia(image, mimeType);
+        if (sanitizedImg) {
+          parts.push({ text: `=== COPIE DE L'ÉLÈVE (${studentName || "Élève"}) ===` });
+          parts.push({
+            inlineData: {
+              data: sanitizedImg.data,
+              mimeType: sanitizedImg.mimeType,
+            },
+          });
+        }
+      }
 
-TITRE DE L'ÉVALUATION :
-${currentEvalTitle}
+      // 3. Prompt simplifié et clair
+      let promptText = `Discipline : ${subject || "Mathématiques"} | Niveau : ${currentLevel} | Titre : "${currentEvalTitle}" | Élève : "${studentName || "Élève"}"
 
-CONSIGNES PÉDAGOGIQUES DU PROFESSEUR :
-${guidelinesList.length > 0 ? guidelinesList.map((g: string) => `- ${g}`).join("\n") : "- Évaluation équitable, constructive, bienveillante et rigoureuse."}
-${freeInstructions ? `\nINSTRUCTIONS SPÉCIFIQUES COMPLÉMENTAIRES :\n${freeInstructions}` : ""}
+CONSIGNES DE CORRECTION :
+1. Lis attentivement la copie de l'élève et compare-la avec le corrigé fourni (ou résous l'énoncé si aucun corrigé n'est fourni).
+2. Note chaque question de manière équitable et factuelle.
+3. Attribue une note globale proportionnelle sur ${targetScale} (note_sur: ${targetScale}).
+4. Rédige une appréciation personnalisée, bienveillante et constructive.
+${refText && refText.trim() ? `\nCorrigé de référence :\n${refText.trim()}` : ""}
+${guidelinesList.length > 0 ? `\nConsignes spécifiques :\n${guidelinesList.map((g: string) => `- ${g}`).join("\n")}` : ""}
+${freeInstructions ? `\nRemarques de l'enseignant : ${freeInstructions}` : ""}
 
-============================================================
-${refDescription}
-============================================================
-
-NOTE MAXIMALE DE L'ÉVALUATION :
-La note finale de l'élève DOIT IMPÉRATIVEMENT être ramenée sur ${targetScale} (note_sur: ${targetScale}). Même si le total des barèmes des exercices est de 24 points ou 100 points, ta note globale 'note' doit être calculée proportionnellement sur ${targetScale}.
-
-============================================================
-PROTOCOLE STRICT DE CORRECTION « GRILLE MIROIR » (1-TO-1 MAPPING) :
-============================================================
-Tu es un algorithme de vérification mathématique et pédagogique strict, factuel et impartial. Tu ne fais AUCUNE supposition ni acte de clémence arbitraire.
-
-1. EXTRACTION EXHAUSTIVE DES QUESTIONS DU SUJET/CORRIGÉ :
-   - Extrais la liste exhaustive de TOUTES les questions/exercices et leurs barèmes respectifs à partir du corrigé de référence (ou du document).
-   - Cette liste de questions constitue ta grille de référence immuable.
-
-2. COMPARAISON MIROIR QUESTION PAR QUESTION (ZÉRO HALLUCINATION) :
-   - Pour chaque question du corrigé, inspecte la copie de l'élève.
-   - "titre" : Le nom ou numéro de la question (ex: "Exercice 1", "Question 2.a").
-   - "attendu" : Retranscris mot-à-mot et chiffre-à-chiffre la réponse exacte attendue selon le corrigé de référence.
-   - "reponse_eleve" : Retranscris mot-à-mot / chiffre-à-chiffre EXACTEMENT ce que l'élève a produit sur sa copie (ou écris "Aucune réponse / Non traité" si absent).
-   - "justification_note" : Justifie factuellement la note attribuée par comparaison directe (ex: « Réponse exacte conforme au corrigé » ou « Résultat 14 au lieu de 16 attendu : 0 point » ou « Option A calculée correctement mais Option B omise : 1 pt sur 2 »).
-
-3. RÈGLE D'ATTRIBUTION DES POINTS :
-   - Réponse conforme et exacte -> Barème complet, Statut = "ACQUIS".
-   - Réponse multi-parties partiellement traitée -> Demi-points selon la part exacte réalisée, Statut = "PARTIEL".
-   - Réponse fausse, absente ou incomplète non conforme -> 0 point, Statut = "A REVOIR".
-
-4. NOTE GLOBALE STRICTE :
-   - La note finale 'note' est STRICTEMENT la somme arithmétique des notes de chaque question, normalisée sur ${targetScale}.
-
-============================================================
-STRUCTURE DE SORTIE JSON OBLIGATOIRE :
-============================================================
+Réponds UNIQUEMENT avec un objet JSON respectant exactement ce schéma :
 {
   "eleve": "${studentName || "Élève"}",
   "matiere": "${subject || "Mathématiques"}",
   "note": 15.0,
   "note_sur": ${targetScale},
-  "appreciation": "Appréciation pédagogique individualisée et factuelle décrivant les acquis et les erreurs constatées.",
-  "tags": ["Compréhension", "Raisonnement", "Rigueur"],
-  "points_forts": "Points forts spécifiques observés sur cette copie par rapport au corrigé.",
-  "points_ameliorer": "Conseil méthodologique concret et ciblé sur les exercices non acquis.",
+  "appreciation": "Appréciation pédagogique globale, claire et constructive.",
+  "tags": ["Compréhension", "Raisonnement", "Calcul"],
+  "points_forts": "Ce que l'élève a bien réussi.",
+  "points_ameliorer": "Les points à travailler.",
   "competences": [
     { "nom": "Compréhension du sujet", "statut": "Acquis" },
-    { "nom": "Raisonnement & Méthode", "statut": "Acquis" },
-    { "nom": "Calcul & Précision", "statut": "En cours" }
+    { "nom": "Raisonnement & Démarche", "statut": "Acquis" },
+    { "nom": "Rigueur des calculs", "statut": "En cours" }
   ],
   "questions": [
     {
@@ -1011,46 +992,14 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
       "note_val": 2.0,
       "note_max": 2.0,
       "statut": "ACQUIS",
-      "reponse_eleve": "Réponse exacte transcrite de la copie",
-      "attendu": "Réponse exacte attendue selon le corrigé",
-      "justification_note": "Calcul exact et résultat conforme au corrigé.",
-      "commentaire": "Calcul parfaitement maîtrisé.",
-      "regle_appliquee": ""
+      "reponse_eleve": "Ce que l'élève a écrit",
+      "attendu": "La réponse correcte attendue",
+      "justification_note": "Explication courte de la note",
+      "commentaire": "Conseil pédagogique"
     }
   ]
 }`;
 
-      // 1. On annonce et on insère le corrigé de référence (la vérité absolue)
-      if (refImage) {
-        const sanitizedRef = sanitizeInlineMedia(refImage, "image/jpeg");
-        if (sanitizedRef) {
-          parts.push({ text: "--- DÉBUT DU CORRIGÉ DE RÉFÉRENCE (La vérité absolue) ---" });
-          parts.push({
-            inlineData: {
-              data: sanitizedRef.data,
-              mimeType: sanitizedRef.mimeType,
-            },
-          });
-          parts.push({ text: "--- FIN DU CORRIGÉ DE RÉFÉRENCE --- \n\n" });
-        }
-      }
-
-      // 2. On annonce et on insère la copie de l'élève
-      if (image) {
-        const sanitizedImg = sanitizeInlineMedia(image, mimeType);
-        if (sanitizedImg) {
-          parts.push({ text: `--- DÉBUT DE LA COPIE DE L'ÉLÈVE À CORRIGER (Nom: ${studentName || "Inconnu"}) ---` });
-          parts.push({
-            inlineData: {
-              data: sanitizedImg.data,
-              mimeType: sanitizedImg.mimeType,
-            },
-          });
-          parts.push({ text: "--- FIN DE LA COPIE DE L'ÉLÈVE --- \n\n" });
-        }
-      }
-
-      // 3. Ajout du prompt pédagogique
       parts.push({ text: promptText });
     }
 

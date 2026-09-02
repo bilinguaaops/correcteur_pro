@@ -1041,9 +1041,13 @@ async function correctSingleStudent(st, idx) {
     freeInstructions: window.getFreeInstructions ? window.getFreeInstructions() : ''
   };
 
-  // Safe timeout with AbortController for multi-page / large documents
+  // Safe timeout with AbortController for multi-page / large documents (180s = 3 min)
   var controller = new AbortController();
-  var timeoutId = setTimeout(function() { controller.abort(); }, 60000);
+  var isTimedOut = false;
+  var timeoutId = setTimeout(function() {
+    isTimedOut = true;
+    controller.abort();
+  }, 180000);
 
   try {
     var resp = await fetch('/api/correct', {
@@ -1056,7 +1060,14 @@ async function correctSingleStudent(st, idx) {
     clearTimeout(timeoutId);
 
     if (!resp.ok) {
-      throw new Error('API server error: ' + resp.status);
+      var serverErrMsg = 'Erreur serveur ' + resp.status;
+      try {
+        var errJson = await resp.json();
+        if (errJson && (errJson.error || errJson.message)) {
+          serverErrMsg = errJson.error || errJson.message;
+        }
+      } catch (e) {}
+      throw new Error(serverErrMsg);
     }
 
     var data = await resp.json();
@@ -1094,6 +1105,9 @@ async function correctSingleStudent(st, idx) {
     };
   } catch (fetchErr) {
     clearTimeout(timeoutId);
+    if (isTimedOut) {
+      throw new Error('Délai d\'analyse dépassé (3 minutes). La copie est volumineuse ou l\'IA était occupée.');
+    }
     throw fetchErr;
   }
 }
@@ -1218,6 +1232,13 @@ function renderResults() {
       ? '<span class="score-adjusted-badge" style="display:inline-block;padding:2px 8px;border-radius:12px;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;border:1px solid #fde68a">✏️ Note prof : ' + scoreFormatted + '/' + (s.scoreMax || 20) + ' (IA: ' + iaScoreFormatted + ')</span>'
       : '<span style="font-size:11px;color:var(--text-muted)">🤖 Évaluation IA validée</span>';
 
+    var isErrorState = (s.tags && s.tags.includes('Erreur analyse')) || (s.score === 0 && s.insight && s.insight.startsWith('⚠️'));
+    var retryBtnHtml = isErrorState
+      ? '<button type="button" class="btn-pedago-primary sm" onclick="retrySingleStudentCorrection(' + idx + ')" title="Relancer la correction IA pour cet élève" style="grid-column: span 2; margin-bottom: 4px; font-weight: 700; background: var(--blue-primary); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">' +
+          '<span>🔄 Relancer la correction de cet élève</span>' +
+        '</button>'
+      : '';
+
     return (
       '<div class="student-pedago-card">' +
         '<div class="card-top-profile">' +
@@ -1246,6 +1267,7 @@ function renderResults() {
         '</div>' +
 
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">' +
+          retryBtnHtml +
           '<button type="button" class="btn-pedago-outline sm" onclick="openScoreEditModal(' + idx + ')" title="Modifier la note manuellement" style="border-color:var(--blue-primary);color:var(--blue-primary);font-weight:700;font-size:12px;padding:8px 4px">' +
             '<span>✏️ Ajuster note</span>' +
           '</button>' +
@@ -1264,6 +1286,29 @@ function renderResults() {
 
   renderClassKPIs();
 }
+
+window.retrySingleStudentCorrection = async function (idx) {
+  var student = ST.results[idx];
+  if (!student) return;
+
+  var stObj = ST.students.find(function (s) { return s.name === student.name; }) || ST.students[idx] || {
+    name: student.name,
+    base64: student.rawImage,
+    type: student.rawType || 'image/jpeg'
+  };
+
+  showToast('⏳ Nouvelle analyse en cours pour ' + student.name + '...', 'info');
+
+  try {
+    var updatedStudent = await correctSingleStudent(stObj, idx + 1);
+    ST.results[idx] = updatedStudent;
+    renderResults();
+    showToast('✓ Copie de ' + student.name + ' corrigée avec succès !', 'success');
+  } catch (err) {
+    console.error('Erreur retry student:', err);
+    showToast('⚠️ Échec de la nouvelle tentative : ' + (err.message || 'Erreur réseau'), 'error');
+  }
+};
 
 window.setResultsFilter = function (filterType) {
   ST.currentFilter = filterType;

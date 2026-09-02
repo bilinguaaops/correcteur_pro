@@ -649,10 +649,15 @@ function sanitizeInlineMedia(rawString: any, requestedMime?: string): { data: st
     base64 = dataUrlMatch[2];
   }
 
-  // 2. Strip any residual data URL header and whitespace/newlines
-  base64 = base64.replace(/^data:[^;]+;base64,/, "").replace(/[^A-Za-z0-9+/=]/g, "");
+  // 2. Normalize URL-safe base64 characters and strip whitespaces/invalid characters
+  base64 = base64
+    .replace(/^data:[^;]+;base64,/, "")
+    .replace(/-/g, "+")
+    .replace(/_/g, "/")
+    .replace(/\s+/g, "")
+    .replace(/[^A-Za-z0-9+/=]/g, "");
 
-  if (!base64 || base64.length < 32) return null;
+  if (!base64 || base64.length < 16) return null;
 
   // 3. Fix base64 padding if needed
   while (base64.length % 4 !== 0) {

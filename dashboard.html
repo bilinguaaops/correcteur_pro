@@ -575,7 +575,10 @@
     <div id="viewUsers" class="table-container-card">
       <div class="table-toolbar">
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1">
-          <input type="text" id="userSearchInput" class="search-input-box" placeholder="🔍 Rechercher (nom, email, école)..." oninput="filterUsers()">
+          <div style="position:relative;display:inline-flex;align-items:center">
+            <input type="text" id="userSearchInput" class="search-input-box" placeholder="🔍 Rechercher (nom, email, école)..." autocomplete="off" spellcheck="false" oninput="filterUsers()" style="padding-right:32px">
+            <button type="button" id="clearUserSearchBtn" onclick="clearUserSearch()" style="position:absolute;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;display:none" title="Effacer la recherche">✕</button>
+          </div>
           
           <select id="userFilterPlan" class="filter-select" onchange="filterUsers()">
             <option value="all">Tous les forfaits</option>
@@ -1113,6 +1116,12 @@
         console.warn('Leads API warning:', le);
       }
 
+      // Safeguard against browser autofill putting admin password into search box
+      const sBox = document.getElementById('userSearchInput');
+      if (sBox && (sBox.value === 'admin123' || sBox.value === 'PedagoAdmin#2026!' || sBox.value === 'pedago2026')) {
+        sBox.value = '';
+      }
+
       renderMetrics();
       initCharts();
       filterUsers();
@@ -1250,9 +1259,17 @@
 
     // Users filtering and sorting
     function filterUsers() {
-      const q = (document.getElementById('userSearchInput').value || '').toLowerCase().trim();
-      const planF = document.getElementById('userFilterPlan').value;
-      const statusF = document.getElementById('userFilterStatus').value;
+      const inputEl = document.getElementById('userSearchInput');
+      const clearBtn = document.getElementById('clearUserSearchBtn');
+      const rawQ = (inputEl ? inputEl.value : '') || '';
+      
+      if (clearBtn) {
+        clearBtn.style.display = rawQ.trim() ? 'block' : 'none';
+      }
+
+      const q = rawQ.toLowerCase().trim();
+      const planF = document.getElementById('userFilterPlan') ? document.getElementById('userFilterPlan').value : 'all';
+      const statusF = document.getElementById('userFilterStatus') ? document.getElementById('userFilterStatus').value : 'all';
 
       filteredUsers = appData.users.filter(u => {
         const matchQ = !q || (u.name && u.name.toLowerCase().includes(q)) || (u.email && u.email.toLowerCase().includes(q)) || (u.school && u.school.toLowerCase().includes(q)) || (u.whatsapp && u.whatsapp.toLowerCase().includes(q));
@@ -1274,6 +1291,14 @@
 
       currentPage = 1;
       renderUsersTable();
+    }
+
+    function clearUserSearch() {
+      const inputEl = document.getElementById('userSearchInput');
+      if (inputEl) {
+        inputEl.value = '';
+      }
+      filterUsers();
     }
 
     function sortUsers(col) {

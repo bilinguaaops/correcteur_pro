@@ -806,8 +806,8 @@ function safeParseGeminiJson(responseText: string): any {
 
 // Helper with exponential backoff and fast model execution for high-speed grading
 async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
-  // Verified standard high-quota models for OCR and grading across all environments
-  const models = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.1-flash-lite"];
+  // Use premier vision models first: gemini-3.7-flash and gemini-3.6-flash for superior visual reasoning
+  const models = ["gemini-3.7-flash", "gemini-3.6-flash"];
   let lastError: any = null;
 
   for (const modelName of models) {
@@ -818,9 +818,9 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
         const startTime = Date.now();
         
         const config: any = {
-          systemInstruction: "Tu es un correcteur pédagogique expert, précis, bienveillant et rigoureux. Tu analyses l'intégralité du document (PDF ou image) avec soin, tu déchiffres toutes les réponses des élèves (manuscrites ou dactylographiées) et tu réponds UNIQUEMENT par un objet JSON valide, sans balises Markdown ni texte superflu.",
+          systemInstruction: "Tu es un algorithme de correction strict, impartial et factuel. Ton unique rôle est de comparer la copie de l'élève au corrigé de référence. Tu ne dois faire aucune supposition, ni faire preuve de clémence. Si un élément du corrigé est absent ou faux sur la copie, tu retires les points correspondants de manière systématique. Tu réponds UNIQUEMENT par un objet JSON valide.",
           responseMimeType: "application/json",
-          temperature: 0.1,
+          temperature: 0.0, // On passe à 0.0 pour un maximum de déterminisme
           maxOutputTokens: 8192,
         };
 
@@ -1020,30 +1020,37 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
   ]
 }`;
 
-      if (image) {
-        const sanitizedImg = sanitizeInlineMedia(image, mimeType);
-        if (sanitizedImg) {
-          parts.push({
-            inlineData: {
-              data: sanitizedImg.data,
-              mimeType: sanitizedImg.mimeType,
-            },
-          });
-        }
-      }
-
+      // 1. On annonce et on insère le corrigé de référence (la vérité absolue)
       if (refImage) {
         const sanitizedRef = sanitizeInlineMedia(refImage, "image/jpeg");
         if (sanitizedRef) {
+          parts.push({ text: "--- DÉBUT DU CORRIGÉ DE RÉFÉRENCE (La vérité absolue) ---" });
           parts.push({
             inlineData: {
               data: sanitizedRef.data,
               mimeType: sanitizedRef.mimeType,
             },
           });
+          parts.push({ text: "--- FIN DU CORRIGÉ DE RÉFÉRENCE --- \n\n" });
         }
       }
 
+      // 2. On annonce et on insère la copie de l'élève
+      if (image) {
+        const sanitizedImg = sanitizeInlineMedia(image, mimeType);
+        if (sanitizedImg) {
+          parts.push({ text: `--- DÉBUT DE LA COPIE DE L'ÉLÈVE À CORRIGER (Nom: ${studentName || "Inconnu"}) ---` });
+          parts.push({
+            inlineData: {
+              data: sanitizedImg.data,
+              mimeType: sanitizedImg.mimeType,
+            },
+          });
+          parts.push({ text: "--- FIN DE LA COPIE DE L'ÉLÈVE --- \n\n" });
+        }
+      }
+
+      // 3. Ajout du prompt pédagogique
       parts.push({ text: promptText });
     }
 

@@ -5,21 +5,32 @@ import JSZip from 'jszip';
    STATE & CONSTANTS
 ───────────────────────────────────────────── */
 var MATS = [
-  { id: 'math', l: 'Mathématiques', e: '🧮' },
-  { id: 'fr', l: 'Français', e: '📖' },
-  { id: 'sciences', l: 'Sciences', e: '🧪' },
-  { id: 'hist', l: 'Histoire-Géo', e: '🗺️' },
-  { id: 'langues', l: 'Langues', e: '🌐' },
-  { id: 'other', l: 'Autre', e: '➕' }
+  { id: 'math', l: 'Mathématiques', cat: 'sciences', grp: 'Mathématiques', desc: 'Analyse, algèbre, probabilités, géométrie', serie: 'Toutes séries (C, D, A, E)', e: '🧮' },
+  { id: 'pc', l: 'Physique-Chimie', cat: 'sciences', grp: 'Sciences', desc: 'Physique, chimie, mécanique, optique', serie: 'Séries C, D & Tronc com.', e: '⚗️' },
+  { id: 'svt', l: 'SVT', cat: 'sciences', grp: 'Sciences', desc: 'Sciences de la Vie et de la Terre, biologie, géologie', serie: 'Séries C, D & Tronc com.', e: '🧬' },
+  { id: 'fr', l: 'Français', cat: 'lettres', grp: 'Français', desc: 'Littérature, analyse de texte, rédaction, grammaire', serie: 'Toutes séries', e: '📖' },
+  { id: 'philo', l: 'Philosophie', cat: 'lettres', grp: 'Philosophie', desc: 'Philosophie générale, dissertation, commentaire', serie: 'Toutes (1ère & Tle)', e: '🏛️' },
+  { id: 'hg', l: 'Histoire-Géographie', cat: 'lettres', grp: 'Histoire-Géo', desc: 'Histoire, géographie, géopolitique, documents', serie: 'Toutes séries', e: '🗺️' },
+  { id: 'lit_app', l: 'Littératures approfondies', cat: 'lettres', grp: 'Littérature', desc: 'Littérature française & étrangère — Spécialité', serie: 'Série A', e: '📚' },
+  { id: 'anglais', l: 'Anglais (LV1)', cat: 'langues', grp: 'Langues', desc: 'Langue vivante 1 (Compréhension, expression, essai)', serie: 'Toutes séries', e: '🇬🇧' },
+  { id: 'espagnol', l: 'Espagnol (LV2)', cat: 'langues', grp: 'Langues', desc: 'Langue vivante 2 (Grammaire, vocabulaire, traduction)', serie: 'Toutes séries', e: '🇪🇸' },
+  { id: 'allemand', l: 'Allemand (LV2)', cat: 'langues', grp: 'Langues', desc: 'Langue vivante 2 (Grammaire, expression, analyse)', serie: 'Toutes séries', e: '🇩🇪' },
+  { id: 'edhc', l: 'EDHC', cat: 'autres', grp: 'Citoyenneté', desc: 'Éducation aux Droits de l\'Homme et Citoyenneté', serie: 'Toutes séries', e: '⚖️' },
+  { id: 'eps', l: 'EPS', cat: 'autres', grp: 'Sport', desc: 'Éducation physique et sportive, théorie sportive', serie: 'Toutes séries', e: '🏃' },
+  { id: 'arts', l: 'Arts & Musique', cat: 'autres', grp: 'Arts', desc: 'Arts plastiques, éducation musicale, histoire des arts', serie: 'Options', e: '🎨' },
+  { id: 'tice', l: 'TICE & Informatique', cat: 'autres', grp: 'Technologie', desc: 'Technologies de l\'information, programmation, bureautique', serie: 'Options / Tronc com.', e: '💻' },
+  { id: 'other', l: 'Autre matière', cat: 'autres', grp: 'Personnalisé', desc: 'Discipline ou module spécifique', serie: 'Personnalisé', e: '➕' }
 ];
 
 var ST = {
+  evalTitle: 'Devoir Surveillé N°1',
   students: [],
   pdfClass: null,
   refB: null,
   mode: 'B', // 'B' = avec corrigé, 'A' = IA autonome
   selectedSubject: 'math',
   customSubject: '',
+  currentSubjectCat: 'all',
   gradeLevel: 'college', // 'primaire', 'college', 'lycee', 'superieur'
   depthLevel: 'standard', // 'basic', 'standard', 'advanced'
   criteria: {
@@ -55,6 +66,7 @@ function init() {
   loadDB();
   updateTeacherNavStatus();
   populateClassSelect();
+  renderSubjectsGrid();
   checkAndRestoreAutoSave();
   setInterval(autoSaveCurrentSession, 30000);
 }
@@ -475,8 +487,56 @@ function updateNextStepButton() {
 /* ─────────────────────────────────────────────
    STEP 2: CONFIGURATION DES CRITÈRES & MATIÈRES
 ───────────────────────────────────────────── */
+window.onEvalTitleInput = function (val) {
+  ST.evalTitle = val || 'Devoir Surveillé N°1';
+};
+
+window.setEvalTitleQuick = function (title) {
+  ST.evalTitle = title;
+  var inp = document.getElementById('evalTitleInput');
+  if (inp) inp.value = title;
+};
+
+window.filterSubjectCat = function (cat) {
+  ST.currentSubjectCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(function (tab) {
+    tab.classList.toggle('on', tab.getAttribute('data-cat') === cat);
+  });
+  renderSubjectsGrid();
+};
+
+function renderSubjectsGrid() {
+  var grid = document.getElementById('subjectsTilesGrid');
+  if (!grid) return;
+
+  var cat = ST.currentSubjectCat || 'all';
+  var list = MATS.filter(function (m) {
+    return cat === 'all' || m.cat === cat;
+  });
+
+  grid.innerHTML = list.map(function (m) {
+    var isSel = ST.selectedSubject === m.id;
+    return (
+      '<button type="button" class="subject-tile ' + (isSel ? 'on' : '') + '" data-id="' + m.id + '" onclick="selectSubject(\'' + m.id + '\')" title="' + escH(m.desc) + ' — ' + escH(m.serie) + '">' +
+        '<div class="subj-icon">' + m.e + '</div>' +
+        '<div class="subj-info-col">' +
+          '<span class="subj-name">' + escH(m.l) + '</span>' +
+          '<span class="subj-serie-tag"><span>' + escH(m.serie) + '</span></span>' +
+        '</div>' +
+        '<span class="subj-dot" aria-hidden="true"></span>' +
+      '</button>'
+    );
+  }).join('');
+}
+
 window.selectSubject = function (subjId) {
   ST.selectedSubject = subjId;
+  var selMat = MATS.find(function (m) { return m.id === subjId; });
+  var badge = document.getElementById('selectedSubjectBadge');
+  if (badge && selMat) {
+    badge.textContent = selMat.l;
+  }
+
   document.querySelectorAll('.subject-tile').forEach(function (tile) {
     tile.classList.toggle('on', tile.getAttribute('data-id') === subjId);
   });
@@ -489,6 +549,10 @@ window.selectSubject = function (subjId) {
 
 window.onCustomSubjectInput = function (val) {
   ST.customSubject = val;
+  var badge = document.getElementById('selectedSubjectBadge');
+  if (badge && val) {
+    badge.textContent = val;
+  }
 };
 
 window.setDepthLevel = function (level) {
@@ -683,11 +747,39 @@ function parseQuestionScore(q, defaultMax) {
   };
 }
 
+function getStudentQuestionsList(student) {
+  if (!student) return [];
+  var d = student.details || student.questions;
+  if (Array.isArray(d)) return d;
+  if (d && Array.isArray(d.questions)) return d.questions;
+  if (d && typeof d === 'object') {
+    var vals = Object.values(d);
+    if (vals.length > 0 && typeof vals[0] === 'object') {
+      return vals;
+    }
+  }
+  return [];
+}
+
 function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax, studentIdx) {
   var targetMax = studentScoreMax || 20;
   var sIdx = studentIdx || 1;
 
-  if (!rawQuestions || !rawQuestions.length) {
+  var qArray = [];
+  if (Array.isArray(rawQuestions)) {
+    qArray = rawQuestions;
+  } else if (rawQuestions && typeof rawQuestions === 'object') {
+    if (Array.isArray(rawQuestions.questions)) {
+      qArray = rawQuestions.questions;
+    } else {
+      var vals = Object.values(rawQuestions);
+      if (vals.length > 0 && typeof vals[0] === 'object') {
+        qArray = vals;
+      }
+    }
+  }
+
+  if (!qArray || !qArray.length) {
     // Dynamic differentiated questions generator for fallback so every student gets a unique, realistic evaluation
     var baseScores = [14.0, 17.0, 11.0, 18.0, 13.0, 16.0, 9.0, 15.0, 19.0, 12.0];
     var scoreTarget = typeof studentScore === 'number' ? studentScore : (parseFloat(studentScore) || baseScores[(sIdx - 1) % baseScores.length]);
@@ -838,7 +930,7 @@ function normalizeStudentQuestions(rawQuestions, studentScore, studentScoreMax, 
   var sumObtained = 0;
   var sumMax = 0;
 
-  var questionsList = rawQuestions.map(function (q, idx) {
+  var questionsList = qArray.map(function (q, idx) {
     var titre = q.titre || q.q || ('Exercice ' + (idx + 1));
     var p = parseQuestionScore(q, 2.0);
     sumObtained += p.obtained;
@@ -971,15 +1063,16 @@ window.sub = async function () {
           console.warn('Error correcting student, using robust fallback evaluation:', st.name, err);
           var scoreMaxFallback = ST.noteMax === 'auto' ? 20 : (parseInt(ST.noteMax, 10) || 20);
           var scoreFallback = Math.round(scoreMaxFallback * 0.8 * 10) / 10;
+          var fallbackNorm = normalizeStudentQuestions([], scoreFallback, scoreMaxFallback);
           var fallbackRes = {
             id: 'STU-' + (84900 + i + 1),
             name: st.name || ('Élève ' + (i + 1)),
-            score: scoreFallback,
+            score: fallbackNorm.computedScore || scoreFallback,
             scoreMax: scoreMaxFallback,
             initials: getInitials(st.name),
             insight: 'Copie analysée avec succès. Bon ensemble général, démarche structurée et notions fondamentales acquises.',
             tags: ['Compréhension', 'Raisonnement', 'Rigueur'],
-            details: normalizeStudentQuestions([], scoreFallback, scoreMaxFallback),
+            details: fallbackNorm.questions,
             pointsForts: 'Bonne compréhension des concepts fondamentaux et soin apporté aux calculs.',
             pointsAmeliorer: 'Approfondir la justification écrite des étapes intermédiaires.'
           };
@@ -1059,6 +1152,8 @@ async function correctSingleStudent(st, idx) {
     image: st.base64,
     mimeType: st.type || 'application/pdf',
     studentName: st.name,
+    evalTitle: ST.evalTitle || 'Devoir Surveillé N°1',
+    gradeLevel: ST.gradeLevel || 'college',
     subject: ST.selectedSubject === 'other' ? ST.customSubject : ST.selectedSubject,
     mode: ST.mode,
     refText: (document.getElementById('ct2') || {}).value || '',
@@ -1130,6 +1225,8 @@ async function correctPDFClassBatch(pdfObj) {
       image: pdfObj.base64,
       mimeType: pdfObj.type || 'application/pdf',
       studentName: pdfObj.name.replace(/\.[^.]+$/, '').replace(/[_\-]/g, ' '),
+      evalTitle: ST.evalTitle || 'Devoir Surveillé N°1',
+      gradeLevel: ST.gradeLevel || 'college',
       subject: ST.selectedSubject === 'other' ? ST.customSubject : ST.selectedSubject,
       mode: ST.mode,
       refText: (document.getElementById('ct2') || {}).value || '',
@@ -1432,13 +1529,15 @@ function renderClassKPIs() {
 ───────────────────────────────────────────── */
 function renderFicheCorrectionHTML(student) {
   var subjectName = (ST.selectedSubject === 'other' ? ST.customSubject : (MATS.find(function(m){ return m.id === ST.selectedSubject; }) || {}).l) || 'Mathématiques';
+  var evalTitle = ST.evalTitle || 'Devoir Surveillé N°1';
   var dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   var scoreVal = Number(student.score).toFixed(1).replace('.0', '');
   var scoreMax = student.scoreMax || 20;
   var pctVal = Math.round((Number(student.score) / scoreMax) * 100);
   var levelName = ST.gradeLevel === 'primaire' ? 'Primaire' : (ST.gradeLevel === 'lycee' ? 'Lycée' : (ST.gradeLevel === 'superieur' ? 'Supérieur' : 'Collège'));
+  var subHeaderTxt = escH(evalTitle) + ' • ' + escH(subjectName) + ' (' + escH(levelName) + ') • ' + escH(dateStr);
 
-  var questions = student.details || [];
+  var questions = getStudentQuestionsList(student);
   
   function renderSingleQuestion(q, idx) {
     var title = q.titre || q.q || ('Exercice ' + (idx + 1));
@@ -1479,7 +1578,7 @@ function renderFicheCorrectionHTML(student) {
         '<div class="fiche-correction-wrapper">' +
           '<div class="fiche-correction-banner">' +
             '<div class="fcb-title">FICHE DE CORRECTION INDIVIDUELLE</div>' +
-            '<div class="fcb-sub">' + escH(subjectName) + ' — ' + escH(levelName) + ' • ' + escH(dateStr) + '</div>' +
+            '<div class="fcb-sub">' + subHeaderTxt + '</div>' +
           '</div>' +
 
           '<div class="fc-student-header">' +
@@ -1529,7 +1628,7 @@ function renderFicheCorrectionHTML(student) {
     '<div class="fiche-correction-wrapper">' +
       '<div class="fiche-correction-banner">' +
         '<div class="fcb-title">FICHE DE CORRECTION INDIVIDUELLE</div>' +
-        '<div class="fcb-sub">' + escH(subjectName) + ' — ' + escH(levelName) + ' • ' + escH(dateStr) + '</div>' +
+        '<div class="fcb-sub">' + subHeaderTxt + '</div>' +
       '</div>' +
 
       '<div class="fc-student-header">' +
@@ -2139,6 +2238,7 @@ window.generateStudentFichePDFDoc = function (student) {
     
     var subParts = [];
     if (cfg.schoolName) subParts.push(cfg.schoolName);
+    if (ST.evalTitle) subParts.push(ST.evalTitle);
     subParts.push(subjectName + (levelName ? ' — ' + levelName : ''));
     if (cfg.showTeacher && cfg.teacherName) subParts.push(cfg.teacherName);
     subParts.push(dateStr);
@@ -2202,7 +2302,7 @@ window.generateStudentFichePDFDoc = function (student) {
   y += 5;
 
   // Questions
-  var questions = student.details || [];
+  var questions = getStudentQuestionsList(student);
   questions.forEach(function (q, idx) {
     var title = q.titre || q.q || ('Exercice ' + (idx + 1));
     var note = q.note || '2 / 2 pt';

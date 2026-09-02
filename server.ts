@@ -780,7 +780,7 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
 // AI Correction Endpoint
 app.post("/api/correct", async (req, res) => {
   try {
-    const { messages, image, mimeType, studentName, subject, mode, refText, refImage, noteMax, guidelines, freeInstructions } = req.body || {};
+    const { messages, image, mimeType, studentName, subject, evalTitle, gradeLevel, mode, refText, refImage, noteMax, guidelines, freeInstructions } = req.body || {};
     
     const ai = getGenAI();
     const parts: any[] = [];
@@ -813,9 +813,14 @@ app.post("/api/correct", async (req, res) => {
       // Structured request payload
       const scaleStr = noteMax === "auto" ? "sur 20 (ou échelle adaptée selon le barème)" : `sur ${noteMax || 20}`;
       const guidelinesList = Array.isArray(guidelines) ? guidelines : [];
+      const currentEvalTitle = evalTitle || "Devoir Surveillé N°1";
+      const currentLevel = gradeLevel || "college";
 
-      let promptText = `Tu es un enseignant et correcteur académique d'élite dans la discipline : ${subject || "Mathématiques"}.
+      let promptText = `Tu es un enseignant et correcteur académique d'élite dans la discipline : ${subject || "Mathématiques"} (Niveau : ${currentLevel}, Évaluation : "${currentEvalTitle}").
 Tu dois analyser et évaluer avec une rigueur absolue la copie de l'élève "${studentName || "Élève"}".
+
+TITRE DE L'ÉVALUATION :
+${currentEvalTitle}
 
 CONSIGNES PÉDAGOGIQUES DU PROFESSEUR (RÈGLES DU JEU ACTIVÉES) :
 ${guidelinesList.length > 0 ? guidelinesList.map((g: string) => `- ${g}`).join("\n") : "- Évaluation équitable, constructive, bienveillante et rigoureuse."}

@@ -1200,87 +1200,49 @@
         <!-- COLONNE GAUCHE (Matière, Niveau d'analyse, Corrigé) -->
         <div class="config-left-col">
           
-          <!-- Section 1 : Matière -->
-          <div class="config-section-card">
-            <h2 class="config-section-title">Matière & Thème</h2>
+          <!-- Section 0 : Nom & Titre de l'évaluation -->
+          <div class="config-section-card" id="cardEvalTitle">
+            <div class="section-title-with-badge">
+              <h2 class="config-section-title" style="margin-bottom:0">📝 Nom & Titre de l'évaluation</h2>
+              <span class="field-badge-tag" style="background:var(--blue-subtle);color:var(--blue-primary);font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px">Identifiant officiel</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;margin-bottom:8px">Ce titre figurera sur les fiches de correction individuelles, le tableau de bord et les exports PDF & CSV.</p>
+            <div class="eval-title-input-wrapper">
+              <input type="text" id="evalTitleInput" placeholder="Ex : Devoir Surveillé N°1 — Suites & Probabilités | Interro SVT..." value="Devoir Surveillé N°1" class="pedago-input" oninput="onEvalTitleInput(this.value)">
+              <div class="eval-quick-pills">
+                <button type="button" class="eval-pill" onclick="setEvalTitleQuick('Devoir Surveillé N°1')">DS N°1</button>
+                <button type="button" class="eval-pill" onclick="setEvalTitleQuick('Interrogation Écrite N°1')">Interro N°1</button>
+                <button type="button" class="eval-pill" onclick="setEvalTitleQuick('Contrôle Continu')">Contrôle Continu</button>
+                <button type="button" class="eval-pill" onclick="setEvalTitleQuick('Devoir de Synthèse')">Devoir de Synthèse</button>
+                <button type="button" class="eval-pill" onclick="setEvalTitleQuick('Bac Blanc 2026')">Bac Blanc</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 1 : Matière & Spécialité -->
+          <div class="config-section-card" id="cardSubjectSelect">
+            <div class="section-title-with-badge">
+              <h2 class="config-section-title" style="margin-bottom:0">📚 Matière & Spécialité</h2>
+              <span class="field-badge-tag" id="selectedSubjectBadge" style="background:var(--bg-subtle);color:var(--text-main);font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;border:1px solid var(--border-subtle)">Mathématiques</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;margin-bottom:8px">Calibre les critères de correction et les compétences académiques selon le programme officiel.</p>
+            
+            <!-- Category Filter Tabs -->
+            <div class="subject-cat-tabs" id="subjectCatTabs">
+              <button type="button" class="cat-tab on" data-cat="all" onclick="filterSubjectCat('all')">Toutes (15)</button>
+              <button type="button" class="cat-tab" data-cat="sciences" onclick="filterSubjectCat('sciences')">📐 Sciences & Maths</button>
+              <button type="button" class="cat-tab" data-cat="lettres" onclick="filterSubjectCat('lettres')">📖 Lettres & Philo</button>
+              <button type="button" class="cat-tab" data-cat="langues" onclick="filterSubjectCat('langues')">🌐 Langues</button>
+              <button type="button" class="cat-tab" data-cat="autres" onclick="filterSubjectCat('autres')">⚖️ Autres & Options</button>
+            </div>
+
             <div class="subjects-tiles-grid" id="subjectsTilesGrid">
-              <button type="button" class="subject-tile" data-id="fr" onclick="selectSubject('fr')">
-                <div class="subj-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-                    <path d="M6 6h10M6 10h10"/>
-                  </svg>
-                </div>
-                <span class="subj-name">Français</span>
-                <span class="subj-dot" aria-hidden="true"></span>
-              </button>
-
-              <button type="button" class="subject-tile on" data-id="math" onclick="selectSubject('math')">
-                <div class="subj-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <rect x="4" y="2" width="16" height="20" rx="2"/>
-                    <line x1="8" y1="6" x2="16" y2="6"/>
-                    <line x1="16" y1="14" x2="16" y2="18"/>
-                    <line x1="16" y1="10" x2="16" y2="10"/>
-                    <line x1="12" y1="10" x2="12" y2="10"/>
-                    <line x1="8" y1="10" x2="8" y2="10"/>
-                    <line x1="12" y1="14" x2="12" y2="14"/>
-                    <line x1="8" y1="14" x2="8" y2="14"/>
-                    <line x1="12" y1="18" x2="12" y2="18"/>
-                    <line x1="8" y1="18" x2="8" y2="18"/>
-                  </svg>
-                </div>
-                <span class="subj-name">Mathématiques</span>
-                <span class="subj-dot" aria-hidden="true"></span>
-              </button>
-
-              <button type="button" class="subject-tile" data-id="sciences" onclick="selectSubject('sciences')">
-                <div class="subj-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M10 2v7.31L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.31V2"/>
-                    <line x1="8" y1="2" x2="16" y2="2"/>
-                  </svg>
-                </div>
-                <span class="subj-name">Sciences</span>
-                <span class="subj-dot" aria-hidden="true"></span>
-              </button>
-
-              <button type="button" class="subject-tile" data-id="hist" onclick="selectSubject('hist')">
-                <div class="subj-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="2" y1="12" x2="22" y2="12"/>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                  </svg>
-                </div>
-                <span class="subj-name">Histoire-Géo</span>
-                <span class="subj-dot" aria-hidden="true"></span>
-              </button>
-
-              <button type="button" class="subject-tile" data-id="langues" onclick="selectSubject('langues')">
-                <div class="subj-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>
-                  </svg>
-                </div>
-                <span class="subj-name">Langues</span>
-                <span class="subj-dot" aria-hidden="true"></span>
-              </button>
-
-              <button type="button" class="subject-tile" data-id="other" onclick="selectSubject('other')">
-                <div class="subj-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"/>
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>
-                </div>
-                <span class="subj-name">Autre</span>
-                <span class="subj-dot" aria-hidden="true"></span>
-              </button>
+              <!-- Grid will be rendered dynamically by renderSubjectsGrid() -->
             </div>
 
             <div id="customSubjectInputWrap" style="display:none;margin-top:12px">
-              <input type="text" id="customSubjectName" placeholder="Ex : Contrôle Maths — Chapitre 3 | Interro Histoire-Géo — L'esclavage | Dissertation Français" class="pedago-input" oninput="onCustomSubjectInput(this.value)">
+              <label for="customSubjectName" class="field-label-sm">Précisez le nom de votre matière personnalisée :</label>
+              <input type="text" id="customSubjectName" placeholder="Ex : Droit & Économie, Algorithmique & Codage, Musique..." class="pedago-input" oninput="onCustomSubjectInput(this.value)">
             </div>
           </div>
 

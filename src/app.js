@@ -1577,7 +1577,7 @@ function renderFicheCorrectionHTML(student) {
     
     var repEleve = q.reponse_eleve || q.reponse || 'Réponse inscrite dans la copie';
     var attendu = q.attendu || 'Conforme au corrigé officiel';
-    var comm = q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct.' : (statut === 'PARTIEL' ? 'Partiellement exact.' : 'Erreur identifiée.'));
+    var comm = q.justification_note || q.commentaire || q.comm || (statut === 'ACQUIS' ? 'Correct et conforme au corrigé.' : (statut === 'PARTIEL' ? 'Partiellement exact.' : 'Erreur ou réponse absente.'));
     var regleAppliquee = q.regle_appliquee || '';
 
     return (

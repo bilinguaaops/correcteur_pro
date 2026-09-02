@@ -806,8 +806,13 @@ function safeParseGeminiJson(responseText: string): any {
 
 // Helper with exponential backoff and fast model execution for high-speed grading
 async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
-  // Use premier vision models first: gemini-3.7-flash and gemini-3.6-flash for superior visual reasoning
-  const models = ["gemini-3.7-flash", "gemini-3.6-flash"];
+  // Multi-tier model cascade for high availability using supported active models
+  const models = [
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-flash-latest",
+    "gemini-3.1-flash-lite"
+  ];
   let lastError: any = null;
 
   for (const modelName of models) {
@@ -841,7 +846,8 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
         const isQuotaExceeded =
           errMsg.includes("429") ||
           errMsg.includes("resource_exhausted") ||
-          errMsg.includes("quota exceeded");
+          errMsg.includes("quota exceeded") ||
+          errMsg.includes("rate_limit");
 
         const isTransientError =
           errMsg.includes("503") ||
@@ -860,17 +866,17 @@ async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
           String(errStatus).includes("503");
 
         if (isQuotaExceeded) {
-          console.warn(`[Gemini API] Quota atteint sur ${modelName}, bascule vers le modèle alternatif...`);
+          console.warn(`[Gemini API] Quota atteint ou limité sur ${modelName} (429/ResourceExhausted), bascule automatique vers le modèle alternatif...`);
           break;
         } else if (isTransientError) {
           console.warn(`[Gemini API] Modèle ${modelName} temporairement occupé (tentative ${attempt}/${maxAttempts})...`);
           if (attempt < maxAttempts) {
-            await new Promise((r) => setTimeout(r, 1000));
+            await new Promise((r) => setTimeout(r, 1200));
             continue;
           }
           break;
         } else {
-          console.warn(`[Gemini API] Avertissement modèle ${modelName}:`, err?.message || err);
+          console.warn(`[Gemini API] Modèle ${modelName} non disponible:`, err?.message || err);
           break;
         }
       }
@@ -948,45 +954,28 @@ NOTE MAXIMALE DE L'ÉVALUATION :
 La note finale de l'élève DOIT IMPÉRATIVEMENT être ramenée sur ${targetScale} (note_sur: ${targetScale}). Même si le total des barèmes des exercices est de 24 points ou 100 points, ta note globale 'note' doit être calculée proportionnellement sur ${targetScale} (ex: si l'élève a 24/24 aux exercices, sa note globale est ${targetScale}/${targetScale} ; si l'élève a 18/24, sa note globale est ${(18 / 24 * targetScale).toFixed(1)}/${targetScale}).
 
 ============================================================
-RÈGLES DE CORRECTION PÉDAGOGIQUES :
+PROTOCOLE STRICT DE CORRECTION « GRILLE MIROIR » (1-TO-1 MAPPING) :
 ============================================================
+Tu es un algorithme de vérification mathématique et pédagogique strict, factuel et impartial. Tu ne fais AUCUNE supposition ni acte de clémence arbitraire.
 
-1. GESTION DES RÉPONSES MULTI-PARTIES (EX: EXERCICE 10, 9, 11) :
-- Si la réponse attendue comporte plusieurs parties séparées par '|' (ex: "A = 1 020€ | B = 1 248€ | Option A gagne") :
-  * Si l'élève ne fournit qu'UNE SEULE partie (ex: "Option A : 1020€") :
-    - Attribuer 50% des points (ex: 1 / 2 pt)
-    - Statut = "PARTIEL"
-    - Commentaire = "Calcul option A correct. Option B manquante." (préciser la partie correcte et celle manquante).
-  * Si l'élève traite tout avec succès : Note maximale (ex: 2 / 2 pt), Statut = "ACQUIS".
+1. EXTRACTION EXHAUSTIVE DU CORRIGÉ (LA VÉRITÉ ABSOLUE) :
+   - Extrais la liste exhaustive de TOUTES les questions/exercices et leurs barèmes respectifs à partir du document ou texte de référence.
+   - Cette liste de questions constitue ta grille de référence immuable.
 
-2. DÉTECTION SYSTÉMATIQUE DES EXERCICES MANQUANTS / NON TRAITÉS :
-- Tu DOIS lister et vérifier TOUS les exercices attendus du sujet.
-- Si un exercice n'apparaît pas ou n'est pas traité sur la copie de l'élève :
-  * Note = 0 / 2 pt (ou 0 / note_max)
-  * note_val = 0.0
-  * Statut = "A REVOIR"
-  * reponse_eleve = "Aucune réponse" (ou "Exercice non traité")
-  * attendu = La réponse officielle complète
-  * commentaire = "Exercice manquant dans la copie."
+2. COMPARAISON MIROIR QUESTION PAR QUESTION (ZÉRO HALLUCINATION) :
+   - Pour chaque question du corrigé, inspecte la copie de l'élève.
+   - "attendu" : Retranscris mot-à-mot et chiffre-à-chiffre la réponse exacte attendue selon le corrigé de référence.
+   - "reponse_eleve" : Retranscris mot-à-mot / chiffre-à-chiffre EXACTEMENT ce que l'élève a produit sur sa copie (ou écris "Aucune réponse / Non traité" si absent).
+   - "justification_note" : Justifie factuellement la note attribuée par comparaison directe (ex: « Réponse 16 conforme au corrigé attendu » ou « Réponse 14 au lieu de 16 attendu : 0 point » ou « Option A calculée correctement mais Option B omise : 1 pt sur 2 »).
 
-3. AFFICHAGE INTÉGRAL DE LA RÉPONSE ÉLÈVE :
-- Dans "reponse_eleve", retranscris EXACTEMENT ce que l'élève a écrit sur sa copie (calcul, amorce, texte manuscrit, même si incomplet ou erroné), sans masquer ni tronquer.
+3. RÈGLE D'ATTRIBUTION DES POINTS :
+   - Réponse conforme et exacte -> Barème complet (ex: 2 / 2 pt), Statut = "ACQUIS".
+   - Réponse multi-parties partiellement traitée -> Demi-points selon la part exacte réalisée (ex: 1 / 2 pt), Statut = "PARTIEL".
+   - Réponse fausse, absente ou incomplète non conforme -> 0 point (ex: 0 / 2 pt), Statut = "A REVOIR".
 
-4. RÉSOLUTION VALIDÉE EXERCICE 10 :
-- La réponse exacte pour l'option A est 1 020€ (1020€, et JAMAIS 1024€).
-- Attendu : "A = 1 020€ | B = 1 248€ | Option A gagne".
-
-5. RÈGLE D'ARRONDI DES POINTS :
-- 0.0 à 0.4 pt  -> Arrondi à 0 pt
-- 0.5 à 0.9 pt  -> Arrondi à 1 pt
-- 1.0 à 1.4 pt  -> Arrondi à 1 pt
-- 1.5 à 1.9 pt  -> Arrondi à 2 pt
-- 2.0 à 2.4 pt  -> Arrondi à 2 pt
-
-6. FORMAT JSON STRICT & ÉCHAPPEMENT DES GUILLEMETS :
-- Tu réponds UNIQUEMENT avec l'objet JSON valide.
-- IMPORTANT : Pour toutes les chaînes de texte ("reponse_eleve", "commentaire", "appreciation"), n'utilise JAMAIS de guillemets doubles non échappés. Utilise des apostrophes simples ' ou des guillemets français « » ou échappe avec \".
-- Ne laisse aucune virgule en fin de liste avant '}' ou ']'.
+4. NOTE GLOBALE STRICTE :
+   - La note finale 'note' est STRICTEMENT la somme arithmétique des notes de chaque question, normalisée sur ${targetScale}.
+   - Exemple : Si la somme des questions donne 18 points sur un total possible de 24 points, la note sur ${targetScale} est exactement (18 / 24) * ${targetScale} = ${(18 / 24 * targetScale).toFixed(1)}.
 
 ============================================================
 STRUCTURE DE SORTIE JSON OBLIGATOIRE :
@@ -996,10 +985,10 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
   "matiere": "${subject || "Mathématiques"}",
   "note": 15.0,
   "note_sur": ${targetScale},
-  "appreciation": "Appréciation pédagogique individualisée et encourageante adaptée à cette copie.",
+  "appreciation": "Appréciation pédagogique individualisée et factuelle décrivant les acquis et les erreurs constatées.",
   "tags": ["Compréhension", "Raisonnement", "Rigueur"],
-  "points_forts": "Points forts spécifiques observés sur cette copie.",
-  "points_ameliorer": "Conseil méthodologique concret pour progresser.",
+  "points_forts": "Points forts spécifiques observés sur cette copie par rapport au corrigé.",
+  "points_ameliorer": "Conseil méthodologique concret et ciblé sur les exercices non acquis.",
   "competences": [
     { "nom": "Compréhension du sujet", "statut": "Acquis" },
     { "nom": "Raisonnement & Méthode", "statut": "Acquis" },
@@ -1012,9 +1001,10 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
       "note_val": 2.0,
       "note_max": 2.0,
       "statut": "ACQUIS",
-      "reponse_eleve": "16",
+      "reponse_eleve": "15 + 3 - 2 = 16",
       "attendu": "15 + 3 - 2 = 16",
-      "commentaire": "Calcul correct.",
+      "justification_note": "Calcul exact et résultat conforme au corrigé.",
+      "commentaire": "Calcul parfaitement maîtrisé.",
       "regle_appliquee": ""
     }
   ]
@@ -1062,6 +1052,31 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
     if (parsedJson) {
       // Ensure note_sur is always strictly targetScale
       parsedJson.note_sur = targetScale;
+
+      // Arithmetically enforce the strict mirror grid sum across all validated questions
+      if (Array.isArray(parsedJson.questions) && parsedJson.questions.length > 0) {
+        let sumPoints = 0;
+        let sumMaxPoints = 0;
+
+        parsedJson.questions.forEach((q: any) => {
+          let val = typeof q.note_val === "number" ? q.note_val : parseFloat(String(q.note_val || q.note || "0").replace(/[^0-9.]/g, ""));
+          let maxVal = typeof q.note_max === "number" ? q.note_max : parseFloat(String(q.note_max || "2").replace(/[^0-9.]/g, ""));
+          if (isNaN(val)) val = 0;
+          if (isNaN(maxVal) || maxVal <= 0) maxVal = 2;
+
+          q.note_val = val;
+          q.note_max = maxVal;
+          q.note = `${Number(val.toFixed(1)).toString().replace(".0", "")} / ${Number(maxVal.toFixed(1)).toString().replace(".0", "")} pt`;
+
+          sumPoints += val;
+          sumMaxPoints += maxVal;
+        });
+
+        if (sumMaxPoints > 0) {
+          const exactScaledNote = (sumPoints / sumMaxPoints) * targetScale;
+          parsedJson.note = Math.round(exactScaledNote * 10) / 10;
+        }
+      }
 
       return res.json({
         result: parsedJson,

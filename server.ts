@@ -700,8 +700,8 @@ function sanitizeInlineMedia(rawString: any, requestedMime?: string): { data: st
 
 // Helper with exponential backoff and fast model execution for high-speed grading
 async function generateWithRetry(ai: GoogleGenAI, parts: any[]) {
-  // Valid free/standard @google/genai model names
-  const models = ["gemini-3.7-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+  // Valid free/standard @google/genai model names with robust fallback chain
+  const models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.7-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
   let lastError: any = null;
 
   for (const modelName of models) {
@@ -913,8 +913,6 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
   ]
 }`;
 
-      parts.push({ text: promptText });
-
       if (image) {
         const sanitizedImg = sanitizeInlineMedia(image, mimeType);
         if (sanitizedImg) {
@@ -938,6 +936,8 @@ STRUCTURE DE SORTIE JSON OBLIGATOIRE :
           });
         }
       }
+
+      parts.push({ text: promptText });
     }
 
     const response = await generateWithRetry(ai, parts);
